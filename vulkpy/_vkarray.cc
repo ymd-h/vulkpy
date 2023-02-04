@@ -433,7 +433,7 @@ PYBIND11_MODULE(_vkarray, m){
     .def_buffer([](Buffer<float>& m) {
       return pybind11::buffer_info {
         .ptr=m.data(),
-        .format=sizeof(float),
+        .itemsize=sizeof(float),
         .format=pybind11::format_descriptor<float>::format(),
         .ndim=1,
         .shape={ m.size() },
