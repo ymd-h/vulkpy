@@ -268,6 +268,7 @@ private:
   vk::UniqueCommandPool pool;
   vk::UniqueCommandBuffer buffer;
   vk::UniqueFence fence;
+  vk::UniqueSemaphore semaphore;
   std::function<vk::Result(std::uint64_t)> w;
 public:
   template<std::uint32_t N, typename Parameters>
@@ -276,7 +277,8 @@ public:
       vk::Queue& queue,
       const Op<N, Parameters>& op,
       const DataShape& shape,
-      const Parameters& params)
+      const Parameters& params,
+      const std::vector<vk::Semaphore>& wait)
   {
     this->pool = device->createCommandPoolUnique(info);
 
@@ -288,12 +290,20 @@ public:
     this->buffer = std::move(device->allocateCommandBuffersUnique(alloc)[0]);
 
     this->fence = device->createFenceUnique(vk::FenceCreateInfo{});
+    this->semaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{});
 
     this->w = [this, &device](std::uint64_t timeout_ns){
       return device->waitForFences({ this->fence.get() }, VK_TRUE, timeout_ns);
     };
 
-    queue.submit(op.getSubmitInfo(this->buffer, shape, params), this->fence.get());
+    auto submit = op.getSubmitInfo(this->buffer, shape, params);
+    submit.signalSemaphoreCount = 1;
+    submit.pSignalSemaphores = &this->semaphore.get();
+    if(!wait.empty()){
+      submit.waitSemaphoreCount = wait.size();
+      submit.pWaitSemaphores = wait.data();
+    }
+    queue.submit(submit, this->fence.get());
   }
 
   Job(Job&& other) = default;
@@ -312,6 +322,10 @@ public:
     default:
       throw std::runtime_error("Error at Command Wait");
     }
+  }
+
+  vk::Semaphore getSemaphore(){
+    return this->semaphore.get();
   }
 };
 
@@ -372,7 +386,8 @@ public:
   template<std::uint32_t N, typename Parameters>
   Job submit(const Op<N, Parameters>& op,
              const vk::DescriptorBufferInfo (&info)[N],
-             const DataShape& shape, const Parameters& params = {}){
+             const DataShape& shape, const Parameters& params = {},
+             const std::vector<vk::Semaphore>& wait = {}){
     op.writeDescriptorSet(this->device, info);
 
     return Job{
@@ -381,7 +396,7 @@ public:
         .flags=vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
         .queueFamilyIndex=this->queueFamilyIndex
       },
-      this->queue, op, shape, params
+      this->queue, op, shape, params, wait
     };
   }
 
@@ -425,7 +440,8 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<Op<3, OpParams::Vector>>(m, "Vec3Op");
 
   pybind11::class_<Job>(m, "Job")
-    .def("wait", &Job::wait, "Wait for this Job");
+    .def("wait", &Job::wait, "Wait for this Job")
+    .def("getSemaphore", &Job::getSemaphore, "Get Semaphore");
 }
 
 
