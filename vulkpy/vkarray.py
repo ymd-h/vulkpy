@@ -39,7 +39,8 @@ class GPU:
 
     def _submitVec3(self,
                     spv: str,
-                    buffers: Iterable[_vkarray.FloatBuffer]) -> _vkarray.Job:
+                    buffers: Iterable[_vkarray.FloatBuffer],
+                    jobs: Iterable[_vkarray.Job]) -> _vkarray.Job:
         """
         Submit 3-buffer Vector Operation
 
@@ -126,3 +127,13 @@ class FloatBuffer:
 
     def __truediv__(self, other: FloatBuffer):
         return self._op3(self._div, other)
+
+    def wait(self):
+        """
+        Wait Last Job
+        """
+        if self.job is not None:
+            self.job.wait()
+
+    def __getitem__(self, key):
+        return self.array[key]
