@@ -46,6 +46,7 @@ std::vector<char> readCode(std::string_view name){
 
 template<typename T> class Buffer {
 private:
+  std::size_t nSize;
   std::uint64_t mSize;
   vk::UniqueBuffer b;
   vk::UniqueDeviceMemory m;
@@ -54,7 +55,7 @@ private:
 public:
   Buffer(vk::UniqueDevice& device,
          const vk::PhysicalDeviceMemoryProperties& ps, std::size_t n)
-    : mSize(sizeof(T) * n)
+    : nSize(n), mSize(sizeof(T) * n)
   {
     auto bInfo = vk::BufferCreateInfo{
       .size=this->mSize,
@@ -87,6 +88,14 @@ public:
 
   T get(std::size_t i) const {
     return this->ptr[i];
+  }
+
+  T* data() const {
+    return this->ptr;
+  }
+
+  std::size_t size() const {
+    return this->nSize;
   }
 
   vk::DescriptorBufferInfo info() const {
