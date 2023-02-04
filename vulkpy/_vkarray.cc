@@ -350,6 +350,10 @@ public:
     return Buffer<T>(this->device, this->physical.getMemoryProperties(), data);
   }
 
+  template<typename T> Buffer<T> createBuffer(std::size_t n){
+    return Buffer<T>(this->device, this->physical.getMemoryProperties(), n);
+  }
+
   template<std::uint32_t N, typename Parameters>
   Op<N, Parameters> createOp(std::string_view spv,
                              std::uint32_t x, std::uint32_t y, std::uint32_t z){
