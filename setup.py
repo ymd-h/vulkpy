@@ -1,11 +1,22 @@
 import os
 import platform
 from setuptools import setup, find_packages, Extension
+import subprocess
 
 import pybind11
 
-
 pkg = "vulkpy"
+
+# Compile Compute Shader
+for shader in ["add", "sub", "mul", "div"]:
+    s = os.path.join(pkg, "shader", shader)
+    spv = s+".spv"
+    comp = s+".comp"
+
+    if ((not os.path.exists(spv)) or
+        (os.path.exists(comp) and (os.stat(comp).st_mtime > os.stat(spv).st_mtime))):
+        subprocess.run(["glslc", "-o", spv, comp], check=True)
+
 
 if platform.system() != "Windows":
     extra_args = {
