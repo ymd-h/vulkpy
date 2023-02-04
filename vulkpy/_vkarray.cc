@@ -392,6 +392,34 @@ public:
 };
 
 
+PYBIND11_MODULE(_vkarray, m){
+  m.doc() = "_vkarray internal module";
+
+  pybind11::class_<GPU>(m, "GPU")
+    .def(pybind11::init<std::size_t, float>())
+    .def("toFloatBuffer", &GPU::toBuffer<float>, "Copy to GPU Buffer")
+    .def("createBuffer", &GPU::createBuffer<float>, "Create GPU Buffer")
+    .def("createOpVec3", &GPU::createOp<3, OpParams::Vector>, "Create Vector Op")
+    .def("submitVec3", &GPU::submit<3, OpParams::Vector>, "Submit Vector Op")
+    .def("wait", &GPU::wait, "Wait all submission");
+
+  pybind11::class_<Buffer<float>>(m, "FloatBuffer")
+    .def("info", &Buffer<float>::info, "Get Buffer Info")
+    .def("range", &Buffer<float>::range, "Get Buffer Range");
+
+  pybind11::class_<OpParams::Vector>(m, "VectorParams")
+    .def(pybind11::init<std::uint32_t>());
+
+  pybind11::class_<DataShape>(m, "DataShape")
+    .def(pybind11::init(std::uint32_t, std::uint32_t, std::uint32_t));
+
+  pybind11::class_<Op<3, OpParams::Vector>>(m, "Vec3Op");
+
+  pybind11::class_<Job>(m, "Job")
+    .def("wait", &Job::wait, "Wait for this Job");
+}
+
+
 int main(int argc, char** argv){
   const auto nhead = 3;
 
