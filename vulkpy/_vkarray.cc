@@ -445,7 +445,7 @@ PYBIND11_MODULE(_vkarray, m){
     .def(pybind11::init<std::uint32_t>());
 
   pybind11::class_<DataShape>(m, "DataShape")
-    .def(pybind11::init(std::uint32_t, std::uint32_t, std::uint32_t));
+    .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
   pybind11::class_<Op<3, OpParams::Vector>>(m, "Vec3Op");
 
