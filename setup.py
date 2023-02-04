@@ -28,4 +28,5 @@ setup(name="vulkpy",
       version="0.0.0",
       packages=find_packages(),
       ext_modules=ext,
-      package_data={f"{pkg}.shader": [os.path.join(f"{pkg}", "shader", "*.spv")]})
+      package_data={f"{pkg}.shader": [os.path.join(f"{pkg}", "shader", "*.spv")]},
+      install_requires=["numpy"])
