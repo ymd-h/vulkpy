@@ -427,9 +427,19 @@ PYBIND11_MODULE(_vkarray, m){
     .def("submitVec3", &GPU::submit<3, OpParams::Vector>, "Submit Vector Op")
     .def("wait", &GPU::wait, "Wait all submission");
 
-  pybind11::class_<Buffer<float>>(m, "FloatBuffer")
+  pybind11::class_<Buffer<float>>(m, "FloatBuffer", pybind11::buffer_protocol())
     .def("info", &Buffer<float>::info, "Get Buffer Info")
-    .def("range", &Buffer<float>::range, "Get Buffer Range");
+    .def("range", &Buffer<float>::range, "Get Buffer Range")
+    .def_buffer([](Buffer<float>& m) {
+      return pybind11::buffer_info {
+        .ptr=&m.data(),
+        .format=sizeof(float),
+        .format=pybind11::format_descriptor<float>::format(),
+        .ndim=1,
+        .shape={ m.size() },
+        .strides={ sizeof(float) }
+      };
+    });
 
   pybind11::class_<OpParams::Vector>(m, "VectorParams")
     .def(pybind11::init<std::uint32_t>());
