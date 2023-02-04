@@ -37,7 +37,9 @@ class GPU:
         """
         return self.gpu.createOpVec3(spv, 64, 1, 1)
 
-    def _submitVec3(self, spv: str, buffers: Iterable[FloatBuffer]) -> _vkarray.Job:
+    def _submitVec3(self,
+                    spv: str,
+                    buffers: Iterable[_vkarray.FloatBuffer]) -> _vkarray.Job:
         """
         Submit 3-buffer Vector Operation
 
@@ -45,7 +47,7 @@ class GPU:
         ----------
         spv : str
             Compute Shader file name of SPIR-V (.spv)
-        buffers : iterable of FloatBuffer
+        buffers : iterable of _vkarray.FloatBuffer
             Buffers to be submitted.
 
         Returns
@@ -80,24 +82,38 @@ class FloatBuffer:
         ValueError
             If both ``data`` and ``shape`` are ``None``.
         """
-        self.gpu = gpu
-        self.spv = os.path.join(shader_dir, "add.spv")
+        self._gpu = gpu
+        self._add = os.path.join(shader_dir, "add.spv")
+        self._sub = os.path.join(shader_dir, "sub.spv")
+        self._mul = os.path.join(shader_dir, "mul.spv")
+        self._div = os.path.join(shader_dir, "div.spv")
 
         if data is not None:
             self.shape = np.asarray(data).shape
-            self.buffer = self.gpu.gpu.toFloatBuffer(data)
+            self.buffer = self._gpu.gpu.toFloatBuffer(data)
         elif shape is not None:
             self.shape = np.asarray(shape)
-            self.buffer = self.gpu.gpu.createFloatBuffer(int(self.shape.prod()))
+            self.buffer = self._gpu.gpu.createFloatBuffer(int(self.shape.prod()))
         else:
             raise ValueError(f"`data` or `shape` must not be `None`.")
 
-
-    def __add__(self, other: FloatBuffer):
+    def _op3(self, spv, other):
         if self.shape != other.shape:
             raise ValueError(f"Incompatible shapes: {self.shape} vs {other.shape}")
 
-        ret = FloatBuffer(self.gpu, shape=self.shape)
-        job = self.gpu._submitVec3(self.spv, [self.buffer, other.buffer, ret.buffer])
+        ret = FloatBuffer(self._gpu, shape=self.shape)
+        job = self._gpu._submitVec3(spv, [self.buffer, other.buffer, ret.buffer])
 
         return ret, job
+
+    def __add__(self, other: FloatBuffer):
+        return self._op3(self._add, other)
+
+    def __sub__(self, other: FloatBuffer):
+        return self._op3(self._sub, other)
+
+    def __mul__(self, other: FloatBuffer):
+        return self._op3(self._mul, other)
+
+    def __div__(self, other: FloatBuffer):
+        return self._op3(self._div, other)
