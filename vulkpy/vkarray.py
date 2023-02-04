@@ -115,5 +115,5 @@ class FloatBuffer:
     def __mul__(self, other: FloatBuffer):
         return self._op3(self._mul, other)
 
-    def __div__(self, other: FloatBuffer):
+    def __truediv__(self, other: FloatBuffer):
         return self._op3(self._div, other)
