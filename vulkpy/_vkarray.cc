@@ -12,7 +12,7 @@
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
 
-#include <pybind11/pybiind11.h>
+#include <pybind11/pybind11.h>
 
 #include "_vkutil.hh"
 
