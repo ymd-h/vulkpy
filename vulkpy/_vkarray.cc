@@ -432,7 +432,7 @@ PYBIND11_MODULE(_vkarray, m){
     .def("range", &Buffer<float>::range, "Get Buffer Range")
     .def_buffer([](Buffer<float>& m) {
       return pybind11::buffer_info {
-        .ptr=&m.data(),
+        .ptr=m.data(),
         .format=sizeof(float),
         .format=pybind11::format_descriptor<float>::format(),
         .ndim=1,
