@@ -49,6 +49,8 @@ class GPU:
             Compute Shader file name of SPIR-V (.spv)
         buffers : iterable of _vkarray.FloatBuffer
             Buffers to be submitted.
+        jobs : iterable of _vkarray.Job
+            Depending Jobs to be waited.
 
         Returns
         -------
@@ -60,7 +62,8 @@ class GPU:
         return self.gpu.submitVec3(op,
                                    [b.info() for b in buffers],
                                    _vkarray.DataShape(size, 1, 1),
-                                   _vkarray.VectorParams(size))
+                                   _vkarray.VectorParams(size),
+                                   [job.getSemaphore() for job in jobs])
 
 
 class FloatBuffer:
@@ -97,14 +100,20 @@ class FloatBuffer:
         else:
             raise ValueError(f"`data` or `shape` must not be `None`.")
 
+        self.array = np.view(np.asarray(self.buffer), self.shape)
+        self.job = None
+
     def _op3(self, spv, other):
-        if self.shape != other.shape:
+        if np.array_equal(self.shape, other.shape):
             raise ValueError(f"Incompatible shapes: {self.shape} vs {other.shape}")
 
         ret = FloatBuffer(self._gpu, shape=self.shape)
-        job = self._gpu._submitVec3(spv, [self.buffer, other.buffer, ret.buffer])
+        self.job = self._gpu._submitVec3(spv,
+                                         [self.buffer, other.buffer, ret.buffer],
+                                         [b.job for b in [self, other]
+                                          if b.job is not None])
 
-        return ret, job
+        return ret
 
     def __add__(self, other: FloatBuffer):
         return self._op3(self._add, other)
