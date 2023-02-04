@@ -12,10 +12,9 @@
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
 
+#include <pybind11/pybiind11.h>
 
 #include "_vkutil.hh"
-
-constexpr const auto _1sec = std::uint64_t(1e+9);
 
 std::uint32_t findMemIndex(const vk::PhysicalDeviceMemoryProperties& ps,
                            vk::MemoryRequirements req,
