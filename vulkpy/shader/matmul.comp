@@ -1,0 +1,33 @@
+#version 460
+layout(local_size_x = 1, local_size_y = 64, local_size_z = 1) in;
+
+
+layout(push_constant) uniform constants {
+  uint rowA;
+  uint contractSize;
+  uint columnB;
+} params;
+
+
+layout(std430, binding = 0) readonly buffer A {
+  float a[]; // [rowA, contractSize]
+};
+layout(std430, binding = 1) readonly buffer B {
+  float b[]; // [contractSize, columnB]
+};
+layout(std430, binding = 2) writeonly buffer C {
+  float c[]; // [rowA, columnB]
+};
+
+
+void main(){
+  uint row = gl_GlobalInvocationID.x;
+  uint col = gl_GlobalInvocationID.y;
+  if((row >= params.rowA) || (col >= params.columnB)){ return; }
+
+  float sum = 0.0;
+  for(uint s = 0; s < params.contractSize; s++){
+    sum += a[row * params.contractSize + s] * b[s * params.columnB + col];
+  }
+  c[row * params.columnB + col] = sum;
+}

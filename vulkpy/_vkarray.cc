@@ -115,6 +115,13 @@ namespace OpParams {
     std::uint32_t size;
     T scalar;
   };
+
+  template<typename T>
+  struct MatMul{
+    std::uint32_t rowA;
+    std::uint32_t contractSize;
+    std::uint32_t columnB;
+  };
 }
 
 struct DataShape {
@@ -457,6 +464,19 @@ PYBIND11_MODULE(_vkarray, m){
            throw std::runtime_error("Unknown Operation");
          },
          "Create Vector-Scalar Operation")
+    .def("createOp",
+         [](GPU& m, int n, const OpParams::MatMul<float>&,
+            std::string_view spv,
+            std::uint32_t x, std::uint32_t y, std::uint32_t z) -> pybind11::object {
+           using pybind11::cast;
+           using Params = OpParams::MatMul<float>;
+           switch(n){
+           case 3:
+             return cast(m.createOp<3, Params>(spv, x, y, z));
+           }
+           throw std::runtime_error("Unknown Operation");
+         },
+         "Create Matrix Multiplication Operation")
     .def("submit",
          [](GPU& m,
             const Op<2, OpParams::Vector>& op,
@@ -506,7 +526,7 @@ PYBIND11_MODULE(_vkarray, m){
            };
            return m.submit(op, info, shape, params, wait);
          },
-         "Submit Vector Op",
+         "Submit Vector-Scalar Op",
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit",
          [](GPU& m,
@@ -523,7 +543,25 @@ PYBIND11_MODULE(_vkarray, m){
            };
            return m.submit(op, info, shape, params, wait);
          },
-         "Submit Vector Op",
+         "Submit Vector-Scalar Op",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit",
+         [](GPU& m,
+            const Op<3, OpParams::MatMul<float>>& op,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const OpParams::MatMul<float>& params,
+            const std::vector<vk::Semaphore>& wait){
+           // Automatic conversion cannot work for `const T(&)[N]`,
+           // so that we manually convert from Python's `list`.
+           vk::DescriptorBufferInfo info[3]{
+             py_info[0].cast<vk::DescriptorBufferInfo>(),
+             py_info[1].cast<vk::DescriptorBufferInfo>(),
+             py_info[2].cast<vk::DescriptorBufferInfo>()
+           };
+           return m.submit(op, info, shape, params, wait);
+         },
+         "Submit Matrix Multiplication Op",
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait, "Wait all submission")
     .def("flush",
@@ -553,6 +591,9 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<OpParams::VectorScalar<float>>(m, "VectorScalarParams")
     .def(pybind11::init<std::uint32_t, float>());
 
+  pybind11::class_<OpParams::MatMul<float>>(m, "MatMulParams")
+    .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
+
   pybind11::class_<DataShape>(m, "DataShape")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
@@ -560,6 +601,7 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<Op<3, OpParams::Vector>>(m, "OpVec3");
   pybind11::class_<Op<1, OpParams::VectorScalar<float>>>(m, "OpVecScalar1");
   pybind11::class_<Op<2, OpParams::VectorScalar<float>>>(m, "OpVecScalar2");
+  pybind11::class_<Op<3, OpParams::MatMul<float>>>(m, "OpMatMul");
 
   pybind11::class_<Job, std::shared_ptr<Job>>(m, "Job")
     .def("wait", &Job::wait, "Wait for this Job",

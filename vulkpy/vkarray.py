@@ -10,9 +10,12 @@ from . import _vkarray
 
 shader_dir = os.path.join(os.path.dirname(__file__), "shader")
 
-Params = Union[_vkarray.VectorParams, _vkarray.VectorScalarParams]
+Params = Union[_vkarray.VectorParams,
+               _vkarray.VectorScalarParams,
+               _vkarray.MatMulParams]
 Op = Union[_vkarray.OpVec2, _vkarray.OpVec3,
-           _vkarray.OpVecScalar1, _vkarray.OpVecScalar2]
+           _vkarray.OpVecScalar1, _vkarray.OpVecScalar2,
+           _vkarray.OpMatMul]
 
 class GPU:
     def __init__(self, idx: int=0, priority: float=0.0):
@@ -149,6 +152,7 @@ class Array:
         self._idiv_scalar = os.path.join(shader_dir, "idiv_scalar.spv")
         self._rsub_scalar = os.path.join(shader_dir, "rsub_scalar.spv")
         self._rdiv_scalar = os.path.join(shader_dir, "rdiv_scalar.spv")
+        self._matmul = os.path.join(shader_dir, "matmul.spv")
 
         if data is not None:
             self.shape = np.asarray(data).shape
@@ -266,6 +270,29 @@ class Array:
 
     def __rtruediv__(self, other: float):
         return self._opVecScalar2(self._rdiv_scalar, other)
+
+    def __matmul__(self, other: Array):
+        if ((len(self.shape) > 3) or
+            (len(other.shape) > 3) or
+            (self.shape[-1] != other.shape[0])):
+            raise ValueError(f"Incompatible shapes: {self.shape} vs {other.shape}")
+
+        shape = tuple(self.shape)[:-1] + tuple(other.shape)[1:]
+        if len(shape) == 0:
+            shape = (1,)
+
+        rowA = self.shape[0] if len(self.shape) > 1 else 1
+        contractSize = self.shape[-1]
+        columnB = other.shape[1] if len(other.shape) > 1 else 1
+
+        ret = Array(self._gpu, shape=shape)
+        ret.job = self._gpu._submit(self._matmul, 1, 64, 1,
+                                    [self.buffer, other.buffer, ret.buffer],
+                                    _vkarray.DataShape(rowA, columnB, 1),
+                                    _vkarray.MatMulParams(rowA,contractSize,columnB),
+                                    [b.job.getSemaphore() for b in [self, other]
+                                     if b.job is not None])
+        return ret
 
     def wait(self):
         """
