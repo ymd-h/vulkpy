@@ -1,1 +1,1 @@
-from .vkarray import GPU, Buffer
+from .vkarray import GPU, Array

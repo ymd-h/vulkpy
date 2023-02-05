@@ -93,16 +93,16 @@ class GPU:
         return self.gpu.submit(op, [b.info() for b in buffers],
                                shape, params, semaphores)
 
-    def flush(self, buffers: Iterable[Buffer]):
+    def flush(self, arrays: Iterable[Array]):
         """
         Flush buffers
 
         Parameters
         ----------
-        buffers : iterable of Buffer
-            Buffers to be flushed
+        arrays : iterable of Array
+            Arrays to be flushed
         """
-        self.gpu.flush([b.range() for b in buffers])
+        self.gpu.flush([a.range() for a in arrays])
 
     def wait(self):
         """
@@ -111,10 +111,10 @@ class GPU:
         self.gpu.wait()
 
 
-class Buffer:
+class Array:
     def __init__(self, gpu: GPU, *, data = None, shape = None):
         """
-        Buffer for float (32bit)
+        Array for float (32bit)
 
         Parameters
         ----------
@@ -178,7 +178,7 @@ class Buffer:
 
     def _opVec3(self, spv, other):
         self._check_shape(other)
-        ret = Buffer(self._gpu, shape=self.shape)
+        ret = Array(self._gpu, shape=self.shape)
         ret.job = self._opVec(spv, [self, other, ret])
         return ret
 
@@ -196,7 +196,7 @@ class Buffer:
                                   if b.job is not None])
 
     def _opVecScalar2(self, spv, other):
-        ret = Buffer(self._gpu, shape=self.shape)
+        ret = Array(self._gpu, shape=self.shape)
         ret.job = self._opVecScalar(spv, [self, ret], other)
         return ret
 
@@ -204,52 +204,52 @@ class Buffer:
         self.job = self._opVecScalar(spv, [self], other)
 
     def __add__(self, other: Union[Self, float]):
-        if isinstance(other, Buffer):
+        if isinstance(other, Array):
             return self._opVec3(self._add, other)
         else:
             return self._opVecScalar2(self._add_scalar, other)
 
     def __sub__(self, other: Union[Self, float]):
-        if isinstance(other, Buffer):
+        if isinstance(other, Array):
             return self._opVec3(self._sub, other)
         else:
             return self._opVecScalar2(self._sub_scalar, other)
 
     def __mul__(self, other: Union[Self, float]):
-        if isinstance(other, Buffer):
+        if isinstance(other, Array):
             return self._opVec3(self._mul, other)
         else:
             return self._opVecScalar2(self._mul_scalar, other)
 
     def __truediv__(self, other: Union[Self, float]):
-        if isinstance(other, Buffer):
+        if isinstance(other, Array):
             return self._opVec3(self._div, other)
         else:
             return self._opVecScalar2(self._div_scalar, other)
 
     def __iadd__(self, other: Union[Self, float]):
-        if isinstance(other, Buffer):
+        if isinstance(other, Array):
             self._opVec2(self._iadd, other)
         else:
             self._opVecScalar1(self._iadd_scalar, other)
         return self
 
     def __isub__(self, other: Union[Self, float]):
-        if isinstance(other, Buffer):
+        if isinstance(other, Array):
             self._opVec2(self._isub, other)
         else:
             self._opVecScalar1(self._isub_scalar, other)
         return self
 
     def __imul__(self, other: Union[Self, float]):
-        if isinstance(other, Buffer):
+        if isinstance(other, Array):
             self._opVec2(self._imul, other)
         else:
             self._opVecScalar1(self._imul_scalar, other)
         return self
 
     def __itruediv__(self, other: Union[Self, float]):
-        if isinstance(other, Buffer):
+        if isinstance(other, Array):
             self._opVec2(self._idiv, other)
         else:
             self._opVecScalar1(self._idiv_scalar, other)
