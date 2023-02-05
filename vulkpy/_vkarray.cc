@@ -490,7 +490,12 @@ PYBIND11_MODULE(_vkarray, m){
          },
          "Submit Vector Op",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("wait", &GPU::wait, "Wait all submission");
+    .def("wait", &GPU::wait, "Wait all submission")
+    .def("flush",
+         [](GPU& m, const std::vector<vk::DescriptorBufferInfo>& info){
+           m.flush(info);
+         },
+         "Flush Memories to GPU");
 
   pybind11::class_<Buffer<float>>(m, "Buffer", pybind11::buffer_protocol())
     .def("info", &Buffer<float>::info, "Get Buffer Info")

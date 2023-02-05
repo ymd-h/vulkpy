@@ -90,6 +90,23 @@ class GPU:
         return self.gpu.submit(op, [b.info() for b in buffers],
                                shape, params, semaphores)
 
+    def flush(self, buffers: Iterable[Buffer]):
+        """
+        Flush buffers
+
+        Parameters
+        ----------
+        buffers : iterable of Buffer
+            Buffers to be flushed
+        """
+        self.gpu.flush([b.info() for b in buffers])
+
+    def wait(self):
+        """
+        Wait All GPU Operations
+        """
+        self.gpu.wait()
+
 
 class Buffer:
     def __init__(self, gpu: GPU, *, data = None, shape = None):
@@ -190,6 +207,12 @@ class Buffer:
         """
         if self.job is not None:
             self.job.wait()
+
+    def flush(self):
+        """
+        Flush Buffer to GPU
+        """
+        self._gpu.flush([self])
 
     def __getitem__(self, key):
         return self.array[key]
