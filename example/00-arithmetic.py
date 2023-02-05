@@ -1,10 +1,10 @@
+import argparse
+
 import numpy as np
 import vulkpy as vk
 from vulkpy.util import enable_debug
 
 def main():
-    enable_debug()
-
     gpu = vk.GPU()
 
     shape = (100,)
@@ -22,4 +22,11 @@ def main():
 
 
 if __name__ == "__main__":
+    p = argparse.ArgumentParser("00-arithmetic.py")
+    p.add_argument("--debug", action="store_true")
+
+    args = p.parse_args()
+    if args.debug:
+        enable_debug()
+
     main()
