@@ -1,1 +1,1 @@
-from .vkarray import GPU, FloatBuffer
+from .vkarray import GPU, Buffer

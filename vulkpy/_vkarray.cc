@@ -13,6 +13,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "_vkutil.hh"
 
@@ -421,15 +422,31 @@ PYBIND11_MODULE(_vkarray, m){
 
   pybind11::class_<GPU>(m, "GPU")
     .def(pybind11::init<std::size_t, float>())
-    .def("toFloatBuffer", &GPU::toBuffer<float>, "Copy to GPU Buffer")
+    .def("toBuffer", &GPU::toBuffer<float>, "Copy to GPU Buffer")
     .def("createBuffer", &GPU::createBuffer<float>, "Create GPU Buffer")
-    .def("createOpVec3", &GPU::createOp<3, OpParams::Vector>, "Create Vector Op")
-    .def("submitVec3", &GPU::submit<3, OpParams::Vector>, "Submit Vector Op")
+    .def("createOp", &GPU::createOp<3, OpParams::Vector>, "Create Vector Op")
+    .def("submit",
+         [](GPU& m,
+            const Op<3, OpParams::Vector>& op,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const OpParams::Vector& params,
+            const std::vector<vk::Semaphore>& wait){
+           vk::DescriptorBufferInfo info[3]{
+             py_info[0].cast<vk::DescriptorBufferInfo>(),
+             py_info[1].cast<vk::DescriptorBufferInfo>(),
+             py_info[2].cast<vk::DescriptorBufferInfo>()
+           };
+           return m.submit(op, info, shape, params, wait);
+         },
+         "Submit Vector Op",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait, "Wait all submission");
 
-  pybind11::class_<Buffer<float>>(m, "FloatBuffer", pybind11::buffer_protocol())
+  pybind11::class_<Buffer<float>>(m, "Buffer", pybind11::buffer_protocol())
     .def("info", &Buffer<float>::info, "Get Buffer Info")
     .def("range", &Buffer<float>::range, "Get Buffer Range")
+    .def("size", &Buffer<float>::size, "Get Buffer Size")
     .def_buffer([](Buffer<float>& m) {
       return pybind11::buffer_info {
         .ptr=m.data(),
@@ -447,11 +464,14 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<DataShape>(m, "DataShape")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
-  pybind11::class_<Op<3, OpParams::Vector>>(m, "Vec3Op");
+  pybind11::class_<Op<3, OpParams::Vector>>(m, "Op");
 
   pybind11::class_<Job>(m, "Job")
-    .def("wait", &Job::wait, "Wait for this Job")
+    .def("wait", &Job::wait, "Wait for this Job",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("getSemaphore", &Job::getSemaphore, "Get Semaphore");
+
+  pybind11::class_<vk::DescriptorBufferInfo>(m, "BufferInfo");
 }
 
 

@@ -1,8 +1,10 @@
 import os
 import functools
+from typing import Iterable, Self
+
 import numpy as np
 
-import _vkarray
+from . import _vkarray
 
 shader_dir = os.path.join(os.path.dirname(__file__), "shader")
 
@@ -21,7 +23,10 @@ class GPU:
         self.gpu = _vkarray.GPU(idx, priority)
 
     @functools.cache
-    def _createOpVec3(self, spv: str) -> _vkarray.Vec3Op:
+    def _createOp(self, spv: str,
+                  local_size_x: int,
+                  local_size_y: int,
+                  local_size_z: int) -> _vkarray.Op:
         """
         Create 3-buffer Vector Operation
 
@@ -29,17 +34,19 @@ class GPU:
         ----------
         spv : str
             Compute Shader file name of SPIR-V (.spv)
+        local_size_x, local_size_y, local_size_z : int
+            Subgroup size of compute shader
 
         Returns
         -------
-        _vkarray.Vec3Op
+        _vkarray.Op
            Operation
         """
-        return self.gpu.createOpVec3(spv, 64, 1, 1)
+        return self.gpu.createOp(spv, local_size_x, local_size_y, local_size_z)
 
     def _submitVec3(self,
                     spv: str,
-                    buffers: Iterable[_vkarray.FloatBuffer],
+                    buffers: Iterable[_vkarray.Buffer],
                     jobs: Iterable[_vkarray.Job]) -> _vkarray.Job:
         """
         Submit 3-buffer Vector Operation
@@ -48,7 +55,7 @@ class GPU:
         ----------
         spv : str
             Compute Shader file name of SPIR-V (.spv)
-        buffers : iterable of _vkarray.FloatBuffer
+        buffers : iterable of _vkarray.Buffer
             Buffers to be submitted.
         jobs : iterable of _vkarray.Job
             Depending Jobs to be waited.
@@ -58,16 +65,16 @@ class GPU:
         _vkarray.Job
             Job
         """
-        op = self._createOpVec3(spv)
-        size = int(buffers[0].prod())
-        return self.gpu.submitVec3(op,
-                                   [b.info() for b in buffers],
-                                   _vkarray.DataShape(size, 1, 1),
-                                   _vkarray.VectorParams(size),
-                                   [job.getSemaphore() for job in jobs])
+        op = self._createOp(spv, 64, 1, 1)
+        size = buffers[0].size()
+        return self.gpu.submit(op,
+                               [b.info() for b in buffers],
+                               _vkarray.DataShape(size, 1, 1),
+                               _vkarray.VectorParams(size),
+                               [job.getSemaphore() for job in jobs])
 
 
-class FloatBuffer:
+class Buffer:
     def __init__(self, gpu: GPU, *, data = None, shape = None):
         """
         Buffer for float (32bit)
@@ -94,21 +101,22 @@ class FloatBuffer:
 
         if data is not None:
             self.shape = np.asarray(data).shape
-            self.buffer = self._gpu.gpu.toFloatBuffer(data)
+            self.buffer = self._gpu.gpu.toBuffer(data)
         elif shape is not None:
             self.shape = np.asarray(shape)
-            self.buffer = self._gpu.gpu.createFloatBuffer(int(self.shape.prod()))
+            self.buffer = self._gpu.gpu.createBuffer(int(self.shape.prod()))
         else:
             raise ValueError(f"`data` or `shape` must not be `None`.")
 
-        self.array = np.view(np.asarray(self.buffer), self.shape)
+        self.array = np.asarray(self.buffer)
+        self.array.shape = self.shape
         self.job = None
 
     def _op3(self, spv, other):
-        if np.array_equal(self.shape, other.shape):
+        if not np.array_equal(self.shape, other.shape):
             raise ValueError(f"Incompatible shapes: {self.shape} vs {other.shape}")
 
-        ret = FloatBuffer(self._gpu, shape=self.shape)
+        ret = Buffer(self._gpu, shape=self.shape)
         self.job = self._gpu._submitVec3(spv,
                                          [self.buffer, other.buffer, ret.buffer],
                                          [b.job for b in [self, other]
@@ -116,16 +124,16 @@ class FloatBuffer:
 
         return ret
 
-    def __add__(self, other: FloatBuffer):
+    def __add__(self, other: Self):
         return self._op3(self._add, other)
 
-    def __sub__(self, other: FloatBuffer):
+    def __sub__(self, other: Self):
         return self._op3(self._sub, other)
 
-    def __mul__(self, other: FloatBuffer):
+    def __mul__(self, other: Self):
         return self._op3(self._mul, other)
 
-    def __truediv__(self, other: FloatBuffer):
+    def __truediv__(self, other: Self):
         return self._op3(self._div, other)
 
     def wait(self):
