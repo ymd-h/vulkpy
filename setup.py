@@ -47,6 +47,8 @@ ext = [Extension(f"{pkg}._vkarray",
 
 setup(name="vulkpy",
       version="0.0.0",
+      author="H. Yamada",
+      description="GPGPU array on Vulkan",
       packages=find_packages(),
       ext_modules=ext,
       package_data={f"{pkg}.shader": [os.path.join(f"{pkg}", "shader", "*.spv")]},
