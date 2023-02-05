@@ -240,6 +240,16 @@ class TestBuffer(unittest.TestCase):
         with self.assertRaises(ValueError):
             c = a @ b
 
+    def test_reshape(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3, 4])
+        a.reshape((2, 2))
+
+        np.testing.assert_allclose(a, np.asarray([[1, 2], [3, 4]]))
+
+    def test_incompatible_reshape(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        with self.assertRaises(ValueError):
+            a.reshape((2, 2))
 
 if __name__ == "__main__":
     unittest.main()

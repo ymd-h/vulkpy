@@ -325,3 +325,20 @@ class Array:
     def __array__(self):
         self.wait()
         return self.array
+
+    def reshape(self, shape: tuple[int]):
+        """
+        Reshape of this array
+
+        Parameters
+        ----------
+        shape : tuple of int
+            New shape
+
+        Raises
+        ------
+        ValueError
+            If ``shape`` is incompatible
+        """
+        self.array.shape = shape
+        self.shape = self.array.shape
