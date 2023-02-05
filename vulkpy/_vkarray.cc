@@ -441,6 +441,8 @@ PYBIND11_MODULE(_vkarray, m){
            using pybind11::cast;
            using Params = OpParams::Vector;
            switch(n){
+           case 1:
+             return cast(m.createOp<1, Params>(spv, x, y, z));
            case 2:
              return cast(m.createOp<2, Params>(spv, x, y, z));
            case 3:
@@ -477,6 +479,22 @@ PYBIND11_MODULE(_vkarray, m){
            throw std::runtime_error("Unknown Operation");
          },
          "Create Matrix Multiplication Operation")
+    .def("submit",
+         [](GPU& m,
+            const Op<1, OpParams::Vector>& op,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const OpParams::Vector& params,
+            const std::vector<vk::Semaphore>& wait){
+           // Automatic conversion cannot work for `const T(&)[N]`,
+           // so that we manually convert from Python's `list`.
+           vk::DescriptorBufferInfo info[1]{
+             py_info[0].cast<vk::DescriptorBufferInfo>()
+           };
+           return m.submit(op, info, shape, params, wait);
+         },
+         "Submit Vector Operation",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit",
          [](GPU& m,
             const Op<2, OpParams::Vector>& op,
@@ -597,6 +615,7 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<DataShape>(m, "DataShape")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
+  pybind11::class_<Op<1, OpParams::Vector>>(m, "OpVec1");
   pybind11::class_<Op<2, OpParams::Vector>>(m, "OpVec2");
   pybind11::class_<Op<3, OpParams::Vector>>(m, "OpVec3");
   pybind11::class_<Op<1, OpParams::VectorScalar<float>>>(m, "OpVecScalar1");

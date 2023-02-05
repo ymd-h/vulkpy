@@ -13,7 +13,7 @@ shader_dir = os.path.join(os.path.dirname(__file__), "shader")
 Params = Union[_vkarray.VectorParams,
                _vkarray.VectorScalarParams,
                _vkarray.MatMulParams]
-Op = Union[_vkarray.OpVec2, _vkarray.OpVec3,
+Op = Union[_vkarray.OpVec1, _vkarray.OpVec2, _vkarray.OpVec3,
            _vkarray.OpVecScalar1, _vkarray.OpVecScalar2,
            _vkarray.OpMatMul]
 
@@ -161,6 +161,10 @@ class Array:
         self._min_scalar = os.path.join(shader_dir, "min_scalar.spv")
         self._imax_scalar = os.path.join(shader_dir, "imax_scalar.spv")
         self._imin_scalar = os.path.join(shader_dir, "imin_scalar.spv")
+        self._abs = os.path.join(shader_dir, "abs.spv")
+        self._sign = os.path.join(shader_dir, "sign.spv")
+        self._iabs = os.path.join(shader_dir, "iabs.spv")
+        self._isign = os.path.join(shader_dir, "isign.spv")
 
         if data is not None:
             self.shape = np.asarray(data).shape
@@ -194,9 +198,17 @@ class Array:
         ret.job = self._opVec(spv, [self, other, ret])
         return ret
 
-    def _opVec2(self, spv, other):
-        self._check_shape(other)
-        self.job = self._opVec(spv, [self, other])
+    def _opVec2(self, spv, other=None):
+        if other is not None:
+            self._check_shape(other)
+            self.job = self._opVec(spv, [self, other])
+        else:
+            ret = Array(self._gpu, shape=self.shape)
+            ret.job = self._opVec(spv, [self, ret])
+            return ret
+
+    def _opVec1(self, spv):
+        self.job = self._opVec(spv, [self])
 
     def _opVecScalar(self, spv, buffers, scalar):
         size = self.buffer.size()
@@ -420,3 +432,47 @@ class Array:
                 self._opVecScalar1(self._imin_scalar, other)
             else:
                 return self._opVecScalar2(self._min_scalar, other)
+
+    def abs(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise Abs
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._iabs)
+        else:
+            return self._opVec2(self._abs)
+
+    def sign(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise sign
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._isign)
+        else:
+            return self._opVec2(self._sign)
