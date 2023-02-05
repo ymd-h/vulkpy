@@ -19,7 +19,13 @@ for shader in ["add", "sub", "mul", "div",
 
     if ((not os.path.exists(spv)) or
         (os.path.exists(comp) and (os.stat(comp).st_mtime > os.stat(spv).st_mtime))):
-        subprocess.run(["glslc", "-o", spv, comp], check=True)
+        cmd = subprocess.run(["glslc", "-o", spv, comp],
+                             capture_output=True, text=True)
+        if cmd.stdout:
+            print(cmd.stdout)
+        if cmd.stderr:
+            print(cmd.stderr)
+        cmd.check_returncode()
 
 
 if platform.system() != "Windows":
