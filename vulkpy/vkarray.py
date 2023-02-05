@@ -28,7 +28,7 @@ class GPU:
                   local_size_y: int,
                   local_size_z: int) -> _vkarray.Op:
         """
-        Create 3-buffer Vector Operation
+        Create GPU Operation
 
         Parameters
         ----------
