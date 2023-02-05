@@ -234,6 +234,13 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(c, np.asarray([7, 10]))
 
+    def test_incompatible_matmul(self):
+        a = vk.Array(self.gpu, data=[[1, 2, 3], [4, 5, 6]])
+        b = vk.Array(self.gpu, data=[[1, 2, 3], [4, 5, 6]])
+
+        with self.assertRaises(ValueError):
+            c = a @ b
+
 
 if __name__ == "__main__":
     unittest.main()
