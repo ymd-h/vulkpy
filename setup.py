@@ -13,7 +13,8 @@ for shader in ["add", "sub", "mul", "div",
                "add_scalar", "sub_scalar", "mul_scalar", "div_scalar",
                "iadd_scalar", "isub_scalar", "imul_scalar", "idiv_scalar",
                "rsub_scalar", "rdiv_scalar",
-               "matmul"]:
+               "matmul",
+               "max", "min", "imax", "imin"]:
     s = os.path.join(pkg, "shader", shader)
     spv = s+".spv"
     comp = s+".comp"

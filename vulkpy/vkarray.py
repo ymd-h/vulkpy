@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import functools
-from typing import Iterable, Self, Union
+from typing import Iterable, Optional, Self, Union
 
 import numpy as np
 
@@ -153,6 +153,10 @@ class Array:
         self._rsub_scalar = os.path.join(shader_dir, "rsub_scalar.spv")
         self._rdiv_scalar = os.path.join(shader_dir, "rdiv_scalar.spv")
         self._matmul = os.path.join(shader_dir, "matmul.spv")
+        self._max = os.path.join(shader_dir, "max.spv")
+        self._min = os.path.join(shader_dir, "min.spv")
+        self._imax = os.path.join(shader_dir, "imax.spv")
+        self._imin = os.path.join(shader_dir, "imin.spv")
 
         if data is not None:
             self.shape = np.asarray(data).shape
@@ -342,3 +346,59 @@ class Array:
         """
         self.array.shape = shape
         self.shape = self.array.shape
+
+    def max(self, other: Array, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise Max
+
+        Parameters
+        ----------
+        other : Array
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+
+        Raises
+        ------
+        ValueError
+            If shape is not same.
+        """
+        if inplace:
+            self._opVec2(self._imax, other)
+        else:
+            return self._opVec3(self._max, other)
+
+    def min(self, other: Array, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise Min
+
+        Parameters
+        ----------
+        other : Array
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+
+        Raises
+        ------
+        ValueError
+            If shape is not same.
+        """
+        if inplace:
+            self._opVec2(self._imin, other)
+        else:
+            return self._opVec3(self._min, other)
