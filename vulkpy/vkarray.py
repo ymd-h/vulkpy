@@ -170,15 +170,19 @@ class Buffer:
 
     def __iadd__(self, other: Self):
         self._opVec2(self._iadd, other)
+        return self
 
     def __isub__(self, other: Self):
         self._opVec2(self._isub, other)
+        return self
 
     def __imul__(self, other: Self):
         self._opVec2(self._isub, other)
+        return self
 
     def __itruediv__(self, other: Self):
         self._opVec2(self._idiv, other)
+        return self
 
     def wait(self):
         """
