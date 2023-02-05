@@ -223,7 +223,6 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(c, np.asarray([7, 15]))
 
-
     def test_vecmat(self):
         a = vk.Array(self.gpu, data=[1, 2])
         b = vk.Array(self.gpu, data=[[1, 2],
