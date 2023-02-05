@@ -39,7 +39,7 @@ class GPU:
 
         Returns
         -------
-        _vkarray.Op
+        std::shared_ptr<_vkarray.Op>
            Operation
         """
         return self.gpu.createOp(spv, local_size_x, local_size_y, local_size_z)
@@ -56,14 +56,16 @@ class GPU:
         ----------
         spv : str
             Compute Shader file name of SPIR-V (.spv)
+        local_size_x, local_size_y, local_size_z : int
+            Subgroup size of compute shader
         buffers : iterable of _vkarray.Buffer
             Buffers to be submitted.
-        jobs : iterable of _vkarray.Job
-            Depending Jobs to be waited.
+        semaphores : iterable of _vkarray.Semaphore
+            Depending Semaphores to be waited.
 
         Returns
         -------
-        _vkarray.Job
+        std::shared_ptr<_vkarray.Job>
             Job
         """
         op = self._createOp(spv, local_size_x, local_size_y, local_size_z)
