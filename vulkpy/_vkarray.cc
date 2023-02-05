@@ -385,20 +385,20 @@ public:
   }
 
   template<std::uint32_t N, typename Parameters>
-  Job submit(const Op<N, Parameters>& op,
-             const vk::DescriptorBufferInfo (&info)[N],
-             const DataShape& shape, const Parameters& params = {},
-             const std::vector<vk::Semaphore>& wait = {}){
+  std::shared_ptr<Job> submit(const Op<N, Parameters>& op,
+                              const vk::DescriptorBufferInfo (&info)[N],
+                              const DataShape& shape, const Parameters& params = {},
+                              const std::vector<vk::Semaphore>& wait = {}){
     op.writeDescriptorSet(this->device, info);
 
-    return Job{
-      this->device,
-      vk::CommandPoolCreateInfo{
-        .flags=vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-        .queueFamilyIndex=this->queueFamilyIndex
-      },
-      this->queue, op, shape, params, wait
-    };
+    return std::shared_ptr<Job>(new Job{
+        this->device,
+        vk::CommandPoolCreateInfo{
+          .flags=vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+          .queueFamilyIndex=this->queueFamilyIndex
+        },
+        this->queue, op, shape, params, wait
+      });
   }
 
   template<typename Ranges>
@@ -468,9 +468,10 @@ PYBIND11_MODULE(_vkarray, m){
 
   pybind11::class_<Op<3, OpParams::Vector>>(m, "Op");
 
-  pybind11::class_<Job>(m, "Job")
+  pybind11::class_<Job, std::shared_ptr<Job>>(m, "Job")
     .def("wait", &Job::wait, "Wait for this Job",
          pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("wait", [](Job& m){ m.wait(); }, "Wait for this Job")
     .def("getSemaphore", &Job::getSemaphore, "Get Semaphore");
 
   pybind11::class_<vk::DescriptorBufferInfo>(m, "BufferInfo");
