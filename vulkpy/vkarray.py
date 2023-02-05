@@ -99,7 +99,7 @@ class GPU:
         buffers : iterable of Buffer
             Buffers to be flushed
         """
-        self.gpu.flush([b.info() for b in buffers])
+        self.gpu.flush([b.range() for b in buffers])
 
     def wait(self):
         """

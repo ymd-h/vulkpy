@@ -492,8 +492,8 @@ PYBIND11_MODULE(_vkarray, m){
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait, "Wait all submission")
     .def("flush",
-         [](GPU& m, const std::vector<vk::DescriptorBufferInfo>& info){
-           m.flush(info);
+         [](GPU& m, const std::vector<vk::MappedMemoryRange>& range){
+           m.flush(range);
          },
          "Flush Memories to GPU");
 
@@ -531,5 +531,6 @@ PYBIND11_MODULE(_vkarray, m){
     .def("getSemaphore", &Job::getSemaphore, "Get Semaphore");
 
   pybind11::class_<vk::DescriptorBufferInfo>(m, "BufferInfo");
+  pybind11::class_<vk::MappedMemoryRange>(m, "MemoryRange");
   pybind11::class_<vk::Semaphore>(m, "Semaphore");
 }
