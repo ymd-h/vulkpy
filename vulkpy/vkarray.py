@@ -273,6 +273,7 @@ class Buffer:
         """
         if self.job is not None:
             self.job.wait()
+            self.job = None
 
     def flush(self):
         """
