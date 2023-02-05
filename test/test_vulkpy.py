@@ -184,5 +184,13 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(d, np.asarray([4, 4, 4]))
 
+
+    def test_incompatible(self):
+        a = vk.Array(self.gpu, data=[1, 1])
+        b = vk.Array(self.gpu, data=[1, 1, 1])
+
+        with self.assertRaises(ValueError):
+            c = a + b
+
 if __name__ == "__main__":
     unittest.main()
