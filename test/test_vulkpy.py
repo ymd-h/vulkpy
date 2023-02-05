@@ -251,5 +251,42 @@ class TestBuffer(unittest.TestCase):
         with self.assertRaises(ValueError):
             a.reshape((2, 2))
 
+    def test_max(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        b = vk.Array(self.gpu, data=[3, 2, 1])
+
+        c = a.max(b)
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([3, 2, 3]))
+
+    def test_imax(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        b = vk.Array(self.gpu, data=[3, 2, 1])
+
+        a.max(b, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([3, 2, 3]))
+
+    def test_min(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        b = vk.Array(self.gpu, data=[3, 2, 1])
+
+        c = a.min(b)
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([1, 2, 1]))
+
+    def test_imin(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        b = vk.Array(self.gpu, data=[3, 2, 1])
+
+        a.min(b, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([1, 2, 1]))
+
+
 if __name__ == "__main__":
     unittest.main()
