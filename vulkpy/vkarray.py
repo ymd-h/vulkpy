@@ -281,6 +281,7 @@ class Buffer:
         self._gpu.flush([self])
 
     def __getitem__(self, key):
+        self.wait()
         return self.array[key]
 
     def __setitem__(self, key, value):
@@ -290,7 +291,9 @@ class Buffer:
         return f"<vulkpy.Buffer(shape={tuple(self.shape)})>"
 
     def __str__(self):
+        self.wait()
         return str(self.array)
 
     def __array__(self):
+        self.wait()
         return self.array
