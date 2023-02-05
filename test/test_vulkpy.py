@@ -192,5 +192,15 @@ class TestBuffer(unittest.TestCase):
         with self.assertRaises(ValueError):
             c = a + b
 
+    def test_higher_dimension(self):
+        a = vk.Array(self.gpu, data=[[1, 1], [1, 1]])
+        b = vk.Array(self.gpu, data=[[2, 2], [2, 2]])
+
+        c = a + b
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([[3, 3], [3, 3]]))
+
+
 if __name__ == "__main__":
     unittest.main()
