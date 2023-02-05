@@ -432,6 +432,8 @@ PYBIND11_MODULE(_vkarray, m){
             const DataShape& shape,
             const OpParams::Vector& params,
             const std::vector<vk::Semaphore>& wait){
+           // Automatic conversion cannot work for `const T(&)[N]`,
+           // so that we manually convert from Python's `list`.
            vk::DescriptorBufferInfo info[3]{
              py_info[0].cast<vk::DescriptorBufferInfo>(),
              py_info[1].cast<vk::DescriptorBufferInfo>(),
