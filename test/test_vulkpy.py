@@ -315,6 +315,33 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(a, np.asarray([1, 1.5, 1.5]))
 
+    def test_abs(self):
+        a = vk.Array(self.gpu, data=[-1, 1, 3])
+        b = a.abs()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.asarray([1, 1, 3]))
+
+    def test_iabs(self):
+        a = vk.Array(self.gpu, data=np.asarray([-1, 1, 3]))
+        a.abs(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([1, 1, 3]))
+
+    def test_sign(self):
+        a = vk.Array(self.gpu, data=[-1, 1, 3])
+        b = a.sign()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.asarray([-1, 1, 1]))
+
+    def test_isign(self):
+        a = vk.Array(self.gpu, data=[-1, 1, 3])
+        a.sign(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([-1, 1, 1]))
 
 if __name__ == "__main__":
     unittest.main()
