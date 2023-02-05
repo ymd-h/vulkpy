@@ -24,6 +24,10 @@ def main():
     e.wait()
     print(e)
 
+    f = e + 5
+    f.wait()
+    print(f)
+
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser("00-arithmetic.py")
