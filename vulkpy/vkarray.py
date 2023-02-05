@@ -264,7 +264,7 @@ class Buffer:
     def __rmul__(self, other: float):
         return self._opVecScalar2(self._mul_scalar, other)
 
-    def __rdiv__(self, other: float):
+    def __rtruediv__(self, other: float):
         return self._opVecScalar2(self._rdiv_scalar, other)
 
     def wait(self):
