@@ -13,12 +13,16 @@ def main():
 
     c = a + b
     c.wait()
-    print(c.array)
+    print(c)
 
     d = c - a
     e = d - b
     e.wait()
-    print(e.array)
+    print(e)
+
+    e += a
+    e.wait()
+    print(e)
 
 
 if __name__ == "__main__":
