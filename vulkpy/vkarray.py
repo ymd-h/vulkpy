@@ -291,3 +291,6 @@ class Buffer:
 
     def __str__(self):
         return str(self.array)
+
+    def __array__(self):
+        return self.array
