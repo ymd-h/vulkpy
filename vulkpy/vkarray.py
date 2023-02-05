@@ -207,71 +207,71 @@ class Array:
     def _opVecScalar1(self, spv, other):
         self.job = self._opVecScalar(spv, [self], other)
 
-    def __add__(self, other: Union[Self, float]):
+    def __add__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
             return self._opVec3(self._add, other)
         else:
             return self._opVecScalar2(self._add_scalar, other)
 
-    def __sub__(self, other: Union[Self, float]):
+    def __sub__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
             return self._opVec3(self._sub, other)
         else:
             return self._opVecScalar2(self._sub_scalar, other)
 
-    def __mul__(self, other: Union[Self, float]):
+    def __mul__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
             return self._opVec3(self._mul, other)
         else:
             return self._opVecScalar2(self._mul_scalar, other)
 
-    def __truediv__(self, other: Union[Self, float]):
+    def __truediv__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
             return self._opVec3(self._div, other)
         else:
             return self._opVecScalar2(self._div_scalar, other)
 
-    def __iadd__(self, other: Union[Self, float]):
+    def __iadd__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
             self._opVec2(self._iadd, other)
         else:
             self._opVecScalar1(self._iadd_scalar, other)
         return self
 
-    def __isub__(self, other: Union[Self, float]):
+    def __isub__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
             self._opVec2(self._isub, other)
         else:
             self._opVecScalar1(self._isub_scalar, other)
         return self
 
-    def __imul__(self, other: Union[Self, float]):
+    def __imul__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
             self._opVec2(self._imul, other)
         else:
             self._opVecScalar1(self._imul_scalar, other)
         return self
 
-    def __itruediv__(self, other: Union[Self, float]):
+    def __itruediv__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
             self._opVec2(self._idiv, other)
         else:
             self._opVecScalar1(self._idiv_scalar, other)
         return self
 
-    def __radd__(self, other: float):
+    def __radd__(self, other: float) -> Array:
         return self._opVecScalar2(self._add_scalar, other)
 
-    def __rsub__(self, other: float):
+    def __rsub__(self, other: float) -> Array:
         return self._opVecScalar2(self._rsub_scalar, other)
 
-    def __rmul__(self, other: float):
+    def __rmul__(self, other: float) -> Array:
         return self._opVecScalar2(self._mul_scalar, other)
 
-    def __rtruediv__(self, other: float):
+    def __rtruediv__(self, other: float) -> Array:
         return self._opVecScalar2(self._rdiv_scalar, other)
 
-    def __matmul__(self, other: Array):
+    def __matmul__(self, other: Array) -> Array:
         if ((len(self.shape) > 3) or
             (len(other.shape) > 3) or
             (self.shape[-1] != other.shape[0])):
@@ -308,21 +308,21 @@ class Array:
         """
         self._gpu.flush([self])
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Union[float, np.ndarray]:
         self.wait()
         return self.array[key]
 
     def __setitem__(self, key, value):
         self.array[key] = value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<vulkpy.Buffer(shape={tuple(self.shape)})>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         self.wait()
         return str(self.array)
 
-    def __array__(self):
+    def __array__(self) -> np.ndarray:
         self.wait()
         return self.array
 
