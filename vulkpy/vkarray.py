@@ -47,7 +47,7 @@ class GPU:
     def _submitVec3(self,
                     spv: str,
                     buffers: Iterable[_vkarray.Buffer],
-                    jobs: Iterable[_vkarray.Job]) -> _vkarray.Job:
+                    semaphores: Iterable[_vkarray.Semaphore]) -> _vkarray.Job:
         """
         Submit 3-buffer Vector Operation
 
@@ -71,7 +71,7 @@ class GPU:
                                [b.info() for b in buffers],
                                _vkarray.DataShape(size, 1, 1),
                                _vkarray.VectorParams(size),
-                               [job.getSemaphore() for job in jobs])
+                               semaphores)
 
 
 class Buffer:
@@ -119,7 +119,7 @@ class Buffer:
         ret = Buffer(self._gpu, shape=self.shape)
         self.job = self._gpu._submitVec3(spv,
                                          [self.buffer, other.buffer, ret.buffer],
-                                         [b.job for b in [self, other]
+                                         [b.job.getSemaphore() for b in [self, other]
                                           if b.job is not None])
 
         return ret

@@ -474,6 +474,7 @@ PYBIND11_MODULE(_vkarray, m){
     .def("getSemaphore", &Job::getSemaphore, "Get Semaphore");
 
   pybind11::class_<vk::DescriptorBufferInfo>(m, "BufferInfo");
+  pybind11::class_<vk::Semaphore>(m, "Semaphore");
 }
 
 
