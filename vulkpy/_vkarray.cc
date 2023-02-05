@@ -29,21 +29,6 @@ std::uint32_t findMemIndex(const vk::PhysicalDeviceMemoryProperties& ps,
 }
 
 
-std::vector<char> readCode(std::string_view name){
-  auto f = std::ifstream(name.data(), std::ios::ate | std::ios::binary);
-  if(!f.is_open()){
-    throw std::runtime_error("failed to open file");
-  }
-  auto size = f.tellg();
-  f.seekg(0);
-
-  auto v = std::vector<char>(size);
-  f.read(v.data(), size);
-
-  f.close();
-  return v;
-}
-
 class GPU;
 
 template<typename T> class Buffer {
@@ -164,7 +149,7 @@ public:
     };
     this->pool = device->createDescriptorPoolUnique(pool);
 
-    auto code = readCode(spv);
+    auto code = util::readCode(spv);
 
     auto shader = vk::ShaderModuleCreateInfo{
       .codeSize=code.size(),
