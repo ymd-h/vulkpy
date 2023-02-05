@@ -9,7 +9,10 @@ pkg = "vulkpy"
 
 # Compile Compute Shader
 for shader in ["add", "sub", "mul", "div",
-               "iadd", "isub", "imul", "idiv"]:
+               "iadd", "isub", "imul", "idiv",
+               "add_scalar", "sub_scalar", "mul_scalar", "div_scalar",
+               "iadd_scalar", "isub_scalar", "imul_scalar", "idiv_scalar",
+               "rsub_scalar", "rdiv_scalar"]:
     s = os.path.join(pkg, "shader", shader)
     spv = s+".spv"
     comp = s+".comp"
