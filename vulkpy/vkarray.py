@@ -157,6 +157,10 @@ class Array:
         self._min = os.path.join(shader_dir, "min.spv")
         self._imax = os.path.join(shader_dir, "imax.spv")
         self._imin = os.path.join(shader_dir, "imin.spv")
+        self._max_scalar = os.path.join(shader_dir, "max_scalar.spv")
+        self._min_scalar = os.path.join(shader_dir, "min_scalar.spv")
+        self._imax_scalar = os.path.join(shader_dir, "imax_scalar.spv")
+        self._imin_scalar = os.path.join(shader_dir, "imin_scalar.spv")
 
         if data is not None:
             self.shape = np.asarray(data).shape
@@ -347,13 +351,14 @@ class Array:
         self.array.shape = shape
         self.shape = self.array.shape
 
-    def max(self, other: Array, inplace: bool = False) -> Optional[Array]:
+    def max(self, other: Union[Array, float],
+            inplace: bool = False) -> Optional[Array]:
         """
         Element-wise Max
 
         Parameters
         ----------
-        other : Array
+        other : Array or float
         inplace : bool
             If ``True``, update inplace, otherwise returns new array.
             Default value is ``False``.
@@ -370,18 +375,25 @@ class Array:
         ValueError
             If shape is not same.
         """
-        if inplace:
-            self._opVec2(self._imax, other)
+        if isinstance(other, Array):
+            if inplace:
+                self._opVec2(self._imax, other)
+            else:
+                return self._opVec3(self._max, other)
         else:
-            return self._opVec3(self._max, other)
+            if inplace:
+                self._opVecScalar1(self._imax_scalar, other)
+            else:
+                return self._opVecScalar2(self._max_scalar, other)
 
-    def min(self, other: Array, inplace: bool = False) -> Optional[Array]:
+    def min(self, other: Union[Array, float],
+            inplace: bool = False) -> Optional[Array]:
         """
         Element-wise Min
 
         Parameters
         ----------
-        other : Array
+        other : Array or float
         inplace : bool
             If ``True``, update inplace, otherwise returns new array.
             Default value is ``False``.
@@ -398,7 +410,13 @@ class Array:
         ValueError
             If shape is not same.
         """
-        if inplace:
-            self._opVec2(self._imin, other)
+        if isinstance(other, Array):
+            if inplace:
+                self._opVec2(self._imin, other)
+            else:
+                return self._opVec3(self._min, other)
         else:
-            return self._opVec3(self._min, other)
+            if inplace:
+                self._opVecScalar1(self._imin_scalar, other)
+            else:
+                return self._opVecScalar2(self._min_scalar, other)

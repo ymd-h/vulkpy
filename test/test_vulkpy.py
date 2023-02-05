@@ -287,6 +287,34 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(a, np.asarray([1, 2, 1]))
 
+    def test_max_scalar(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        b = a.max(1.5)
+        b.wait()
+
+        np.testing.assert_allclose(b, np.asarray([1.5, 2, 3]))
+
+    def test_imax_scalar(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        a.max(1.5, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([1.5, 2, 3]))
+
+    def test_min_scalar(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        b = a.min(1.5)
+        b.wait()
+
+        np.testing.assert_allclose(b, np.asarray([1, 1.5, 1.5]))
+
+    def test_imin_scalar(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        a.min(1.5, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([1, 1.5, 1.5]))
+
 
 if __name__ == "__main__":
     unittest.main()
