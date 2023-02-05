@@ -447,11 +447,12 @@ PYBIND11_MODULE(_vkarray, m){
             std::string_view spv,
             std::uint32_t x, std::uint32_t y, std::uint32_t z) -> pybind11::object {
            using pybind11::cast;
+           using Params = OpParams::Vector;
            switch(n){
            case 2:
-             return cast(m.createOp<2, OpParams::Vector>(spv, x, y, z));
+             return cast(m.createOp<2, Params>(spv, x, y, z));
            case 3:
-             return cast(m.createOp<3, OpParams::Vector>(spv, x, y, z));
+             return cast(m.createOp<3, Params>(spv, x, y, z));
            }
            throw std::runtime_error("Unknown Operation");
          },
@@ -461,11 +462,12 @@ PYBIND11_MODULE(_vkarray, m){
             std::string_view spv,
             std::uint32_t x, std::uint32_t y, std::uint32_t z) -> pybind11::object {
            using pybind11::cast;
+           using Params = OpParams::VectorScalar<float>;
            switch(n){
            case 1:
-             return cast(m.createOp<1, OpParams::VectorScalar<float>>(spv, x, y, z));
+             return cast(m.createOp<1, Params>(spv, x, y, z));
            case 2:
-             return cast(m.createOp<2, OpParams::VectorScalar<float>>(spv, x, y, z));
+             return cast(m.createOp<2, Params>(spv, x, y, z));
            }
            throw std::runtime_error("Unknown Operation");
          },
