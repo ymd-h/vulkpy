@@ -1,3 +1,4 @@
 a.out
 *.spv
 *.egg-info
+*.so
