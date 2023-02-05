@@ -213,6 +213,27 @@ class TestBuffer(unittest.TestCase):
         np.testing.assert_allclose(c, np.asarray([[ 7, 10],
                                                   [15, 22]]))
 
+    def test_matvec(self):
+        a = vk.Array(self.gpu, data=[[1, 2],
+                                     [3, 4]])
+        b = vk.Array(self.gpu, data=[1, 3])
+
+        c = a @ b
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([7, 15]))
+
+
+    def test_vecmat(self):
+        a = vk.Array(self.gpu, data=[1, 2])
+        b = vk.Array(self.gpu, data=[[1, 2],
+                                     [3, 4]])
+
+        c = a @ b
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([7, 10]))
+
 
 if __name__ == "__main__":
     unittest.main()
