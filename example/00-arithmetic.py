@@ -28,6 +28,9 @@ def main():
     f.wait()
     print(f)
 
+    f /= 4
+    f.wait()
+    print(f)
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser("00-arithmetic.py")
