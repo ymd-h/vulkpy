@@ -573,6 +573,8 @@ PYBIND11_MODULE(_vkarray, m){
 
   pybind11::class_<Op<2, OpParams::Vector>>(m, "OpVec2");
   pybind11::class_<Op<3, OpParams::Vector>>(m, "OpVec3");
+  pybind11::class_<Op<1, OpParams::VectorScalar<float>>>(m, "OpVecScalar1");
+  pybind11::class_<Op<2, OpParams::VectorScalar<float>>>(m, "OpVecScalar2");
 
   pybind11::class_<Job, std::shared_ptr<Job>>(m, "Job")
     .def("wait", &Job::wait, "Wait for this Job",

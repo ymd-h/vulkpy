@@ -11,7 +11,8 @@ from . import _vkarray
 shader_dir = os.path.join(os.path.dirname(__file__), "shader")
 
 Params = Union[_vkarray.VectorParams, _vkarray.VectorScalarParams]
-Op = Union[_vkarray.OpVec2, _vkarray.OpVec3]
+Op = Union[_vkarray.OpVec2, _vkarray.OpVec3,
+           _vkarray.OpVecScalar1, _vkarray.OpVecScalar2]
 
 class GPU:
     def __init__(self, idx: int=0, priority: float=0.0):
