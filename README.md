@@ -40,7 +40,7 @@ print(c)
 
 ## Features
 
-* Arithmetic Operations between 2 `Array`s.
+* Element-wise Arithmetic Operations between 2 `Array`s.
   * `+`, `-`, `*`, `/`, `+=`, `-=`, `*=`, `/=`
 * Arithmetic Operations between `Array` and `float`.
   * `+`, `-`, `*`, `/`, `+=`, `-=`, `*=`, `/=`
