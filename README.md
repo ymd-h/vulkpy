@@ -46,3 +46,5 @@ print(c)
   * `+`, `-`, `*`, `/`, `+=`, `-=`, `*=`, `/=`
 * Arithmetic Operations between `float` and `Array`.
   * `+`, `-`, `*`, `/`
+* Matrix Multiplication between 1d/2d `Array`s.
+  * `@`
