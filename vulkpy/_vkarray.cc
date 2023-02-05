@@ -44,9 +44,11 @@ std::vector<char> readCode(std::string_view name){
   return v;
 }
 
+class GPU;
 
 template<typename T> class Buffer {
 private:
+  std::shared_ptr<GPU> gpu;
   std::size_t nSize;
   std::uint64_t mSize;
   vk::UniqueBuffer b;
@@ -54,9 +56,9 @@ private:
   T* ptr;
 
 public:
-  Buffer(vk::UniqueDevice& device,
+  Buffer(std::shared_ptr<GPU> gpu, vk::UniqueDevice& device,
          const vk::PhysicalDeviceMemoryProperties& ps, std::size_t n)
-    : nSize(n), mSize(sizeof(T) * n)
+    : gpu(gpu), nSize(n), mSize(sizeof(T) * n)
   {
     auto bInfo = vk::BufferCreateInfo{
       .size=this->mSize,
@@ -80,9 +82,9 @@ public:
     this->ptr = static_cast<T*>(device->mapMemory(this->m.get(), 0, this->mSize));
   }
 
-  Buffer(vk::UniqueDevice& device,
+  Buffer(std::shared_ptr<GPU> gpu, vk::UniqueDevice& device,
          const vk::PhysicalDeviceMemoryProperties& ps, const std::vector<T>& data)
-    : Buffer<T>(device, ps, data.size())
+    : Buffer<T>(gpu, device, ps, data.size())
   {
     memcpy((void*)this->ptr, (void*)data.data(), this->mSize);
   }
@@ -127,9 +129,11 @@ struct DataShape {
   std::uint32_t x, y, z;
 };
 
-template <std::uint32_t N, typename Parameters = OpParams::Empty> class Op {
+template <std::uint32_t N, typename Parameters = OpParams::Empty>
+class Op {
 private:
   std::uint32_t x, y, z;
+  std::shared_ptr<GPU> gpu;
   vk::UniqueDescriptorPool pool;
   vk::UniqueShaderModule shader;
   vk::UniqueDescriptorSetLayout dlayout;
@@ -137,12 +141,10 @@ private:
   vk::UniquePipeline pipe;
   vk::UniqueDescriptorSet desc;
 public:
-  Op(vk::UniqueDevice& device, std::string_view spv,
-     std::uint32_t x, std::uint32_t y = 1, std::uint32_t z = 1){
-    this->x = x;
-    this->y = y;
-    this->z = z;
-
+  Op(std::shared_ptr<GPU> gpu, vk::UniqueDevice& device,
+     std::string_view spv, std::uint32_t x, std::uint32_t y = 1, std::uint32_t z = 1)
+    : x(x), y(y), z(z), gpu(gpu)
+  {
     auto psize = vk::DescriptorPoolSize{
       .type=vk::DescriptorType::eStorageBuffer,
       .descriptorCount=N
@@ -263,9 +265,9 @@ public:
   }
 };
 
-class GPU;
 class Job {
 private:
+  std::shared_ptr<GPU> gpu;
   vk::UniqueCommandPool pool;
   vk::UniqueCommandBuffer buffer;
   vk::UniqueFence fence;
@@ -273,13 +275,14 @@ private:
   std::function<vk::Result(std::uint64_t)> w;
 public:
   template<std::uint32_t N, typename Parameters>
-  Job(vk::UniqueDevice& device,
+  Job(std::shared_ptr<GPU> gpu,
+      vk::UniqueDevice& device,
       vk::CommandPoolCreateInfo info,
       vk::Queue& queue,
       const Op<N, Parameters>& op,
       const DataShape& shape,
       const Parameters& params,
-      const std::vector<vk::Semaphore>& wait)
+      const std::vector<vk::Semaphore>& wait) : gpu(gpu)
   {
     this->pool = device->createCommandPoolUnique(info);
 
@@ -331,7 +334,7 @@ public:
 };
 
 
-class GPU {
+class GPU : public std::enable_shared_from_this<GPU> {
 private:
   float priority;
   std::uint32_t queueFamilyIndex;
@@ -371,17 +374,19 @@ public:
   }
 
   template<typename T> Buffer<T> toBuffer(const std::vector<T>& data){
-    return Buffer<T>(this->device, this->physical.getMemoryProperties(), data);
+    return Buffer<T>(this->shared_from_this(),
+                     this->device, this->physical.getMemoryProperties(), data);
   }
 
   template<typename T> Buffer<T> createBuffer(std::size_t n){
-    return Buffer<T>(this->device, this->physical.getMemoryProperties(), n);
+    return Buffer<T>(this->shared_from_this(),
+                     this->device, this->physical.getMemoryProperties(), n);
   }
 
   template<std::uint32_t N, typename Parameters>
   Op<N, Parameters> createOp(std::string_view spv,
                              std::uint32_t x, std::uint32_t y, std::uint32_t z){
-    return Op<N, Parameters>{this->device, spv, x, y, z};
+    return Op<N, Parameters>{this->shared_from_this(), this->device, spv, x, y, z};
   }
 
   template<std::uint32_t N, typename Parameters>
@@ -392,6 +397,7 @@ public:
     op.writeDescriptorSet(this->device, info);
 
     return std::shared_ptr<Job>(new Job{
+        this->shared_from_this(),
         this->device,
         vk::CommandPoolCreateInfo{
           .flags=vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
@@ -420,8 +426,13 @@ public:
 PYBIND11_MODULE(_vkarray, m){
   m.doc() = "_vkarray internal module";
 
-  pybind11::class_<GPU>(m, "GPU")
-    .def(pybind11::init<std::size_t, float>())
+  m.def("createGPU",
+        [](std::size_t n, float priority){
+          return std::make_shared<GPU>(n, priority);
+        },
+        "Create GPU");
+
+  pybind11::class_<GPU, std::shared_ptr<GPU>>(m, "GPU")
     .def("toBuffer", &GPU::toBuffer<float>, "Copy to GPU Buffer")
     .def("createBuffer", &GPU::createBuffer<float>, "Create GPU Buffer")
     .def("createOp", &GPU::createOp<3, OpParams::Vector>, "Create Vector Op")

@@ -20,7 +20,7 @@ class GPU:
         priority : float, optional
             GPU priority. Default is ``0.0``.
         """
-        self.gpu = _vkarray.GPU(idx, priority)
+        self.gpu = _vkarray.createGPU(idx, priority)
 
     @functools.cache
     def _createOp(self, spv: str,
