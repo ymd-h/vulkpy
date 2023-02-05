@@ -8,7 +8,8 @@ import pybind11
 pkg = "vulkpy"
 
 # Compile Compute Shader
-for shader in ["add", "sub", "mul", "div"]:
+for shader in ["add", "sub", "mul", "div",
+               "iadd", "isub", "imul", "idiv"]:
     s = os.path.join(pkg, "shader", shader)
     spv = s+".spv"
     comp = s+".comp"

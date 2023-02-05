@@ -1,12 +1,15 @@
 import os
 import functools
-from typing import Iterable, Self
+from typing import Iterable, Self, Union
 
 import numpy as np
 
 from . import _vkarray
 
 shader_dir = os.path.join(os.path.dirname(__file__), "shader")
+
+Params = Union[_vkarray.VectorParams, _vkarray.VectorScalarParams]
+Op = Union[_vkarray.OpVec2, _vkarray.OpVec3]
 
 class GPU:
     def __init__(self, idx: int=0, priority: float=0.0):
@@ -24,9 +27,11 @@ class GPU:
 
     @functools.cache
     def _createOp(self, spv: str,
+                  n: int,
+                  params: Params,
                   local_size_x: int,
                   local_size_y: int,
-                  local_size_z: int) -> _vkarray.Op:
+                  local_size_z: int) -> Op:
         """
         Create GPU Operation
 
@@ -34,20 +39,27 @@ class GPU:
         ----------
         spv : str
             Compute Shader file name of SPIR-V (.spv)
+        n : int
+            Number of buffers
+        params : Params
+            Parameters
         local_size_x, local_size_y, local_size_z : int
             Subgroup size of compute shader
 
         Returns
         -------
-        std::shared_ptr<_vkarray.Op>
+        std::shared_ptr<Op>
            Operation
         """
-        return self.gpu.createOp(spv, local_size_x, local_size_y, local_size_z)
+        return self.gpu.createOp(n, params,
+                                 spv, local_size_x, local_size_y, local_size_z)
 
     def _submit(self,
                 spv: str,
                 local_size_x: int, local_size_y: int, local_size_z: int,
                 buffers: Iterable[_vkarray.Buffer],
+                shape: _vkarray.DataShape,
+                params: Params,
                 semaphores: Iterable[_vkarray.Semaphore]) -> _vkarray.Job:
         """
         Submit GPU Operation
@@ -60,6 +72,10 @@ class GPU:
             Subgroup size of compute shader
         buffers : iterable of _vkarray.Buffer
             Buffers to be submitted.
+        shape : _vkarray.DataShape
+            Shape of data
+        params : _vkarray.VectorParams, _vkarrayVectorScalarParams
+            Parameters
         semaphores : iterable of _vkarray.Semaphore
             Depending Semaphores to be waited.
 
@@ -68,13 +84,11 @@ class GPU:
         std::shared_ptr<_vkarray.Job>
             Job
         """
-        op = self._createOp(spv, local_size_x, local_size_y, local_size_z)
+        op = self._createOp(spv, len(buffers), params,
+                            local_size_x, local_size_y, local_size_z)
         size = buffers[0].size()
-        return self.gpu.submit(op,
-                               [b.info() for b in buffers],
-                               _vkarray.DataShape(size, 1, 1),
-                               _vkarray.VectorParams(size),
-                               semaphores)
+        return self.gpu.submit(op, [b.info() for b in buffers],
+                               shape, params, semaphores)
 
 
 class Buffer:
@@ -101,6 +115,10 @@ class Buffer:
         self._sub = os.path.join(shader_dir, "sub.spv")
         self._mul = os.path.join(shader_dir, "mul.spv")
         self._div = os.path.join(shader_dir, "div.spv")
+        self._iadd = os.path.join(shader_dir, "iadd.spv")
+        self._isub = os.path.join(shader_dir, "isub.spv")
+        self._imul = os.path.join(shader_dir, "imul.spv")
+        self._idiv = os.path.join(shader_dir, "idiv.spv")
 
         if data is not None:
             self.shape = np.asarray(data).shape
@@ -115,29 +133,52 @@ class Buffer:
         self.array.shape = self.shape
         self.job = None
 
-    def _op3(self, spv, other):
+    def _check_shape(self, other):
         if not np.array_equal(self.shape, other.shape):
             raise ValueError(f"Incompatible shapes: {self.shape} vs {other.shape}")
 
-        ret = Buffer(self._gpu, shape=self.shape)
-        ret.job = self._gpu._submit(spv, 64, 1, 1,
-                                    [self.buffer, other.buffer, ret.buffer],
-                                    [b.job.getSemaphore() for b in [self, other]
-                                     if b.job is not None])
+    def _opVec(self, spv, buffers):
+        size = self.buffer.size()
+        return self._gpu._submit(spv, 64, 1, 1,
+                                 [b.buffer for b in buffers],
+                                 _vkarray.DataShape(size, 1, 1),
+                                 _vkarray.VectorParams(size),
+                                 [b.job.getSemaphore() for b in buffers
+                                  if b.job is not None])
 
+    def _opVec3(self, spv, other):
+        self._check_shape(other)
+        ret = Buffer(self._gpu, shape=self.shape)
+        ret.job = self._opVec(spv, [self, other, ret])
         return ret
 
+    def _opVec2(self, spv, other):
+        self._check_shape(other)
+        self.job = self._opVec(spv, [self, other])
+
     def __add__(self, other: Self):
-        return self._op3(self._add, other)
+        return self._opVec3(self._add, other)
 
     def __sub__(self, other: Self):
-        return self._op3(self._sub, other)
+        return self._opVec3(self._sub, other)
 
     def __mul__(self, other: Self):
-        return self._op3(self._mul, other)
+        return self._opVec3(self._mul, other)
 
     def __truediv__(self, other: Self):
-        return self._op3(self._div, other)
+        return self._opVec3(self._div, other)
+
+    def __iadd__(self, other: Self):
+        self._opVec2(self._iadd, other)
+
+    def __isub__(self, other: Self):
+        self._opVec2(self._isub, other)
+
+    def __imul__(self, other: Self):
+        self._opVec2(self._isub, other)
+
+    def __itruediv__(self, other: Self):
+        self._opVec2(self._idiv, other)
 
     def wait(self):
         """

@@ -120,8 +120,15 @@ public:
 
 namespace OpParams {
   struct Empty{};
+
   struct Vector{
     std::uint32_t size;
+  };
+
+  template<typename T>
+  struct VectorScalar{
+    std::uint32_t size;
+    T scalar;
   };
 }
 
@@ -435,7 +442,36 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<GPU, std::shared_ptr<GPU>>(m, "GPU")
     .def("toBuffer", &GPU::toBuffer<float>, "Copy to GPU Buffer")
     .def("createBuffer", &GPU::createBuffer<float>, "Create GPU Buffer")
-    .def("createOp", &GPU::createOp<3, OpParams::Vector>, "Create Vector Op")
+    .def("createOp",
+         [](GPU& m, int n, const OpParams::Vector&,
+            std::string_view spv,
+            std::uint32_t x, std::uint32_t y, std::uint32_t z) -> pybind11::object {
+           switch(n){
+           case 2:
+             return pybind11::cast(m.createOp<2, OpParams::Vector>(spv, x, y, z));
+           case 3:
+             return pybind11::cast(m.createOp<3, OpParams::Vector>(spv, x, y, z));
+           }
+           throw std::runtime_error("Unknown Operation");
+         },
+         "Create Vector Operation")
+    .def("submit",
+         [](GPU& m,
+            const Op<2, OpParams::Vector>& op,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const OpParams::Vector& params,
+            const std::vector<vk::Semaphore>& wait){
+           // Automatic conversion cannot work for `const T(&)[N]`,
+           // so that we manually convert from Python's `list`.
+           vk::DescriptorBufferInfo info[2]{
+             py_info[0].cast<vk::DescriptorBufferInfo>(),
+             py_info[1].cast<vk::DescriptorBufferInfo>(),
+           };
+           return m.submit(op, info, shape, params, wait);
+         },
+         "Submit Vector Operation",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit",
          [](GPU& m,
             const Op<3, OpParams::Vector>& op,
@@ -474,10 +510,14 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<OpParams::Vector>(m, "VectorParams")
     .def(pybind11::init<std::uint32_t>());
 
+  pybind11::class_<OpParams::VectorScalar<float>>(m, "VectorScalarParams")
+    .def(pybind11::init<std::uint32_t, float>());
+
   pybind11::class_<DataShape>(m, "DataShape")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
-  pybind11::class_<Op<3, OpParams::Vector>>(m, "Op");
+  pybind11::class_<Op<2, OpParams::Vector>>(m, "OpVec2");
+  pybind11::class_<Op<3, OpParams::Vector>>(m, "OpVec3");
 
   pybind11::class_<Job, std::shared_ptr<Job>>(m, "Job")
     .def("wait", &Job::wait, "Wait for this Job",
