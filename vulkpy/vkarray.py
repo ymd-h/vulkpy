@@ -217,6 +217,9 @@ class Buffer:
     def __getitem__(self, key):
         return self.array[key]
 
+    def __setitem__(self, key, value):
+        self.array[key] = value
+
     def __repr__(self):
         return f"<vulkpy.Buffer(shape={tuple(self.shape)})>"
 
