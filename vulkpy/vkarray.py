@@ -44,12 +44,13 @@ class GPU:
         """
         return self.gpu.createOp(spv, local_size_x, local_size_y, local_size_z)
 
-    def _submitVec3(self,
-                    spv: str,
-                    buffers: Iterable[_vkarray.Buffer],
-                    semaphores: Iterable[_vkarray.Semaphore]) -> _vkarray.Job:
+    def _submit(self,
+                spv: str,
+                local_size_x: int, local_size_y: int, local_size_z: int,
+                buffers: Iterable[_vkarray.Buffer],
+                semaphores: Iterable[_vkarray.Semaphore]) -> _vkarray.Job:
         """
-        Submit 3-buffer Vector Operation
+        Submit GPU Operation
 
         Parameters
         ----------
@@ -65,7 +66,7 @@ class GPU:
         _vkarray.Job
             Job
         """
-        op = self._createOp(spv, 64, 1, 1)
+        op = self._createOp(spv, local_size_x, local_size_y, local_size_z)
         size = buffers[0].size()
         return self.gpu.submit(op,
                                [b.info() for b in buffers],
@@ -117,10 +118,10 @@ class Buffer:
             raise ValueError(f"Incompatible shapes: {self.shape} vs {other.shape}")
 
         ret = Buffer(self._gpu, shape=self.shape)
-        self.job = self._gpu._submitVec3(spv,
-                                         [self.buffer, other.buffer, ret.buffer],
-                                         [b.job.getSemaphore() for b in [self, other]
-                                          if b.job is not None])
+        ret.job = self._gpu._submit(spv, 64, 1, 1,
+                                    [self.buffer, other.buffer, ret.buffer],
+                                    [b.job.getSemaphore() for b in [self, other]
+                                     if b.job is not None])
 
         return ret
 
