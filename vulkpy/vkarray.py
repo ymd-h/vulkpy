@@ -152,7 +152,7 @@ class Array:
 
         if data is not None:
             self.shape = np.asarray(data).shape
-            self.buffer = self._gpu.gpu.toBuffer(data)
+            self.buffer = self._gpu.gpu.toBuffer(np.ravel(data))
         elif shape is not None:
             self.shape = np.asarray(shape)
             self.buffer = self._gpu.gpu.createBuffer(int(self.shape.prod()))
