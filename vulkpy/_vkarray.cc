@@ -429,6 +429,24 @@ public:
 
 
 // Helper Functions
+template<typename Parameters, pybind11::size_t ...I>
+pybind11::object createOp(GPU& m, int n, const Parameters&,
+                          std::string_view spv,
+                          std::uint32_t x, std::uint32_t y, std::uint32_t z){
+  using pybind11::cast;
+  using Tuple = std::tuple<pybind11::size_t, std::function<pybind11::object()>>;
+  auto ops = {
+    Tuple(I, [&](){ return cast(m.createOp<I, Parameters>(spv, x, y, z)); })...
+  };
+
+  for(auto op : ops){
+    auto [i, f] = op;
+    if(i == n){ return f(); }
+  }
+
+  throw std::runtime_error("Unknown Operation");
+}
+
 template<std::size_t N, typename Parameters>
 auto submit(GPU& m,
             const Op<N, Parameters>& op,
@@ -458,69 +476,13 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<GPU, std::shared_ptr<GPU>>(m, "GPU")
     .def("toBuffer", &GPU::toBuffer<float>, "Copy to GPU Buffer")
     .def("createBuffer", &GPU::createBuffer<float>, "Create GPU Buffer")
-    .def("createOp",
-         [](GPU& m, int n, const OpParams::Vector&,
-            std::string_view spv,
-            std::uint32_t x, std::uint32_t y, std::uint32_t z) -> pybind11::object {
-           using pybind11::cast;
-           using Params = OpParams::Vector;
-           switch(n){
-           case 1:
-             return cast(m.createOp<1, Params>(spv, x, y, z));
-           case 2:
-             return cast(m.createOp<2, Params>(spv, x, y, z));
-           case 3:
-             return cast(m.createOp<3, Params>(spv, x, y, z));
-           case 4:
-             return cast(m.createOp<4, Params>(spv, x, y, z));
-           }
-           throw std::runtime_error("Unknown Operation");
-         },
+    .def("createOp", &createOp<OpParams::Vector, 1, 2, 3, 4>,
          "Create Vector Operation")
-    .def("createOp",
-         [](GPU& m, int n, const OpParams::VectorScalar<float>&,
-            std::string_view spv,
-            std::uint32_t x, std::uint32_t y, std::uint32_t z) -> pybind11::object {
-           using pybind11::cast;
-           using Params = OpParams::VectorScalar<float>;
-           switch(n){
-           case 1:
-             return cast(m.createOp<1, Params>(spv, x, y, z));
-           case 2:
-             return cast(m.createOp<2, Params>(spv, x, y, z));
-           case 3:
-             return cast(m.createOp<3, Params>(spv, x, y, z));
-           }
-           throw std::runtime_error("Unknown Operation");
-         },
+    .def("createOp", &createOp<OpParams::VectorScalar<float>, 1, 2, 3>,
          "Create Vector-Scalar Operation")
-    .def("createOp",
-         [](GPU& m, int n, const OpParams::VectorMultiScalar<float, 2>&,
-            std::string_view spv,
-            std::uint32_t x, std::uint32_t y, std::uint32_t z) -> pybind11::object {
-           using pybind11::cast;
-           using Params = OpParams::VectorMultiScalar<float, 2>;
-           switch(n){
-           case 1:
-             return cast(m.createOp<1, Params>(spv, x, y, z));
-           case 2:
-             return cast(m.createOp<2, Params>(spv, x, y, z));
-           }
-           throw std::runtime_error("Unknown Operation");
-         },
+    .def("createOp", &createOp<OpParams::VectorMultiScalar<float, 2>, 1, 2>,
          "Create Vector-Scalar[2] Operation")
-    .def("createOp",
-         [](GPU& m, int n, const OpParams::MatMul<float>&,
-            std::string_view spv,
-            std::uint32_t x, std::uint32_t y, std::uint32_t z) -> pybind11::object {
-           using pybind11::cast;
-           using Params = OpParams::MatMul<float>;
-           switch(n){
-           case 3:
-             return cast(m.createOp<3, Params>(spv, x, y, z));
-           }
-           throw std::runtime_error("Unknown Operation");
-         },
+    .def("createOp", &createOp<OpParams::MatMul<float>, 3>,
          "Create Matrix Multiplication Operation")
     .def("submit", &submit<1, OpParams::Vector>, "Submit Vector Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
