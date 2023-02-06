@@ -623,5 +623,166 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(a, np.sqrt(1/x))
 
+    def test_pow(self):
+        x = np.asarray([1, 2, 3])
+        y = np.asarray([1.1, 2.2, 1.4])
+
+        a = vk.Array(self.gpu, data=x)
+        b = vk.Array(self.gpu, data=y)
+
+        c = a ** b
+        c.wait()
+
+        np.testing.assert_allclose(c, x ** y)
+
+    def test_ipow(self):
+        x = np.asarray([1, 2, 3])
+        y = np.asarray([1.1, 2.2, 1.4])
+
+        a = vk.Array(self.gpu, data=x)
+        b = vk.Array(self.gpu, data=y)
+
+        a **= b
+        a.wait()
+
+        np.testing.assert_allclose(a, x ** y)
+
+    def test_pow_scalar(self):
+        x = np.asarray([1, 2, 3])
+        y = 2.7
+
+        a = vk.Array(self.gpu, data=x)
+
+        c = a ** y
+        c.wait()
+
+        np.testing.assert_allclose(c, x ** y)
+
+    def test_ipow_scalar(self):
+        x = np.asarray([1, 2, 3])
+        y = 2.7
+
+        a = vk.Array(self.gpu, data=x)
+
+        a **= y
+        a.wait()
+
+        np.testing.assert_allclose(a, x ** y)
+
+    def test_rpow_scalar(self):
+        x = 1.3
+        y = np.asarray([1.1, 2.2, 1.4])
+
+        b = vk.Array(self.gpu, data=y)
+
+        c = x ** b
+        c.wait()
+
+        np.testing.assert_allclose(c, x ** y)
+
+    def test_clamp(self):
+        x = np.asarray([1.2, 3.5, 10])
+        _min = np.asarray([3, 3, 4])
+        _max = np.asarray([6, 6, 7])
+
+        a = vk.Array(self.gpu, data=x)
+        b = vk.Array(self.gpu, data=_min)
+        c = vk.Array(self.gpu, data=_max)
+
+        d = a.clamp(b, c)
+        d.wait()
+
+        np.testing.assert_allclose(d, np.clip(x, _min, _max))
+
+    def test_iclamp(self):
+        x = np.asarray([1.2, 3.5, 10])
+        _min = np.asarray([3, 3, 4])
+        _max = np.asarray([6, 6, 7])
+
+        a = vk.Array(self.gpu, data=x)
+        b = vk.Array(self.gpu, data=_min)
+        c = vk.Array(self.gpu, data=_max)
+
+        a.clamp(b, c, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.clip(x, _min, _max))
+
+    def test_clamp_sv(self):
+        x = np.asarray([1.2, 3.5, 10])
+        _min = 3
+        _max = np.asarray([6, 6, 7])
+
+        a = vk.Array(self.gpu, data=x)
+        c = vk.Array(self.gpu, data=_max)
+
+        d = a.clamp(_min, c)
+        d.wait()
+
+        np.testing.assert_allclose(d, np.clip(x, _min, _max))
+
+    def test_iclamp_sv(self):
+        x = np.asarray([1.2, 3.5, 10])
+        _min = 3
+        _max = np.asarray([6, 6, 7])
+
+        a = vk.Array(self.gpu, data=x)
+        c = vk.Array(self.gpu, data=_max)
+
+        a.clamp(_min, c, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.clip(x, _min, _max))
+
+    def test_clamp_vs(self):
+        x = np.asarray([1.2, 3.5, 10])
+        _min = np.asarray([3, 3, 4])
+        _max = 7
+
+        a = vk.Array(self.gpu, data=x)
+        b = vk.Array(self.gpu, data=_min)
+
+        d = a.clamp(b, _max)
+        d.wait()
+
+        np.testing.assert_allclose(d, np.clip(x, _min, _max))
+
+    def test_iclamp_vs(self):
+        x = np.asarray([1.2, 3.5, 10])
+        _min = np.asarray([3, 3, 4])
+        _max = 7
+
+        a = vk.Array(self.gpu, data=x)
+        b = vk.Array(self.gpu, data=_min)
+
+        a.clamp(b, _max, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.clip(x, _min, _max))
+
+    def test_clamp_ss(self):
+        x = np.asarray([1.2, 3.5, 10])
+        _min = 3
+        _max = 7
+
+        a = vk.Array(self.gpu, data=x)
+
+        d = a.clamp(_min, _max)
+        d.wait()
+
+        np.testing.assert_allclose(d, np.clip(x, _min, _max))
+
+    def test_iclamp_ss(self):
+        x = np.asarray([1.2, 3.5, 10])
+        _min = 3
+        _max = 7
+
+        a = vk.Array(self.gpu, data=x)
+
+        a.clamp(_min, _max, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.clip(x, _min, _max))
+
 if __name__ == "__main__":
     unittest.main()

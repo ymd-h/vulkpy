@@ -23,7 +23,10 @@ for shader in ["add", "sub", "mul", "div",
                "isinh", "icosh", "itanh", "iasinh", "iacosh", "iatanh",
                "exp", "log", "exp2", "log2",
                "iexp", "ilog", "iexp2", "ilog2",
-               "sqrt", "invsqrt", "isqrt", "iinvsqrt"]:
+               "sqrt", "invsqrt", "isqrt", "iinvsqrt",
+               "pow", "ipow", "pow_scalar", "ipow_scalar", "rpow_scalar",
+               "clamp", "clamp_sv", "clamp_vs", "clamp_ss",
+               "iclamp", "iclamp_sv", "iclamp_vs", "iclamp_ss"]:
     s = os.path.join(pkg, "shader", shader)
     spv = s+".spv"
     comp = s+".comp"

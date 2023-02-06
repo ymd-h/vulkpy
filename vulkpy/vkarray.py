@@ -12,9 +12,11 @@ shader_dir = os.path.join(os.path.dirname(__file__), "shader")
 
 Params = Union[_vkarray.VectorParams,
                _vkarray.VectorScalarParams,
+               _vkarray.VectorScalar2Params,
                _vkarray.MatMulParams]
-Op = Union[_vkarray.OpVec1, _vkarray.OpVec2, _vkarray.OpVec3,
-           _vkarray.OpVecScalar1, _vkarray.OpVecScalar2,
+Op = Union[_vkarray.OpVec1, _vkarray.OpVec2, _vkarray.OpVec3, _vkarray.OpVec4,
+           _vkarray.OpVecScalar1, _vkarray.OpVecScalar2, _vkarray.OpVecScalar3,
+           _vkarray.OpVec2Scalar1, _vkarray.OpVec2Scalar2,
            _vkarray.OpMatMul]
 
 class GPU:
@@ -201,6 +203,20 @@ class Array:
         self._invsqrt = os.path.join(shader_dir, "invsqrt.spv")
         self._isqrt = os.path.join(shader_dir, "isqrt.spv")
         self._iinvsqrt = os.path.join(shader_dir, "iinvsqrt.spv")
+        self._pow = os.path.join(shader_dir, "pow.spv")
+        self._ipow = os.path.join(shader_dir, "ipow.spv")
+        self._pow_scalar = os.path.join(shader_dir, "pow_scalar.spv")
+        self._ipow_scalar = os.path.join(shader_dir, "ipow_scalar.spv")
+        self._rpow_scalar = os.path.join(shader_dir, "rpow_scalar.spv")
+        self._clamp = os.path.join(shader_dir, "clamp.spv")
+        self._iclamp = os.path.join(shader_dir, "iclamp.spv")
+        self._clamp_sv = os.path.join(shader_dir, "clamp_sv.spv")
+        self._iclamp_sv = os.path.join(shader_dir, "iclamp_sv.spv")
+        self._clamp_vs = os.path.join(shader_dir, "clamp_vs.spv")
+        self._iclamp_vs = os.path.join(shader_dir, "iclamp_vs.spv")
+        self._clamp_ss = os.path.join(shader_dir, "clamp_ss.spv")
+        self._iclamp_ss = os.path.join(shader_dir, "iclamp_ss.spv")
+
 
         if data is not None:
             self.shape = np.asarray(data).shape
@@ -262,6 +278,15 @@ class Array:
 
     def _opVecScalar1(self, spv, other):
         self.job = self._opVecScalar(spv, [self], other)
+
+    def _opVec2Scalar(self, spv, buffers, scalars):
+        size = self.buffer.size()
+        return self._gpu._submit(spv, 64, 1, 1,
+                                 [b.buffer for b in buffers],
+                                 _vkarray.DataShape(size, 1, 1),
+                                 _vkarray.VectorScalar2Params(size, *scalars),
+                                 [b.job.getSemaphore() for b in buffers
+                                  if b.job is not None])
 
     def __add__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
@@ -908,3 +933,69 @@ class Array:
             self._opVec1(self._iinvsqrt)
         else:
             return self._opVec2(self._invsqrt)
+
+    def __pow__(self, other: Union[Array, float]) -> Array:
+        if isinstance(other, Array):
+            return self._opVec3(self._pow, other)
+        else:
+            return self._opVecScalar2(self._pow_scalar, other)
+
+    def __ipow__(self, other: Union[Array, float]) -> Array:
+        if isinstance(other, Array):
+            self._opVec2(self._ipow, other)
+        else:
+            self._opVecScalar1(self._ipow_scalar, other)
+        return self
+
+    def __rpow__(self, other: float) -> Array:
+        return self._opVecScalar2(self._rpow_scalar, other)
+
+    def clamp(self, min: Union[Array, float], max: Union[Array, float],
+              inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise clamp()
+
+        Parameters
+        ----------
+        min, max : Array or float
+            Minimum/Maximum value
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        min_is_array = isinstance(min, Array)
+        if min_is_array:
+            self._check_shape(min)
+
+        max_is_array = isinstance(max, Array)
+        if max_is_array:
+            self._check_shape(max)
+
+        if not inplace:
+            ret = Array(self._gpu, shape=self.shape)
+            if min_is_array and max_is_array:
+                ret.job = self._opVec(self._clamp, [self, min, max, ret])
+            elif max_is_array:
+                ret.job = self._opVecScalar(self._clamp_sv, [self, max, ret], min)
+            elif min_is_array:
+                ret.job = self._opVecScalar(self._clamp_vs, [self, min, ret], max)
+            else:
+                ret.job = self._opVec2Scalar(self._clamp_ss, [self, ret], [min, max])
+            return ret
+        else:
+            # inplace
+            if min_is_array and max_is_array:
+                self.job = self._opVec(self._iclamp, [self, min, max])
+            elif max_is_array:
+                self.job = self._opVecScalar(self._iclamp_sv, [self, max], min)
+            elif min_is_array:
+                self.job = self._opVecScalar(self._iclamp_vs, [self, min], max)
+            else:
+                self.job = self._opVec2Scalar(self._iclamp_ss, [self], [min, max])

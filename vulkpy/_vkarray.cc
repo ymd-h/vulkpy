@@ -116,6 +116,12 @@ namespace OpParams {
     T scalar;
   };
 
+  template<typename T, std::size_t N>
+  struct VectorMultiScalar{
+    std::uint32_t size;
+    T scalar[N];
+  };
+
   template<typename T>
   struct MatMul{
     std::uint32_t rowA;
@@ -447,6 +453,8 @@ PYBIND11_MODULE(_vkarray, m){
              return cast(m.createOp<2, Params>(spv, x, y, z));
            case 3:
              return cast(m.createOp<3, Params>(spv, x, y, z));
+           case 4:
+             return cast(m.createOp<4, Params>(spv, x, y, z));
            }
            throw std::runtime_error("Unknown Operation");
          },
@@ -462,10 +470,27 @@ PYBIND11_MODULE(_vkarray, m){
              return cast(m.createOp<1, Params>(spv, x, y, z));
            case 2:
              return cast(m.createOp<2, Params>(spv, x, y, z));
+           case 3:
+             return cast(m.createOp<3, Params>(spv, x, y, z));
            }
            throw std::runtime_error("Unknown Operation");
          },
          "Create Vector-Scalar Operation")
+    .def("createOp",
+         [](GPU& m, int n, const OpParams::VectorMultiScalar<float, 2>&,
+            std::string_view spv,
+            std::uint32_t x, std::uint32_t y, std::uint32_t z) -> pybind11::object {
+           using pybind11::cast;
+           using Params = OpParams::VectorMultiScalar<float, 2>;
+           switch(n){
+           case 1:
+             return cast(m.createOp<1, Params>(spv, x, y, z));
+           case 2:
+             return cast(m.createOp<2, Params>(spv, x, y, z));
+           }
+           throw std::runtime_error("Unknown Operation");
+         },
+         "Create Vector-Scalar[2] Operation")
     .def("createOp",
          [](GPU& m, int n, const OpParams::MatMul<float>&,
             std::string_view spv,
@@ -532,6 +557,25 @@ PYBIND11_MODULE(_vkarray, m){
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit",
          [](GPU& m,
+            const Op<4, OpParams::Vector>& op,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const OpParams::Vector& params,
+            const std::vector<vk::Semaphore>& wait){
+           // Automatic conversion cannot work for `const T(&)[N]`,
+           // so that we manually convert from Python's `list`.
+           vk::DescriptorBufferInfo info[4]{
+             py_info[0].cast<vk::DescriptorBufferInfo>(),
+             py_info[1].cast<vk::DescriptorBufferInfo>(),
+             py_info[2].cast<vk::DescriptorBufferInfo>(),
+             py_info[3].cast<vk::DescriptorBufferInfo>()
+           };
+           return m.submit(op, info, shape, params, wait);
+         },
+         "Submit Vector Op",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit",
+         [](GPU& m,
             const Op<1, OpParams::VectorScalar<float>>& op,
             const pybind11::list& py_info,
             const DataShape& shape,
@@ -562,6 +606,57 @@ PYBIND11_MODULE(_vkarray, m){
            return m.submit(op, info, shape, params, wait);
          },
          "Submit Vector-Scalar Op",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit",
+         [](GPU& m,
+            const Op<3, OpParams::VectorScalar<float>>& op,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const OpParams::VectorScalar<float>& params,
+            const std::vector<vk::Semaphore>& wait){
+           // Automatic conversion cannot work for `const T(&)[N]`,
+           // so that we manually convert from Python's `list`.
+           vk::DescriptorBufferInfo info[3]{
+             py_info[0].cast<vk::DescriptorBufferInfo>(),
+             py_info[1].cast<vk::DescriptorBufferInfo>(),
+             py_info[2].cast<vk::DescriptorBufferInfo>()
+           };
+           return m.submit(op, info, shape, params, wait);
+         },
+         "Submit Vector-Scalar Op",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit",
+         [](GPU& m,
+            const Op<1, OpParams::VectorMultiScalar<float, 2>>& op,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const OpParams::VectorMultiScalar<float, 2>& params,
+            const std::vector<vk::Semaphore>& wait){
+           // Automatic conversion cannot work for `const T(&)[N]`,
+           // so that we manually convert from Python's `list`.
+           vk::DescriptorBufferInfo info[1]{
+             py_info[0].cast<vk::DescriptorBufferInfo>()
+           };
+           return m.submit(op, info, shape, params, wait);
+         },
+         "Submit Vector-Scalar[2] Op",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit",
+         [](GPU& m,
+            const Op<2, OpParams::VectorMultiScalar<float, 2>>& op,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const OpParams::VectorMultiScalar<float, 2>& params,
+            const std::vector<vk::Semaphore>& wait){
+           // Automatic conversion cannot work for `const T(&)[N]`,
+           // so that we manually convert from Python's `list`.
+           vk::DescriptorBufferInfo info[2]{
+             py_info[0].cast<vk::DescriptorBufferInfo>(),
+             py_info[1].cast<vk::DescriptorBufferInfo>()
+           };
+           return m.submit(op, info, shape, params, wait);
+         },
+         "Submit Vector-Scalar[2] Op",
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit",
          [](GPU& m,
@@ -609,6 +704,9 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<OpParams::VectorScalar<float>>(m, "VectorScalarParams")
     .def(pybind11::init<std::uint32_t, float>());
 
+  pybind11::class_<OpParams::VectorMultiScalar<float, 2>>(m, "VectorScalar2Params")
+    .def(pybind11::init<std::uint32_t, float, float>());
+
   pybind11::class_<OpParams::MatMul<float>>(m, "MatMulParams")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
@@ -618,8 +716,12 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<Op<1, OpParams::Vector>>(m, "OpVec1");
   pybind11::class_<Op<2, OpParams::Vector>>(m, "OpVec2");
   pybind11::class_<Op<3, OpParams::Vector>>(m, "OpVec3");
+  pybind11::class_<Op<4, OpParams::Vector>>(m, "OpVec4");
   pybind11::class_<Op<1, OpParams::VectorScalar<float>>>(m, "OpVecScalar1");
   pybind11::class_<Op<2, OpParams::VectorScalar<float>>>(m, "OpVecScalar2");
+  pybind11::class_<Op<3, OpParams::VectorScalar<float>>>(m, "OpVecScalar3");
+  pybind11::class_<Op<1, OpParams::VectorMultiScalar<float, 2>>>(m, "OpVec2Scalar1");
+  pybind11::class_<Op<2, OpParams::VectorMultiScalar<float, 2>>>(m, "OpVec2Scalar2");
   pybind11::class_<Op<3, OpParams::MatMul<float>>>(m, "OpMatMul");
 
   pybind11::class_<Job, std::shared_ptr<Job>>(m, "Job")
