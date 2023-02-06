@@ -476,6 +476,7 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<GPU, std::shared_ptr<GPU>>(m, "GPU")
     .def("toBuffer", &GPU::toBuffer<float>, "Copy to GPU Buffer")
     .def("createBuffer", &GPU::createBuffer<float>, "Create GPU Buffer")
+    .def("createUintBuffer", &GPU::createBuffer<std::uint32_t>, "Create GPU Buffer")
     .def("createOp", &createOp<OpParams::Vector, 1, 2, 3, 4>,
          "Create Vector Operation")
     .def("createOp", &createOp<OpParams::VectorScalar<float>, 1, 2, 3>,
@@ -527,6 +528,21 @@ PYBIND11_MODULE(_vkarray, m){
         .ndim=1,
         .shape={ m.size() },
         .strides={ sizeof(float) }
+      };
+    });
+
+  pybind11::class_<Buffer<std::uint32_t>>(m, "UintBuffer", pybind11::buffer_protocol())
+    .def("info", &Buffer<std::uint32_t>::info, "Get Buffer Info")
+    .def("range", &Buffer<std::uint32_t>::range, "Get Buffer Range")
+    .def("size", &Buffer<std::uint32_t>::size, "Get Buffer Size")
+    .def_buffer([](Buffer<std::uint32_t>& m) {
+      return pybind11::buffer_info {
+        .ptr=m.data(),
+        .itemsize=sizeof(std::uint32_t),
+        .format=pybind11::format_descriptor<std::uint32_t>::format(),
+        .ndim=1,
+        .shape={ m.size() },
+        .strides={ sizeof(std::uint32_t) }
       };
     });
 
