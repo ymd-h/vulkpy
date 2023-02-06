@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace util {
@@ -30,6 +31,16 @@ namespace util {
 
     f.close();
     return v;
+  }
+
+
+  template<typename T, typename F, std::size_t ...I>
+  auto pylist2array(F&& f, const pybind11::list& pylist,
+                    std::integer_sequence<std::size_t, I...>){
+    T array[]{
+      pylist[pybind11::size_t(I)].cast<T>()...
+    };
+    return f(array);
   }
 }
 

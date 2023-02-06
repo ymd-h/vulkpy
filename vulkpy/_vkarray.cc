@@ -428,6 +428,24 @@ public:
 };
 
 
+// Helper Functions
+template<std::size_t N, typename Parameters>
+auto submit(GPU& m,
+            const Op<N, Parameters>& op,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const Parameters& params,
+            const std::vector<vk::Semaphore>& wait){
+  // Automatic conversion cannot work for `const T(&)[N]`,
+  // so that we manually convert from Python's `list`.
+
+  using B = vk::DescriptorBufferInfo;
+  return util::pylist2array<B>([&](const B (&info)[N]){
+    return m.submit(op, info, shape, params, wait);
+  }, py_info, std::make_index_sequence<N>());
+}
+
+
 PYBIND11_MODULE(_vkarray, m){
   m.doc() = "_vkarray internal module";
 
@@ -504,177 +522,31 @@ PYBIND11_MODULE(_vkarray, m){
            throw std::runtime_error("Unknown Operation");
          },
          "Create Matrix Multiplication Operation")
-    .def("submit",
-         [](GPU& m,
-            const Op<1, OpParams::Vector>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const OpParams::Vector& params,
-            const std::vector<vk::Semaphore>& wait){
-           // Automatic conversion cannot work for `const T(&)[N]`,
-           // so that we manually convert from Python's `list`.
-           vk::DescriptorBufferInfo info[1]{
-             py_info[0].cast<vk::DescriptorBufferInfo>()
-           };
-           return m.submit(op, info, shape, params, wait);
-         },
-         "Submit Vector Operation",
+    .def("submit", &submit<1, OpParams::Vector>, "Submit Vector Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit",
-         [](GPU& m,
-            const Op<2, OpParams::Vector>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const OpParams::Vector& params,
-            const std::vector<vk::Semaphore>& wait){
-           // Automatic conversion cannot work for `const T(&)[N]`,
-           // so that we manually convert from Python's `list`.
-           vk::DescriptorBufferInfo info[2]{
-             py_info[0].cast<vk::DescriptorBufferInfo>(),
-             py_info[1].cast<vk::DescriptorBufferInfo>(),
-           };
-           return m.submit(op, info, shape, params, wait);
-         },
-         "Submit Vector Operation",
+    .def("submit", &submit<2, OpParams::Vector>, "Submit Vector Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit",
-         [](GPU& m,
-            const Op<3, OpParams::Vector>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const OpParams::Vector& params,
-            const std::vector<vk::Semaphore>& wait){
-           // Automatic conversion cannot work for `const T(&)[N]`,
-           // so that we manually convert from Python's `list`.
-           vk::DescriptorBufferInfo info[3]{
-             py_info[0].cast<vk::DescriptorBufferInfo>(),
-             py_info[1].cast<vk::DescriptorBufferInfo>(),
-             py_info[2].cast<vk::DescriptorBufferInfo>()
-           };
-           return m.submit(op, info, shape, params, wait);
-         },
-         "Submit Vector Op",
+    .def("submit", &submit<3, OpParams::Vector>, "Submit Vector Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit",
-         [](GPU& m,
-            const Op<4, OpParams::Vector>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const OpParams::Vector& params,
-            const std::vector<vk::Semaphore>& wait){
-           // Automatic conversion cannot work for `const T(&)[N]`,
-           // so that we manually convert from Python's `list`.
-           vk::DescriptorBufferInfo info[4]{
-             py_info[0].cast<vk::DescriptorBufferInfo>(),
-             py_info[1].cast<vk::DescriptorBufferInfo>(),
-             py_info[2].cast<vk::DescriptorBufferInfo>(),
-             py_info[3].cast<vk::DescriptorBufferInfo>()
-           };
-           return m.submit(op, info, shape, params, wait);
-         },
-         "Submit Vector Op",
+    .def("submit", &submit<4, OpParams::Vector>, "Submit Vector Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit",
-         [](GPU& m,
-            const Op<1, OpParams::VectorScalar<float>>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const OpParams::VectorScalar<float>& params,
-            const std::vector<vk::Semaphore>& wait){
-           // Automatic conversion cannot work for `const T(&)[N]`,
-           // so that we manually convert from Python's `list`.
-           vk::DescriptorBufferInfo info[1]{
-             py_info[0].cast<vk::DescriptorBufferInfo>()
-           };
-           return m.submit(op, info, shape, params, wait);
-         },
-         "Submit Vector-Scalar Op",
+    .def("submit", &submit<1, OpParams::VectorScalar<float>>,
+         "Submit Vector-Scalar Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit",
-         [](GPU& m,
-            const Op<2, OpParams::VectorScalar<float>>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const OpParams::VectorScalar<float>& params,
-            const std::vector<vk::Semaphore>& wait){
-           // Automatic conversion cannot work for `const T(&)[N]`,
-           // so that we manually convert from Python's `list`.
-           vk::DescriptorBufferInfo info[2]{
-             py_info[0].cast<vk::DescriptorBufferInfo>(),
-             py_info[1].cast<vk::DescriptorBufferInfo>()
-           };
-           return m.submit(op, info, shape, params, wait);
-         },
-         "Submit Vector-Scalar Op",
+    .def("submit", &submit<2, OpParams::VectorScalar<float>>,
+         "Submit Vector-Scalar Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit",
-         [](GPU& m,
-            const Op<3, OpParams::VectorScalar<float>>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const OpParams::VectorScalar<float>& params,
-            const std::vector<vk::Semaphore>& wait){
-           // Automatic conversion cannot work for `const T(&)[N]`,
-           // so that we manually convert from Python's `list`.
-           vk::DescriptorBufferInfo info[3]{
-             py_info[0].cast<vk::DescriptorBufferInfo>(),
-             py_info[1].cast<vk::DescriptorBufferInfo>(),
-             py_info[2].cast<vk::DescriptorBufferInfo>()
-           };
-           return m.submit(op, info, shape, params, wait);
-         },
-         "Submit Vector-Scalar Op",
+    .def("submit", &submit<3, OpParams::VectorScalar<float>>,
+         "Submit Vector-Scalar Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit",
-         [](GPU& m,
-            const Op<1, OpParams::VectorMultiScalar<float, 2>>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const OpParams::VectorMultiScalar<float, 2>& params,
-            const std::vector<vk::Semaphore>& wait){
-           // Automatic conversion cannot work for `const T(&)[N]`,
-           // so that we manually convert from Python's `list`.
-           vk::DescriptorBufferInfo info[1]{
-             py_info[0].cast<vk::DescriptorBufferInfo>()
-           };
-           return m.submit(op, info, shape, params, wait);
-         },
-         "Submit Vector-Scalar[2] Op",
+    .def("submit", &submit<1, OpParams::VectorMultiScalar<float, 2>>,
+         "Submit Vector-Scalar[2] Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit",
-         [](GPU& m,
-            const Op<2, OpParams::VectorMultiScalar<float, 2>>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const OpParams::VectorMultiScalar<float, 2>& params,
-            const std::vector<vk::Semaphore>& wait){
-           // Automatic conversion cannot work for `const T(&)[N]`,
-           // so that we manually convert from Python's `list`.
-           vk::DescriptorBufferInfo info[2]{
-             py_info[0].cast<vk::DescriptorBufferInfo>(),
-             py_info[1].cast<vk::DescriptorBufferInfo>()
-           };
-           return m.submit(op, info, shape, params, wait);
-         },
-         "Submit Vector-Scalar[2] Op",
+    .def("submit", &submit<2, OpParams::VectorMultiScalar<float, 2>>,
+         "Submit Vector-Scalar[2] Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit",
-         [](GPU& m,
-            const Op<3, OpParams::MatMul<float>>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const OpParams::MatMul<float>& params,
-            const std::vector<vk::Semaphore>& wait){
-           // Automatic conversion cannot work for `const T(&)[N]`,
-           // so that we manually convert from Python's `list`.
-           vk::DescriptorBufferInfo info[3]{
-             py_info[0].cast<vk::DescriptorBufferInfo>(),
-             py_info[1].cast<vk::DescriptorBufferInfo>(),
-             py_info[2].cast<vk::DescriptorBufferInfo>()
-           };
-           return m.submit(op, info, shape, params, wait);
-         },
-         "Submit Matrix Multiplication Op",
+    .def("submit", &submit<3, OpParams::MatMul<float>>,
+         "Submit Matrix Multiplication Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait, "Wait all submission")
     .def("flush",
