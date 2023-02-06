@@ -40,11 +40,30 @@ print(c)
 
 ## Features
 
-* Element-wise Arithmetic Operations between 2 `Array`s.
-  * `+`, `-`, `*`, `/`, `+=`, `-=`, `*=`, `/=`
-* Arithmetic Operations between `Array` and `float`.
-  * `+`, `-`, `*`, `/`, `+=`, `-=`, `*=`, `/=`
-* Arithmetic Operations between `float` and `Array`.
-  * `+`, `-`, `*`, `/`
-* Matrix Multiplication between 1d/2d `Array`s.
-  * `@`
+* Element-wise Arithmetic Operators between 2 `Array`s.
+  * [x] `+`, `-`, `*`, `/`, `**`, `+=`, `-=`, `*=`, `/=`, `**=`
+* Arithmetic Operators between `Array` and `float`.
+  * [x] `+`, `-`, `*`, `/`, `**`, `+=`, `-=`, `*=`, `/=`, `**=`
+* Arithmetic Operators between `float` and `Array`.
+  * [x] `+`, `-`, `*`, `/`, `**`
+* Matrix Multiplication Operator between 1d/2d `Array`s.
+  * [x] `@`
+* Element-wise math functions as `Array`'s member function
+  * [x] `abs(inplace=False)`, `sign(inplace=False)`
+  * [x] `sin(inplace=False)`, `cos(inplace=False)`, `tan(inplace=False)`
+  * [x] `asin(inplace=False)`, `acos(inplace=False)`, `atan(inplace=False)`
+  * [x] `sinh(inplace=False)`, `cosh(inplace=False)`, `tanh(inplace=False)`
+  * [x] `asinh(inplace=False)`, `acosh(inplace=False)`, `atanh(inplace=False)`
+  * [x] `exp(inplace=False)`, `log(inplace=False)`
+  * [x] `exp2(inplace=False)`, `log2(inplace=False)`
+  * [x] `sqrt(inplace=False)`, `invsqrt(inplace=False)`
+  * [x] `clamp(min, max, inplace=False)`
+* Reduction
+  * [ ] sum, mean, max, min, ...
+* Bload Cast
+  * [ ] ???
+* Pseudo Random Number Generator (PRNG)
+  * [ ] pcg32
+* Neural Network
+  * [ ] dense, conv, ...
+  * [ ] sgd, adam, ...
