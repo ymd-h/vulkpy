@@ -16,7 +16,14 @@ for shader in ["add", "sub", "mul", "div",
                "matmul",
                "max", "min", "imax", "imin",
                "max_scalar", "min_scalar", "imax_scalar", "imin_scalar",
-               "abs", "sign", "iabs", "isign"]:
+               "abs", "sign", "iabs", "isign",
+               "sin", "cos", "tan", "asin", "acos", "atan",
+               "isin", "icos", "itan", "iasin", "iacos", "iatan",
+               "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
+               "isinh", "icosh", "itanh", "iasinh", "iacosh", "iatanh",
+               "exp", "log", "exp2", "log2",
+               "iexp", "ilog", "iexp2", "ilog2",
+               "sqrt", "invsqrt", "isqrt", "iinvsqrt"]:
     s = os.path.join(pkg, "shader", shader)
     spv = s+".spv"
     comp = s+".comp"

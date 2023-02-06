@@ -343,5 +343,285 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(a, np.asarray([-1, 1, 1]))
 
+    def test_sin(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        b = a.sin()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.sin(x), rtol=1e-5)
+
+    def test_isin(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        a.sin(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.sin(x), rtol=1e-5)
+
+    def test_cos(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        b = a.cos()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.cos(x), rtol=1e-5)
+
+    def test_icos(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        a.cos(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.cos(x), rtol=1e-5)
+
+    def test_tan(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        b = a.tan()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.tan(x), rtol=1e-5)
+
+    def test_itan(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        a.tan(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.tan(x), rtol=1e-5)
+
+    def test_sinh(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        b = a.sinh()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.sinh(x), rtol=1e-5)
+
+    def test_isinh(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        a.sinh(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.sinh(x), rtol=1e-5)
+
+    def test_cosh(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        b = a.cosh()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.cosh(x), rtol=1e-5)
+
+    def test_icosh(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        a.cosh(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.cosh(x), rtol=1e-5)
+
+    def test_tanh(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        b = a.tanh()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.tanh(x), rtol=1e-5)
+
+    def test_itanh(self):
+        x = np.asarray([1, 3, 5])
+        a = vk.Array(self.gpu, data=x)
+        a.tanh(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.tanh(x), rtol=1e-5)
+
+    def test_asin(self):
+        x = np.asarray([0.5, 0.3, -0.2])
+        a = vk.Array(self.gpu, data=x)
+        b = a.asin()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.arcsin(x), rtol=1e-3)
+
+    def test_iasin(self):
+        x = np.asarray([0.5, 0.3, -0.2])
+        a = vk.Array(self.gpu, data=x)
+        a.asin(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.arcsin(x), rtol=1e-3)
+
+    def test_acos(self):
+        x = np.asarray([0.5, 0.3, -0.2])
+        a = vk.Array(self.gpu, data=x)
+        b = a.acos()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.arccos(x), rtol=1e-3)
+
+    def test_iacos(self):
+        x = np.asarray([0.5, 0.3, -0.2])
+        a = vk.Array(self.gpu, data=x)
+        a.acos(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.arccos(x), rtol=1e-3)
+
+    def test_atan(self):
+        x = np.asarray([0.5, 0.3, -0.2])
+        a = vk.Array(self.gpu, data=x)
+        b = a.atan()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.arctan(x), rtol=1e-5)
+
+    def test_iatan(self):
+        x = np.asarray([0.5, 0.3, -0.2])
+        a = vk.Array(self.gpu, data=x)
+        a.atan(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.arctan(x), rtol=1e-5)
+
+    def test_iasinh(self):
+        x = np.asarray([0.5, 0.3, -0.2])
+        a = vk.Array(self.gpu, data=x)
+        a.asinh(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.arcsinh(x), rtol=1e-5)
+
+    def test_acosh(self):
+        x = np.asarray([1.5, 1.3, 1.2])
+        a = vk.Array(self.gpu, data=x)
+        b = a.acosh()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.arccosh(x), rtol=1e-5)
+
+    def test_iacosh(self):
+        x = np.asarray([1.5, 1.3, 1.2])
+        a = vk.Array(self.gpu, data=x)
+        a.acosh(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.arccosh(x), rtol=1e-5)
+
+    def test_atanh(self):
+        x = np.asarray([0.5, 0.3, -0.2])
+        a = vk.Array(self.gpu, data=x)
+        b = a.atanh()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.arctanh(x), rtol=1e-5)
+
+    def test_iatanh(self):
+        x = np.asarray([0.5, 0.3, -0.2])
+        a = vk.Array(self.gpu, data=x)
+        a.atanh(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.arctanh(x), rtol=1e-5)
+
+    def test_exp(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        b = a.exp()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.exp(x))
+
+    def test_iexp(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        a.exp(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.exp(x))
+
+    def test_log(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        b = a.log()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.log(x))
+
+    def test_ilog(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        a.log(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.log(x))
+
+    def test_exp2(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        b = a.exp2()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.exp2(x))
+
+    def test_iexp2(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        a.exp2(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.exp2(x))
+
+    def test_log2(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        b = a.log2()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.log2(x))
+
+    def test_ilog2(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        a.log2(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.log2(x))
+
+    def test_sqrt(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        b = a.sqrt()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.sqrt(x))
+
+    def test_isqrt(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        a.sqrt(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.sqrt(x))
+
+    def test_invsqrt(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        b = a.invsqrt()
+        b.wait()
+
+        np.testing.assert_allclose(b, np.sqrt(1/x))
+
+    def test_iinvsqrt(self):
+        x = np.asarray([1, 2, 3])
+        a = vk.Array(self.gpu, data=x)
+        a.invsqrt(inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.sqrt(1/x))
+
 if __name__ == "__main__":
     unittest.main()

@@ -165,6 +165,42 @@ class Array:
         self._sign = os.path.join(shader_dir, "sign.spv")
         self._iabs = os.path.join(shader_dir, "iabs.spv")
         self._isign = os.path.join(shader_dir, "isign.spv")
+        self._sin = os.path.join(shader_dir, "sin.spv")
+        self._cos = os.path.join(shader_dir, "cos.spv")
+        self._tan = os.path.join(shader_dir, "tan.spv")
+        self._isin = os.path.join(shader_dir, "isin.spv")
+        self._icos = os.path.join(shader_dir, "icos.spv")
+        self._itan = os.path.join(shader_dir, "itan.spv")
+        self._asin = os.path.join(shader_dir, "asin.spv")
+        self._acos = os.path.join(shader_dir, "acos.spv")
+        self._atan = os.path.join(shader_dir, "atan.spv")
+        self._iasin = os.path.join(shader_dir, "iasin.spv")
+        self._iacos = os.path.join(shader_dir, "iacos.spv")
+        self._iatan = os.path.join(shader_dir, "iatan.spv")
+        self._sinh = os.path.join(shader_dir, "sinh.spv")
+        self._cosh = os.path.join(shader_dir, "cosh.spv")
+        self._tanh = os.path.join(shader_dir, "tanh.spv")
+        self._isinh = os.path.join(shader_dir, "isinh.spv")
+        self._icosh = os.path.join(shader_dir, "icosh.spv")
+        self._itanh = os.path.join(shader_dir, "itanh.spv")
+        self._asinh = os.path.join(shader_dir, "asinh.spv")
+        self._acosh = os.path.join(shader_dir, "acosh.spv")
+        self._atanh = os.path.join(shader_dir, "atanh.spv")
+        self._iasinh = os.path.join(shader_dir, "iasinh.spv")
+        self._iacosh = os.path.join(shader_dir, "iacosh.spv")
+        self._iatanh = os.path.join(shader_dir, "iatanh.spv")
+        self._exp = os.path.join(shader_dir, "exp.spv")
+        self._log = os.path.join(shader_dir, "log.spv")
+        self._iexp = os.path.join(shader_dir, "iexp.spv")
+        self._ilog = os.path.join(shader_dir, "ilog.spv")
+        self._exp2 = os.path.join(shader_dir, "exp2.spv")
+        self._log2 = os.path.join(shader_dir, "log2.spv")
+        self._iexp2 = os.path.join(shader_dir, "iexp2.spv")
+        self._ilog2 = os.path.join(shader_dir, "ilog2.spv")
+        self._sqrt = os.path.join(shader_dir, "sqrt.spv")
+        self._invsqrt = os.path.join(shader_dir, "invsqrt.spv")
+        self._isqrt = os.path.join(shader_dir, "isqrt.spv")
+        self._iinvsqrt = os.path.join(shader_dir, "iinvsqrt.spv")
 
         if data is not None:
             self.shape = np.asarray(data).shape
@@ -476,3 +512,399 @@ class Array:
             self._opVec1(self._isign)
         else:
             return self._opVec2(self._sign)
+
+    def sin(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise sin()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._isin)
+        else:
+            return self._opVec2(self._sin)
+
+    def cos(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise cos()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._icos)
+        else:
+            return self._opVec2(self._cos)
+
+    def tan(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise tan()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._itan)
+        else:
+            return self._opVec2(self._tan)
+
+    def asin(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise asin()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._iasin)
+        else:
+            return self._opVec2(self._asin)
+
+    def acos(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise acos()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._iacos)
+        else:
+            return self._opVec2(self._acos)
+
+    def atan(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise atan()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._iatan)
+        else:
+            return self._opVec2(self._atan)
+
+    def sinh(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise sinh()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._isinh)
+        else:
+            return self._opVec2(self._sinh)
+
+    def cosh(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise cosh()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._icosh)
+        else:
+            return self._opVec2(self._cosh)
+
+    def tanh(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise tanh()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._itanh)
+        else:
+            return self._opVec2(self._tanh)
+
+    def asinh(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise asinh()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._iasinh)
+        else:
+            return self._opVec2(self._asinh)
+
+    def acosh(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise acosh()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._iacosh)
+        else:
+            return self._opVec2(self._acosh)
+
+    def atanh(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise atanh()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._iatanh)
+        else:
+            return self._opVec2(self._atanh)
+
+    def exp(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise exp()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._iexp)
+        else:
+            return self._opVec2(self._exp)
+
+    def log(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise log()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._ilog)
+        else:
+            return self._opVec2(self._log)
+
+    def exp2(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise exp2()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._iexp2)
+        else:
+            return self._opVec2(self._exp2)
+
+    def log2(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise log2()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._ilog2)
+        else:
+            return self._opVec2(self._log2)
+
+    def sqrt(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise sqrt()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._isqrt)
+        else:
+            return self._opVec2(self._sqrt)
+
+    def invsqrt(self, inplace: bool = False) -> Optional[Array]:
+        """
+        Element-wise 1/sqrt()
+
+        Parameters
+        ----------
+        inplace : bool
+            If ``True``, update inplace, otherwise returns new array.
+            Default value is ``False``.
+
+        Returns
+        -------
+        None
+            When ``replace=True``.
+        Array
+            When ``replace=False``.
+        """
+        if inplace:
+            self._opVec1(self._iinvsqrt)
+        else:
+            return self._opVec2(self._invsqrt)
