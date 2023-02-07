@@ -17,7 +17,7 @@ apt update
 apt install -y libvulkan1 libvulkan-dev vulkan-headers shaderc vulkan-validationlayers
 ```
 
-> **Note**
+> **Note**  
 > `vulkan-sdk` cannot be installed because it requires obsolete package `qt5-default`.
 
 
