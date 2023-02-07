@@ -63,6 +63,7 @@ print(c)
 * Bload Cast
   * [ ] ???
 * Pseudo Random Number Generator (PRNG)
+  * [x] xoshiro128++ (`vulkpy.random.Xoshiro128pp(gpu, *, size=None, data=None)`)
   * [ ] pcg32
 * Neural Network
   * [ ] dense, conv, ...

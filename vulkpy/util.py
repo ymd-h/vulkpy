@@ -13,3 +13,16 @@ def enable_debug(*, validation=True, api_dump=True):
 
     if len(layers) > 0:
         os.environ["VK_INSTANCE_LAYERS"] = ":".join(layers)
+
+
+def getShader(name: str):
+    """
+    Get Shader Path
+
+    Parameters
+    ----------
+    name : str
+        SPIR-V (.spv) name
+    """
+    return os.path.join(os.path.dirname(__file__), "shader", name)
+

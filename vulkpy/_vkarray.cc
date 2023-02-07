@@ -8,6 +8,7 @@
 #include <memory>
 #include <string_view>
 #include <vector>
+#include <random>
 
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
@@ -78,6 +79,15 @@ public:
     return this->ptr[i];
   }
 
+  void set(std::size_t i, T v){
+    this->ptr[i] = v;
+  }
+
+  void set(std::size_t i, const std::vector<T>& data){
+    auto m = std::min(this->nSize, data.size()-i) * sizeof(T);
+    memcpy((void*)(this->ptr+i), (void*)data.data(), m);
+  }
+
   T* data() const {
     return this->ptr;
   }
@@ -107,6 +117,11 @@ namespace OpParams {
   struct Empty{};
 
   struct Vector{
+    std::uint32_t size;
+  };
+
+  struct ShiftVector{
+    std::uint32_t shift;
     std::uint32_t size;
   };
 
@@ -428,15 +443,142 @@ public:
 };
 
 
+namespace PRNG {
+  // xoshiro128++
+  // https://prng.di.unimi.it/xoshiro128plusplus.c
+  class Xoshiro128pp {
+  private:
+    const std::uint32_t size;
+    std::shared_ptr<GPU> gpu;
+    std::shared_ptr<Job> job;
+    Buffer<std::uint32_t> state;
+    Op<2, OpParams::ShiftVector> op;
+
+    std::uint64_t splitmix64(std::uint64_t x) const noexcept {
+      // https://prng.di.unimi.it/splitmix64.c
+      std::uint64_t z = (x += 0x9e3779b97f4a7c15);
+      z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+      z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+      return z ^ (z >> 31);
+    }
+
+    void jump(std::uint32_t (&s)[4]) const noexcept {
+      // Equivalent to 2^64 calls of next()
+      constexpr const std::uint32_t JUMP[] = {
+        0x8764000b, 0xf542d2d3, 0x6fa035c3, 0x77f2db5b
+      };
+      constexpr const std::uint32_t one = 1;
+
+      std::uint32_t s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+      for(auto j : JUMP){
+        for(auto b = 0; b < 32; b++){
+          if(j & one << b){
+            s0 ^= s[0];
+            s1 ^= s[1];
+            s2 ^= s[2];
+            s3 ^= s[3];
+          }
+          this->next_on_cpu(s);
+        }
+
+        s[0] = s0;
+        s[1] = s1;
+        s[2] = s2;
+        s[3] = s3;
+      }
+    }
+
+    std::uint32_t rtol(const std::uint32_t x, int k) const noexcept {
+      return (x << k) | (x >> (32 - k));
+    }
+
+    std::uint32_t next_on_cpu(std::uint32_t (&s)[4]) const noexcept {
+      // Only for Initialization
+      const std::uint32_t result = rtol(s[0] + s[3], 7) + s[0];
+      const std::uint32_t t = s[1] << 9;
+
+      s[2] ^= s[0];
+      s[3] ^= s[1];
+      s[1] ^= s[2];
+      s[0] ^= s[3];
+
+      s[2] ^= t;
+      s[3] = this->rtol(s[3], 11);
+
+      return result;
+    }
+  public:
+    Xoshiro128pp(std::shared_ptr<GPU> gpu,
+                 std::string_view spv, std::uint32_t size,
+                 std::uint64_t seed)
+      : size(size),
+        gpu(gpu),
+        job(),
+        state(gpu->createBuffer<std::uint32_t>(4 * size)),
+        op(gpu->createOp<2, OpParams::ShiftVector>(spv, 64, 1, 1))
+    {
+      std::vector<std::uint32_t> state_vec{};
+      state_vec.reserve(4 * this->size);
+
+      std::uint32_t s[4]{};
+
+      // Compute Initial State with SplitMix64
+      for(auto i = 0; i < 4; i++){
+        seed = this->splitmix64(seed);
+        s[i] = (std::uint32_t)seed;
+        state_vec.push_back((std::uint32_t)seed);
+      }
+
+      // Create enough far Starting Points.
+      for(std::uint32_t i = 1, N = this->size; i < N; i++){
+        this->jump(s);
+        state_vec.push_back(s[0]);
+        state_vec.push_back(s[1]);
+        state_vec.push_back(s[2]);
+        state_vec.push_back(s[3]);
+      }
+
+      this->state.set(0, state_vec);
+    }
+    Xoshiro128pp(std::shared_ptr<GPU> gpu,
+                 std::string_view spv, std::uint32_t size)
+      : Xoshiro128pp(gpu, spv, size, std::random_device{}()) {}
+
+    std::shared_ptr<Job> random(std::uint32_t n,
+                                const vk::DescriptorBufferInfo& info){
+      vk::DescriptorBufferInfo b[]{ this->state.info(), info };
+
+      auto sem = std::vector<vk::Semaphore>{};
+      if(this->job){ sem.push_back(job->getSemaphore()); }
+
+      if(n <= this->size){
+        this->job = this->gpu->submit(this->op, b, { n, 1, 1 }, { 0, n }, sem);
+        return this->job;
+      }
+
+      for(std::uint32_t i = 0; i < n; i += this->size){
+        auto local_size = std::min(this->size, (n-i));
+        this->job = this->gpu->submit(this->op, b,
+                                      { local_size, 1, 1 }, { i, local_size }, sem);
+        sem.clear();
+        sem.push_back(this->job->getSemaphore());
+      }
+      return this->job;
+    }
+  };
+} // namespace PRNG
+
+
+
 // Helper Functions
 template<typename Parameters, pybind11::size_t ...I>
 pybind11::object createOp(GPU& m, int n, const Parameters&,
                           std::string_view spv,
                           std::uint32_t x, std::uint32_t y, std::uint32_t z){
   using pybind11::cast;
-  using Tuple = std::tuple<pybind11::size_t, std::function<pybind11::object()>>;
+  using Tuple = std::tuple<int, std::function<pybind11::object()>>;
   auto ops = {
-    Tuple(I, [&](){ return cast(m.createOp<I, Parameters>(spv, x, y, z)); })...
+    Tuple(int(I), [&](){ return cast(m.createOp<I, Parameters>(spv, x, y, z)); })...
   };
 
   for(auto op : ops){
@@ -476,7 +618,6 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<GPU, std::shared_ptr<GPU>>(m, "GPU")
     .def("toBuffer", &GPU::toBuffer<float>, "Copy to GPU Buffer")
     .def("createBuffer", &GPU::createBuffer<float>, "Create GPU Buffer")
-    .def("createUintBuffer", &GPU::createBuffer<std::uint32_t>, "Create GPU Buffer")
     .def("createOp", &createOp<OpParams::Vector, 1, 2, 3, 4>,
          "Create Vector Operation")
     .def("createOp", &createOp<OpParams::VectorScalar<float>, 1, 2, 3>,
@@ -531,21 +672,6 @@ PYBIND11_MODULE(_vkarray, m){
       };
     });
 
-  pybind11::class_<Buffer<std::uint32_t>>(m, "UintBuffer", pybind11::buffer_protocol())
-    .def("info", &Buffer<std::uint32_t>::info, "Get Buffer Info")
-    .def("range", &Buffer<std::uint32_t>::range, "Get Buffer Range")
-    .def("size", &Buffer<std::uint32_t>::size, "Get Buffer Size")
-    .def_buffer([](Buffer<std::uint32_t>& m) {
-      return pybind11::buffer_info {
-        .ptr=m.data(),
-        .itemsize=sizeof(std::uint32_t),
-        .format=pybind11::format_descriptor<std::uint32_t>::format(),
-        .ndim=1,
-        .shape={ m.size() },
-        .strides={ sizeof(std::uint32_t) }
-      };
-    });
-
   pybind11::class_<OpParams::Vector>(m, "VectorParams")
     .def(pybind11::init<std::uint32_t>());
 
@@ -581,4 +707,9 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<vk::DescriptorBufferInfo>(m, "BufferInfo");
   pybind11::class_<vk::MappedMemoryRange>(m, "MemoryRange");
   pybind11::class_<vk::Semaphore>(m, "Semaphore");
+
+  pybind11::class_<PRNG::Xoshiro128pp>(m, "Xoshiro128pp")
+    .def(pybind11::init<std::shared_ptr<GPU>, std::string_view, std::uint32_t, std::uint64_t>())
+    .def(pybind11::init<std::shared_ptr<GPU>, std::string_view, std::uint32_t>())
+    .def("random", &PRNG::Xoshiro128pp::random, "Generate Pseudo Random Numbers");
 }
