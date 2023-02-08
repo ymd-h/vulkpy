@@ -223,7 +223,7 @@ class Array:
             self.shape = np.asarray(data).shape
             self.buffer = self._gpu.gpu.toBuffer(np.ravel(data))
         elif shape is not None:
-            self.shape = np.asarray(shape)
+            self.shape = np.asarray(shape, dtype=int)
             self.buffer = self._gpu.gpu.createBuffer(int(self.shape.prod()))
         else:
             raise ValueError(f"`data` or `shape` must not be `None`.")
