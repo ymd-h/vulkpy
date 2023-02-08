@@ -108,7 +108,7 @@ class GPU:
         arrays : iterable of Array
             Arrays to be flushed
         """
-        self.gpu.flush([a.range() for a in arrays])
+        self.gpu.flush([a.buffer.range() for a in arrays])
 
     def wait(self):
         """
