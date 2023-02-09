@@ -143,6 +143,12 @@ namespace OpParams {
     std::uint32_t contractSize;
     std::uint32_t columnB;
   };
+
+  struct AxisReduction{
+    std::uint32_t prev_prod;
+    std::uint32_t axis_size;
+    std::uint32_t post_prod;
+  };
 }
 
 struct DataShape {
@@ -626,6 +632,8 @@ PYBIND11_MODULE(_vkarray, m){
          "Create Vector-Scalar[2] Operation")
     .def("createOp", &createOp<OpParams::MatMul<float>, 3>,
          "Create Matrix Multiplication Operation")
+    .def("createOp", &createOp<OpParams::AxisReduction, 2>,
+         "Create Axis Reduction Operation")
     .def("submit", &submit<1, OpParams::Vector>, "Submit Vector Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<2, OpParams::Vector>, "Submit Vector Operation",
@@ -651,6 +659,9 @@ PYBIND11_MODULE(_vkarray, m){
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<3, OpParams::MatMul<float>>,
          "Submit Matrix Multiplication Operation",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit", &submit<2, OpParams::AxisReduction>,
+         "Submit Axis Reduction Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait, "Wait all submission")
     .def("flush",
@@ -684,6 +695,9 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<OpParams::MatMul<float>>(m, "MatMulParams")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
+  pybind11::class_<OpParams::AxisReduction>(m, "AxisReductionParams")
+    .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
+
   pybind11::class_<DataShape>(m, "DataShape")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
@@ -697,6 +711,7 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<Op<1, OpParams::VectorMultiScalar<float, 2>>>(m, "OpVec2Scalar1");
   pybind11::class_<Op<2, OpParams::VectorMultiScalar<float, 2>>>(m, "OpVec2Scalar2");
   pybind11::class_<Op<3, OpParams::MatMul<float>>>(m, "OpMatMul");
+  pybind11::class_<Op<2, OpParams::AxisReduction>>(m, "OpAxisReduction");
 
   pybind11::class_<Job, std::shared_ptr<Job>>(m, "Job")
     .def("wait", &Job::wait, "Wait for this Job",
