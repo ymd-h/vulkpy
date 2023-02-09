@@ -51,13 +51,11 @@ class TestRandom(unittest.TestCase):
         self.assertTrue((0 <= np.asarray(a)).all())
         self.assertTrue((np.asarray(a) < 1.0).all())
 
-    @unittest.skip("")
     def test_higher_dimension(self):
         rng = vk.random.Xoshiro128pp(self.gpu)
         a = rng.random(shape=(5, 5, 5))
 
         a.wait()
-        print(a)
         np.testing.assert_allclose(np.asarray(a).shape, (5, 5, 5))
         self.assertTrue((0 <= np.asarray(a)).all())
         self.assertTrue((np.asarray(a) < 1.0).all())
