@@ -266,7 +266,8 @@ public:
   }
 
   vk::SubmitInfo getSubmitInfo(vk::UniqueCommandBuffer& buffer,
-                               const DataShape& shape, const Parameters& params) const {
+                               const DataShape& shape,
+                               const Parameters& params) const {
     buffer->begin(vk::CommandBufferBeginInfo{});
     buffer->bindPipeline(vk::PipelineBindPoint::eCompute, this->pipe.get());
     buffer->bindDescriptorSets(vk::PipelineBindPoint::eCompute,
