@@ -18,6 +18,17 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(c, np.asarray([6, 6, 6]))
 
+    def test_cascade_add(self):
+        a = vk.Array(self.gpu, data=[5, 5, 5])
+        b = vk.Array(self.gpu, data=[1, 1, 1])
+        c = vk.Array(self.gpu, data=[4, 4, 4])
+
+        d = a + b + c
+        d.wait()
+
+        np.testing.assert_allclose(d, np.asarray([10, 10, 10]))
+
+
     def test_sub(self):
         a = vk.Array(self.gpu, data=[4, 4, 4])
         b = vk.Array(self.gpu, data=[2, 2, 2])
