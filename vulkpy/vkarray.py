@@ -14,11 +14,13 @@ __all__ = ["GPU", "Array"]
 Params = Union[_vkarray.VectorParams,
                _vkarray.VectorScalarParams,
                _vkarray.VectorScalar2Params,
-               _vkarray.MatMulParams]
+               _vkarray.MatMulParams,
+               _vkarray.AxisReductionParams]
 Op = Union[_vkarray.OpVec1, _vkarray.OpVec2, _vkarray.OpVec3, _vkarray.OpVec4,
            _vkarray.OpVecScalar1, _vkarray.OpVecScalar2, _vkarray.OpVecScalar3,
            _vkarray.OpVec2Scalar1, _vkarray.OpVec2Scalar2,
-           _vkarray.OpMatMul]
+           _vkarray.OpMatMul,
+           _vkarray.OpAxisReduction]
 
 class GPU:
     def __init__(self, idx: int=0, priority: float=0.0):
@@ -198,6 +200,8 @@ class Array:
     _iclamp_vs = getShader("iclamp_vs.spv")
     _clamp_ss = getShader("clamp_ss.spv")
     _iclamp_ss = getShader("iclamp_ss.spv")
+    _sum = getShader("sum.spv")
+    _sum_axis = getShader("sum_axis.spv")
 
     def __init__(self, gpu: GPU, *, data = None, shape = None):
         """
@@ -1000,3 +1004,66 @@ class Array:
                 self.job = self._opVecScalar(self._iclamp_vs, [self, min], max)
             else:
                 self.job = self._opVec2Scalar(self._iclamp_ss, [self], [min, max])
+
+
+    def _axis_reduction(self, spv, axis):
+        # Ensure axis is flattened decending unique indices set.
+        axis = np.unique(axis, axis=None)[::-1]
+
+        tmp = self
+        # Loop from last axis, to keep previous axis indices.
+        for a in axis:
+            prev_prod = int(np.prod(tmp.shape[:a]))
+            axis_size = int(tmp.shape[a])
+            post_prod = int(np.prod(tmp.shape[a+1:]))
+
+            print(f"shape: {tmp.shape}/axis {a} -> prev_prod: {prev_prod}, axis_size: {axis_size}, post_prod: {post_prod}")
+            ret = Array(self._gpu, shape=np.concatenate((tmp.shape[:a],
+                                                         tmp.shape[a+1:]),
+                                                        axis=0))
+            sem = [] if tmp.job is None else [tmp.job.getSemaphore()]
+            print(tmp)
+            tmp.wait()
+            ret.job = self._gpu._submit(spv, 1, 64, 1,
+                                        [tmp.buffer, ret.buffer],
+                                        _vkarray.DataShape(prev_prod, post_prod, 1),
+                                        _vkarray.AxisReductionParams(prev_prod,
+                                                                     axis_size,
+                                                                     post_prod),
+                                        sem)
+            tmp = ret
+
+        return ret
+
+    def sum(self, axis: Union[int, Iterable[int]]=None):
+        """
+        Summarize
+
+        Parameters
+        ----------
+        axis : int, optional
+            Reduction array
+
+        Returns
+        -------
+        vulkpy.Array
+            Summarized array
+        """
+
+        if axis is None:
+            _local_size = 64
+            n = self.buffer.size()
+            tmp = self
+
+            while True:
+                m = (n // _local_size) + ((n % _local_size) != 0)
+                ret = Array(self._gpu, shape=(m,))
+                ret.job = self._opVec(self._sum, [tmp, ret])
+
+                if m == 1:
+                    return ret
+
+                n = m
+                tmp = ret
+        else:
+            return self._axis_reduction(self._sum_axis, axis)

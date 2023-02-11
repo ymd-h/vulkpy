@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 import vulkpy as vk
+from vulkpy.util import enable_debug
 
 
 class TestBuffer(unittest.TestCase):
@@ -784,5 +785,41 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(a, np.clip(x, _min, _max))
 
+    def test_sum_axis(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+
+        b = a.sum(axis=0)
+        b.wait()
+
+        np.testing.assert_allclose(b, (6, ))
+
+    def test_sum_axis_multi(self):
+        x = np.asarray([[1, 2], [3, 4]])
+        a = vk.Array(self.gpu, data=x)
+
+        b = a.sum(axis=1)
+        b.wait()
+
+        np.testing.assert_allclose(b, x.sum(axis=1))
+
+    def test_sum_axis_multi_axis(self):
+        x = np.ones(shape=(2,3,4,2))
+        a = vk.Array(self.gpu, data=x)
+
+        b = a.sum(axis=(1, 2))
+        b.wait()
+
+        np.testing.assert_allclose(b, x.sum(axis=(1, 2)))
+
+    def test_sum_axis_multi_axis_large(self):
+        x = np.ones(shape=(2,3,4,2,2,4,3))
+        a = vk.Array(self.gpu, data=x)
+
+        b = a.sum(axis=(1, 2, 5))
+        b.wait()
+
+        np.testing.assert_allclose(b, x.sum(axis=(1, 2, 5)))
+
 if __name__ == "__main__":
+    enable_debug(validation=True)
     unittest.main()

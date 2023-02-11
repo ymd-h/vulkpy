@@ -300,6 +300,7 @@ private:
   vk::UniqueFence fence;
   vk::UniqueSemaphore semaphore;
   std::function<vk::Result(std::uint64_t)> w;
+  std::vector<vk::PipelineStageFlags> waitFlags;
 public:
   template<std::uint32_t N, typename Parameters>
   Job(std::shared_ptr<GPU> gpu,
@@ -321,7 +322,15 @@ public:
     this->buffer = std::move(device->allocateCommandBuffersUnique(alloc)[0]);
 
     this->fence = device->createFenceUnique(vk::FenceCreateInfo{});
-    this->semaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+
+    vk::SemaphoreTypeCreateInfo stype{
+      .sType=vk::StructureType::eSemaphoreCreateInfo,
+      .semaphoreType=vk::SemaphoreType::eBinary//eTimeline
+    };
+    this->semaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{
+        .sType=vk::StructureType::eSemaphoreCreateInfo,
+        .pNext=&stype
+      });
 
     this->w = [this, &device](std::uint64_t timeout_ns){
       return device->waitForFences({ this->fence.get() }, VK_TRUE, timeout_ns);
@@ -333,6 +342,9 @@ public:
     if(!wait.empty()){
       submit.waitSemaphoreCount = wait.size();
       submit.pWaitSemaphores = wait.data();
+
+      this->waitFlags.resize(wait.size(), vk::PipelineStageFlagBits::eAllCommands);
+      submit.pWaitDstStageMask = this->waitFlags.data();
     }
     queue.submit(submit, this->fence.get());
   }
