@@ -560,20 +560,17 @@ namespace PRNG {
                                 const vk::DescriptorBufferInfo& info){
       vk::DescriptorBufferInfo b[]{ this->state.info(), info };
 
-      auto sem = std::vector<vk::Semaphore>{};
-      if(this->job){ sem.push_back(job->getSemaphore()); }
-
       if(n <= this->size){
-        this->job = this->gpu->submit(this->op, b, { n, 1, 1 }, { 0, n }, sem);
+        if(this->job){ this->job->wait(); }
+        this->job = this->gpu->submit(this->op, b, { n, 1, 1 }, { 0, n }, {});
         return this->job;
       }
 
       for(std::uint32_t i = 0; i < n; i += this->size){
+        if(this->job){ this->job->wait(); }
         auto local_size = std::min(this->size, (n-i));
         this->job = this->gpu->submit(this->op, b,
-                                      { local_size, 1, 1 }, { i, local_size }, sem);
-        sem.clear();
-        sem.push_back(this->job->getSemaphore());
+                                      { local_size, 1, 1 }, { i, local_size }, {});
       }
       return this->job;
     }
