@@ -236,6 +236,9 @@ class Array:
         self.array.shape = self.shape
         self.job = None
 
+    def __del__(self):
+        self.wait()
+
     def _check_shape(self, other):
         if not np.array_equal(self.shape, other.shape):
             raise ValueError(f"Incompatible shapes: {self.shape} vs {other.shape}")
