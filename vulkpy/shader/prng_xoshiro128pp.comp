@@ -25,11 +25,12 @@ uint rotl(uint x, int k){
 // https://prng.di.unimi.it/xoshiro128plusplus.c
 void main(){
   uint i = gl_GlobalInvocationID.x;
-  if(i+params.shift >= params.size){ return; }
+  uint shifted_i = i+params.shift;
+  if(shifted_i >= params.size){ return; }
   uint j = 4 * i;
 
   uint result = rotl(a[j] + a[j+3], 7) + a[j];
-  b[i+params.shift] = uintBitsToFloat((result >> 9) | 0x3f800000) - 1.0;
+  b[shifted_i] = uintBitsToFloat((result >> 9) | 0x3f800000) - 1.0;
 
   uint t = (a[j+1] << 9);
 
