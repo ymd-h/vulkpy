@@ -61,6 +61,6 @@ class Xoshiro128pp:
             # For safety, we wait output buffer job.
             buffer.wait()
 
-        n = buffer.shape.prod()
+        n = int(np.prod(buffer.shape.prod()))
         buffer.job = self.rng.random(n, buffer.buffer.info())
         return buffer
