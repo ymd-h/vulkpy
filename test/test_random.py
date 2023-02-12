@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 import vulkpy as vk
+from vulkpy.util import enable_debug
 
 
 class TestRandom(unittest.TestCase):
@@ -61,4 +62,5 @@ class TestRandom(unittest.TestCase):
         self.assertTrue((np.asarray(a) < 1.0).all())
 
 if __name__ == "__main__":
+    enable_debug(api_dump=False)
     unittest.main()

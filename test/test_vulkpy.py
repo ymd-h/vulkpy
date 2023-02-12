@@ -821,5 +821,5 @@ class TestBuffer(unittest.TestCase):
         np.testing.assert_allclose(b, x.sum(axis=(1, 2, 5)))
 
 if __name__ == "__main__":
-    enable_debug(validation=True)
+    enable_debug(api_dump=False)
     unittest.main()
