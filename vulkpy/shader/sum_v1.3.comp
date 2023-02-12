@@ -1,9 +1,11 @@
 #version 460
+#extension GL_KHR_shader_subgroup_arithmetic: enable
+
 layout(local_size_x = 64) in;
 
 
 layout(push_constant) uniform constants {
-  uint size[2];
+  uint size;
 } params;
 
 
@@ -17,14 +19,11 @@ layout(std430, binding = 1) writeonly buffer B {
 
 void main(){
   uint i = gl_GlobalInvocationID.x;
-  uint sizeA = params.size[0];
-  uint sizeB = params.size[1];
-  if(i >= sizeB){ return; }
+  if(i >= params.size){ return; }
 
-  float partial_sum = 0.0f;
-  for(uint j = i; j < sizeA; j += sizeB){
-    partial_sum += a[j];
+  float partial_sum = subgroupAdd(a[i]);
+
+  if(subgroupElect()){
+    b[gl_SubgroupID] = partial_sum;
   }
-
-  b[i] = partial_sum;
 }

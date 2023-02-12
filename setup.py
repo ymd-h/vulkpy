@@ -28,7 +28,7 @@ for shader in ["add", "sub", "mul", "div",
                "clamp", "clamp_sv", "clamp_vs", "clamp_ss",
                "iclamp", "iclamp_sv", "iclamp_vs", "iclamp_ss",
                "prng_xoshiro128pp",
-               "sum_axis"]:
+               "sum", "sum_v1.3", "sum_axis"]:
     s = os.path.join(pkg, "shader", shader)
     spv = s+".spv"
     comp = s+".comp"

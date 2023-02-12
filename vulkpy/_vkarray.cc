@@ -120,6 +120,11 @@ namespace OpParams {
     std::uint32_t size;
   };
 
+  template<std::size_t N>
+  struct MultiVector{
+    std::uint32_t size[N];
+  };
+
   struct ShiftVector{
     std::uint32_t shift;
     std::uint32_t size;
