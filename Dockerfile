@@ -7,3 +7,4 @@ RUN --mount=type=cache,target=/var/lib/apt/lists \
     apt update && \
     apt install -y \
     libvulkan1 libvulkan-dev vulkan-headers shaderc vulkan-validationlayers
+RUN --mount=type=cache,target=/root/.cache/pip pip install numpy
