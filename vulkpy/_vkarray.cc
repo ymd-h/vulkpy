@@ -729,5 +729,6 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<PRNG::Xoshiro128pp>(m, "Xoshiro128pp")
     .def(pybind11::init<std::shared_ptr<GPU>, std::string_view, std::uint32_t, std::uint64_t>())
     .def(pybind11::init<std::shared_ptr<GPU>, std::string_view, std::uint32_t>())
-    .def("random", &PRNG::Xoshiro128pp::random, "Generate Pseudo Random Numbers");
+    .def("random", &PRNG::Xoshiro128pp::random, "Generate Pseudo Random Numbers",
+         pybind11::call_guard<pybind11::gil_scoped_release>());
 }
