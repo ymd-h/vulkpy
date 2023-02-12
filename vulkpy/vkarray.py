@@ -71,7 +71,7 @@ class GPU:
                 buffers: Iterable[_vkarray.Buffer],
                 shape: _vkarray.DataShape,
                 params: Params,
-                semaphores: Iterable[_vkarray.Semaphore]) -> _vkarray.Job:
+                jobs: Iterable[_vkarray.Job]) -> _vkarray.Job:
         """
         Submit GPU Operation
 
@@ -87,19 +87,18 @@ class GPU:
             Shape of data
         params : _vkarray.VectorParams, _vkarrayVectorScalarParams
             Parameters
-        semaphores : iterable of _vkarray.Semaphore
+        jobs : iterable of _vkarray.Job
             Depending Semaphores to be waited.
 
         Returns
         -------
-        std::shared_ptr<_vkarray.Job>
+        _vkarray.Job
             Job
         """
         op = self._createOp(spv, len(buffers), params,
                             local_size_x, local_size_y, local_size_z)
         size = buffers[0].size()
-        return self.gpu.submit(op, [b.info() for b in buffers],
-                               shape, params, semaphores)
+        return self.gpu.submit(op, [b.info() for b in buffers], shape, params, jobs)
 
     def flush(self, arrays: Iterable[Array]):
         """
@@ -249,8 +248,7 @@ class Array:
                                  [b.buffer for b in buffers],
                                  _vkarray.DataShape(size, 1, 1),
                                  _vkarray.VectorParams(size),
-                                 [b.job.getSemaphore() for b in buffers
-                                  if b.job is not None])
+                                 [b.job for b in buffers if b.job is not None])
 
     def _opVec3(self, spv, other):
         self._check_shape(other)
@@ -276,8 +274,7 @@ class Array:
                                  [b.buffer for b in buffers],
                                  _vkarray.DataShape(size, 1, 1),
                                  _vkarray.VectorScalarParams(size, scalar),
-                                 [b.job.getSemaphore() for b in buffers
-                                  if b.job is not None])
+                                 [b.job for b in buffers if b.job is not None])
 
     def _opVecScalar2(self, spv, other):
         ret = Array(self._gpu, shape=self.shape)
@@ -293,8 +290,7 @@ class Array:
                                  [b.buffer for b in buffers],
                                  _vkarray.DataShape(size, 1, 1),
                                  _vkarray.VectorScalar2Params(size, *scalars),
-                                 [b.job.getSemaphore() for b in buffers
-                                  if b.job is not None])
+                                 [b.job for b in buffers if b.job is not None])
 
     def __add__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
@@ -379,7 +375,7 @@ class Array:
                                     [self.buffer, other.buffer, ret.buffer],
                                     _vkarray.DataShape(rowA, columnB, 1),
                                     _vkarray.MatMulParams(rowA,contractSize,columnB),
-                                    [b.job.getSemaphore() for b in [self, other]
+                                    [b.job for b in [self, other]
                                      if b.job is not None])
         return ret
 
@@ -1020,20 +1016,17 @@ class Array:
             axis_size = int(tmp.shape[a])
             post_prod = int(np.prod(tmp.shape[a+1:]))
 
-            print(f"shape: {tmp.shape}/axis {a} -> prev_prod: {prev_prod}, axis_size: {axis_size}, post_prod: {post_prod}")
             ret = Array(self._gpu, shape=np.concatenate((tmp.shape[:a],
                                                          tmp.shape[a+1:]),
                                                         axis=0))
-            sem = [] if tmp.job is None else [tmp.job.getSemaphore()]
-            print(tmp)
-            tmp.wait()
+            jobs = [] if tmp.job is None else [tmp.job]
             ret.job = self._gpu._submit(spv, 1, 64, 1,
                                         [tmp.buffer, ret.buffer],
                                         _vkarray.DataShape(prev_prod, post_prod, 1),
                                         _vkarray.AxisReductionParams(prev_prod,
                                                                      axis_size,
                                                                      post_prod),
-                                        sem)
+                                        jobs)
             tmp = ret
 
         return ret

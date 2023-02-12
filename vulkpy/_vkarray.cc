@@ -298,9 +298,7 @@ private:
   vk::UniqueCommandPool pool;
   vk::UniqueCommandBuffer buffer;
   vk::UniqueFence fence;
-  vk::UniqueSemaphore semaphore;
   std::function<vk::Result(std::uint64_t)> w;
-  std::vector<vk::PipelineStageFlags> waitFlags;
 public:
   template<std::uint32_t N, typename Parameters>
   Job(std::shared_ptr<GPU> gpu,
@@ -310,7 +308,7 @@ public:
       const Op<N, Parameters>& op,
       const DataShape& shape,
       const Parameters& params,
-      const std::vector<vk::Semaphore>& wait) : gpu(gpu)
+      const std::vector<std::shared_ptr<Job>>& wait) : gpu(gpu)
   {
     this->pool = device->createCommandPoolUnique(info);
 
@@ -323,22 +321,15 @@ public:
 
     this->fence = device->createFenceUnique(vk::FenceCreateInfo{});
 
-    this->semaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-
     this->w = [this, &device](std::uint64_t timeout_ns){
       return device->waitForFences({ this->fence.get() }, VK_TRUE, timeout_ns);
     };
 
-    auto submit = op.getSubmitInfo(this->buffer, shape, params);
-    submit.signalSemaphoreCount = 1;
-    submit.pSignalSemaphores = &this->semaphore.get();
-    if(!wait.empty()){
-      submit.waitSemaphoreCount = wait.size();
-      submit.pWaitSemaphores = wait.data();
+    // ToDo: Since semaphore is problematic,
+    //       we temporary wait depending job with fence.
+    for(auto& ws: wait){ ws->wait(); }
 
-      this->waitFlags.resize(wait.size(), vk::PipelineStageFlagBits::eAllCommands);
-      submit.pWaitDstStageMask = this->waitFlags.data();
-    }
+    auto submit = op.getSubmitInfo(this->buffer, shape, params);
     queue.submit(submit, this->fence.get());
   }
 
@@ -358,10 +349,6 @@ public:
     default:
       throw std::runtime_error("Error at Command Wait");
     }
-  }
-
-  vk::Semaphore getSemaphore(){
-    return this->semaphore.get();
   }
 };
 
@@ -425,7 +412,7 @@ public:
   std::shared_ptr<Job> submit(const Op<N, Parameters>& op,
                               const vk::DescriptorBufferInfo (&info)[N],
                               const DataShape& shape, const Parameters& params = {},
-                              const std::vector<vk::Semaphore>& wait = {}){
+                              const std::vector<std::shared_ptr<Job>>& wait = {}){
     op.writeDescriptorSet(this->device, info);
 
     return std::shared_ptr<Job>(new Job{
@@ -604,7 +591,7 @@ auto submit(GPU& m,
             const pybind11::list& py_info,
             const DataShape& shape,
             const Parameters& params,
-            const std::vector<vk::Semaphore>& wait){
+            const std::vector<std::shared_ptr<Job>>& wait){
   // Automatic conversion cannot work for `const T(&)[N]`,
   // so that we manually convert from Python's `list`.
 
@@ -719,12 +706,10 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<Job, std::shared_ptr<Job>>(m, "Job")
     .def("wait", &Job::wait, "Wait for this Job",
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("wait", [](Job& m){ m.wait(); }, "Wait for this Job")
-    .def("getSemaphore", &Job::getSemaphore, "Get Semaphore");
+    .def("wait", [](Job& m){ m.wait(); }, "Wait for this Job");
 
   pybind11::class_<vk::DescriptorBufferInfo>(m, "BufferInfo");
   pybind11::class_<vk::MappedMemoryRange>(m, "MemoryRange");
-  pybind11::class_<vk::Semaphore>(m, "Semaphore");
 
   pybind11::class_<PRNG::Xoshiro128pp>(m, "Xoshiro128pp")
     .def(pybind11::init<std::shared_ptr<GPU>, std::string_view, std::uint32_t, std::uint64_t>())
