@@ -323,14 +323,7 @@ public:
 
     this->fence = device->createFenceUnique(vk::FenceCreateInfo{});
 
-    vk::SemaphoreTypeCreateInfo stype{
-      .sType=vk::StructureType::eSemaphoreCreateInfo,
-      .semaphoreType=vk::SemaphoreType::eBinary//eTimeline
-    };
-    this->semaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{
-        .sType=vk::StructureType::eSemaphoreCreateInfo,
-        .pNext=&stype
-      });
+    this->semaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{});
 
     this->w = [this, &device](std::uint64_t timeout_ns){
       return device->waitForFences({ this->fence.get() }, VK_TRUE, timeout_ns);
