@@ -632,6 +632,8 @@ PYBIND11_MODULE(_vkarray, m){
     .def("createBuffer", &GPU::createBuffer<float>, "Create GPU Buffer")
     .def("createOp", &createOp<OpParams::Vector, 1, 2, 3, 4>,
          "Create Vector Operation")
+    .def("createOp", &createOp<OpParams::MultiVector<2>, 2>,
+         "Create MultiVector[2] Operation")
     .def("createOp", &createOp<OpParams::VectorScalar<float>, 1, 2, 3>,
          "Create Vector-Scalar Operation")
     .def("createOp", &createOp<OpParams::VectorMultiScalar<float, 2>, 1, 2>,
@@ -647,6 +649,9 @@ PYBIND11_MODULE(_vkarray, m){
     .def("submit", &submit<3, OpParams::Vector>, "Submit Vector Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<4, OpParams::Vector>, "Submit Vector Operation",
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit", &submit<2, OpParams::MultiVector<2>>,
+         "Submit MultiVector<2> Operation",
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<1, OpParams::VectorScalar<float>>,
          "Submit Vector-Scalar Operation",
@@ -715,6 +720,7 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<Op<2, OpParams::Vector>>(m, "OpVec2");
   pybind11::class_<Op<3, OpParams::Vector>>(m, "OpVec3");
   pybind11::class_<Op<4, OpParams::Vector>>(m, "OpVec4");
+  pybind11::class_<Op<2, OpParams::MultiVector<2>>>(m, "Op2MultiVec2");
   pybind11::class_<Op<1, OpParams::VectorScalar<float>>>(m, "OpVecScalar1");
   pybind11::class_<Op<2, OpParams::VectorScalar<float>>>(m, "OpVecScalar2");
   pybind11::class_<Op<3, OpParams::VectorScalar<float>>>(m, "OpVecScalar3");

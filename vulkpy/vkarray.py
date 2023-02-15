@@ -19,6 +19,7 @@ Params = Union[_vkarray.VectorParams,
                _vkarray.MatMulParams,
                _vkarray.AxisReductionParams]
 Op = Union[_vkarray.OpVec1, _vkarray.OpVec2, _vkarray.OpVec3, _vkarray.OpVec4,
+           _vkarray.Op2MultiVec2,
            _vkarray.OpVecScalar1, _vkarray.OpVecScalar2, _vkarray.OpVecScalar3,
            _vkarray.OpVec2Scalar1, _vkarray.OpVec2Scalar2,
            _vkarray.OpMatMul,
@@ -1060,9 +1061,10 @@ class Array:
                 logger.info("sum w/o SubgroupArithmetic")
                 def f(tmp, ret):
                     b = [tmp.buffer, ret.buffer]
-                    p = _vkarray.MultiVector2Params([bb.size() for bb in b])
+                    p = _vkarray.MultiVector2Params(*[bb.size() for bb in b])
                     return self._gpu._submit(self._sum, _local_size, 1, 1,
-                                             b, _vkarray.DataShape(64,1,1), p)
+                                             b, _vkarray.DataShape(64,1,1), p,
+                                             [tmp.job] if tmp.job else [])
 
             n = self.buffer.size()
             tmp = self
