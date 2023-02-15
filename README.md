@@ -59,7 +59,8 @@ print(c)
   * [x] `sqrt(inplace=False)`, `invsqrt(inplace=False)`
   * [x] `clamp(min, max, inplace=False)`
 * Reduction
-  * [ ] sum, mean, max, min, ...
+  * [x] sum
+  * [ ] mean, max, min, ...
 * Bload Cast
   * [ ] ???
 * Pseudo Random Number Generator (PRNG)
