@@ -60,7 +60,7 @@ print(c)
   * [x] `clamp(min, max, inplace=False)`
 * Reduction
   * [x] sum
-  * [ ] mean, max, min, ...
+  * [ ] mean, max, min, prod, ...
 * Bload Cast
   * [ ] ???
 * Pseudo Random Number Generator (PRNG)
