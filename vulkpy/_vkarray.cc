@@ -446,14 +446,14 @@ public:
   }
 
   bool canSubgroupArithmetic() const {
-    if(this->physical->getProperties().apiVersion < util::VK_API_VERSION(1, 1, 0)){
+    if(this->physical.getProperties().apiVersion < util::VK_API_VERSION(1, 1, 0)){
       return false;
     }
 
     using sub_t = vk::PhysicalDeviceSubgroupProperties;
     constexpr const auto eArithmetic = vk::SubgroupFeatureFlagBits::eArithmetic;
-    auto p = this->physical->getProperties2<vk::PhysicalDeviceProperties2, sub_t>();
-    return (p.get<sub_t>()->supportedOperations & eArithmetic);
+    auto p = this->physical.getProperties2<vk::PhysicalDeviceProperties2, sub_t>();
+    return bool(p.get<sub_t>().supportedOperations & eArithmetic);
   }
 };
 
