@@ -1039,7 +1039,7 @@ class Array:
 
         return ret
 
-    def sum(self, axis: Union[int, Iterable[int]]=None):
+    def sum(self, axis: Union[int, Iterable[int]]=None) -> Array:
         """
         Summarize
 
