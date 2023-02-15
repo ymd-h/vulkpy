@@ -5,6 +5,7 @@ import functools
 from typing import Iterable, Optional, Self, Union
 
 import numpy as np
+import wblog
 
 from .util import getShader
 from . import _vkarray
@@ -21,6 +22,8 @@ Op = Union[_vkarray.OpVec1, _vkarray.OpVec2, _vkarray.OpVec3, _vkarray.OpVec4,
            _vkarray.OpVec2Scalar1, _vkarray.OpVec2Scalar2,
            _vkarray.OpMatMul,
            _vkarray.OpAxisReduction]
+
+logger = wblog.getLogger()
 
 class GPU:
     def __init__(self, idx: int=0, priority: float=0.0):
@@ -1049,8 +1052,10 @@ class Array:
         """
         if axis is None:
             if self._gpu.gpu.canSubgroupArithmetic:
+                logger.info("sum w/ SubgroupArithmetic")
                 spv = self._sum_v1_3
             else:
+                logger.info("sum w/o SubgroupArithmetic")
                 spv = self._sum
 
             _local_size = 64

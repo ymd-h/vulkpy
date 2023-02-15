@@ -1,5 +1,7 @@
 import os
+import logging
 
+import wblog
 
 def enable_debug(*, validation=True, api_dump=True):
     """
@@ -14,6 +16,8 @@ def enable_debug(*, validation=True, api_dump=True):
     if len(layers) > 0:
         os.environ["VK_INSTANCE_LAYERS"] = ":".join(layers)
 
+    wblog.start_logging("vulkpy", level=logging.DEBUG)
+
 
 def getShader(name: str):
     """
@@ -25,4 +29,3 @@ def getShader(name: str):
         SPIR-V (.spv) name
     """
     return os.path.join(os.path.dirname(__file__), "shader", name)
-
