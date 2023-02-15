@@ -1051,7 +1051,7 @@ class Array:
             Summarized array
         """
         if axis is None:
-            if self._gpu.gpu.canSubgroupArithmetic:
+            if self._gpu.canSubgroupArithmetic:
                 logger.info("sum w/ SubgroupArithmetic")
                 spv = self._sum_v1_3
             else:
