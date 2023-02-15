@@ -7,6 +7,12 @@
 #include <vector>
 
 namespace util {
+  constexpr inline std::uint32_t VK_API_VERSION(std::uint32_t major,
+                                                std::uint32_t minor,
+                                                std::uint32_t patch) noexcept {
+    return (major << 22) | (minor << 12) | (patch);
+  }
+
   template<typename F>
   auto generate_from_range(F&& f, std::uint32_t n) {
     auto v = std::vector<std::invoke_result_t<F, std::uint32_t>>{};

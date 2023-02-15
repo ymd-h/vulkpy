@@ -444,6 +444,17 @@ public:
   void wait(){
     this->queue.waitIdle();
   }
+
+  bool canSubgroupArithmetic() const {
+    if(this->physical->getProperties().apiVersion < util::VK_API_VERSION(1, 1, 0)){
+      return false;
+    }
+
+    using sub_t = vk::PhysicalDeviceSubgroupProperties;
+    constexpr const auto eArithmetic = vk::SubgroupFeatureFlagBits::eArithmetic;
+    auto p = this->physical->getProperties2<vk::PhysicalDeviceProperties2, sub_t>();
+    return (p.get<sub_t>()->supportedOperations & eArithmetic);
+  }
 };
 
 
@@ -661,7 +672,8 @@ PYBIND11_MODULE(_vkarray, m){
     .def("wait", &GPU::wait, "Wait all submission")
     .def("flush",
          [](GPU& m, const std::vector<vk::MappedMemoryRange>& range){ m.flush(range); },
-         "Flush Memories to GPU");
+         "Flush Memories to GPU")
+    .def("canSubgroupArithmetic", &GPU::canSubgroupArithmetic);
 
   pybind11::class_<Buffer<float>>(m, "Buffer", pybind11::buffer_protocol())
     .def("info", &Buffer<float>::info, "Get Buffer Info")
