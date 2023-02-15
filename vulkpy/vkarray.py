@@ -13,6 +13,7 @@ from . import _vkarray
 __all__ = ["GPU", "Array"]
 
 Params = Union[_vkarray.VectorParams,
+               _vkarray.MultiVector2Params,
                _vkarray.VectorScalarParams,
                _vkarray.VectorScalar2Params,
                _vkarray.MatMulParams,

@@ -693,6 +693,9 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<OpParams::Vector>(m, "VectorParams")
     .def(pybind11::init<std::uint32_t>());
 
+  pybind11::class_<OpParams::MultiVector<2>>(m, "MultiVector2Params")
+    .def(pybind11::init<std::uint32_t, std::uint32_t>());
+
   pybind11::class_<OpParams::VectorScalar<float>>(m, "VectorScalarParams")
     .def(pybind11::init<std::uint32_t, float>());
 
