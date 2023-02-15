@@ -41,6 +41,7 @@ class GPU:
         """
         self.gpu = _vkarray.createGPU(idx, priority)
         self.canSubgroupArithmetic = self.gpu.canSubgroupArithmetic()
+        logger.info(f"GPU {idx}: Subgroup Arithmetic: {self.canSubgroupArithmetic}")
 
     @functools.cache
     def _createOp(self, spv: str,
@@ -1055,10 +1056,8 @@ class Array:
         if axis is None:
             _local_size = 64
             if self._gpu.canSubgroupArithmetic:
-                logger.info("sum w/ SubgroupArithmetic")
                 f = lambda tmp, ret: self._opVec(self._sum_v1_3, [tmp, ret])
             else:
-                logger.info("sum w/o SubgroupArithmetic")
                 def f(tmp, ret):
                     b = [tmp.buffer, ret.buffer]
                     p = _vkarray.MultiVector2Params(*[bb.size() for bb in b])
