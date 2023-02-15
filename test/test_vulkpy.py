@@ -799,9 +799,9 @@ class TestBuffer(unittest.TestCase):
     def test_sum(self):
         a = vk.Array(self.gpu, data=[1, 2, 3])
         b = a.sum()
-        b.wai()
+        b.wait()
 
-        np.testting.assert_allclose(b, (6,))
+        np.testing.assert_allclose(b, (6,))
 
     def test_sum_large(self):
         a = vk.Array(self.gpu, data=np.ones(shape=(65,)))
