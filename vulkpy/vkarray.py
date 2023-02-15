@@ -1052,21 +1052,25 @@ class Array:
             Summarized array
         """
         if axis is None:
+            _local_size = 64
             if self._gpu.canSubgroupArithmetic:
                 logger.info("sum w/ SubgroupArithmetic")
-                spv = self._sum_v1_3
+                f = lambda tmp, ret: self._opVec(self._sum_v1_3, [tmp, ret])
             else:
                 logger.info("sum w/o SubgroupArithmetic")
-                spv = self._sum
+                def f(tmp, ret):
+                    b = [tmp.buffer, ret.buffer]
+                    p = _vkarray.MultiVector2Params([bb.size() for bb in b])
+                    return self._gpu._submit(self._sum, _local_size, 1, 1,
+                                             b, _vkarray.DataShape(64,1,1), p)
 
-            _local_size = 64
             n = self.buffer.size()
             tmp = self
 
             while True:
                 m = (n // _local_size) + ((n % _local_size) != 0)
                 ret = Array(self._gpu, shape=(m,))
-                ret.job = self._opVec(spv, [tmp, ret])
+                ret.job = f(tmp, ret)
 
                 if m == 1:
                     return ret
