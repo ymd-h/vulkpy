@@ -671,7 +671,7 @@ PYBIND11_MODULE(_vkarray, m){
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait, "Wait all submission")
     .def("flush",
-         [](GPU& m, const std::vector<vk::MappedMemoryRange>& range){ m.flush(range); },
+         [](GPU& m, const std::vector<vk::MappedMemoryRange>& r){ m.flush(r); },
          "Flush Memories to GPU")
     .def("canSubgroupArithmetic", &GPU::canSubgroupArithmetic);
 
