@@ -35,6 +35,7 @@ class GPU:
             GPU priority. Default is ``0.0``.
         """
         self.gpu = _vkarray.createGPU(idx, priority)
+        self.canSubgroupArithmetic = self.gpu.canSubgroupArithmetic()
 
     @functools.cache
     def _createOp(self, spv: str,
@@ -200,6 +201,7 @@ class Array:
     _clamp_ss = getShader("clamp_ss.spv")
     _iclamp_ss = getShader("iclamp_ss.spv")
     _sum = getShader("sum.spv")
+    _sum_v1_3 = getShader("sum_v1.3.spv")
     _sum_axis = getShader("sum_axis.spv")
 
     def __init__(self, gpu: GPU, *, data = None, shape = None):
@@ -1045,8 +1047,12 @@ class Array:
         vulkpy.Array
             Summarized array
         """
-
         if axis is None:
+            if self._gpu.gpu.canSubgroupArithmetic:
+                spv = self._sum_v1_3
+            else:
+                spv = self._sum
+
             _local_size = 64
             n = self.buffer.size()
             tmp = self
@@ -1054,7 +1060,7 @@ class Array:
             while True:
                 m = (n // _local_size) + ((n % _local_size) != 0)
                 ret = Array(self._gpu, shape=(m,))
-                ret.job = self._opVec(self._sum, [tmp, ret])
+                ret.job = self._opVec(spv, [tmp, ret])
 
                 if m == 1:
                     return ret
