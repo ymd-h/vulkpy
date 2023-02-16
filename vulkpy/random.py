@@ -69,7 +69,7 @@ class _ConvertMixin:
                                            [buffer], dshape, p)
         else:
             # Odd: Require additional space for intermediate [0, 1)
-            rng = self.random(shape=floor_n + 1)
+            rng = self.random(shape=2*(floor_n + 1))
             buffer.job = self._gpu._submit(self._box_muller,
                                            _local_size, 1, 1,
                                            [rng, buffer], dshape, p)
