@@ -212,6 +212,12 @@ class Array:
     _prod = getShader("prod.spv")
     _prod_v1_3 = getShader("prod_v1.3.spv")
     _prod_axis = getShader("prod_axis.spv")
+    _maximum = getShader("maximum.spv")
+    _maximum_v1_3 = getShader("maximum_v1.3.spv")
+    _maximum_axis = getShader("maximum_axis.spv")
+    _minimum = getShader("minimum.spv")
+    _minimum_v1_3 = getShader("minimum_v1.3.spv")
+    _minimum_axis = getShader("minimum_axis.spv")
 
     def __init__(self, gpu: GPU, *, data = None, shape = None):
         """
@@ -1102,3 +1108,63 @@ class Array:
             Producted array
         """
         return self._reduce(self._prod, self._prod_v1_3, self._prod_axis, axis)
+
+    def maximum(self, axis: Union[int, Iterable[int]]=None) -> Array:
+        """
+        Get Maximum Value
+
+        Parameters
+        ----------
+        axis : int, optional
+            Reduction array
+
+        Returns
+        -------
+        vulkpy.Array
+            Maximum array
+        """
+        return self._reduce(self._maximum,
+                            self._maximum_v1_3,
+                            self._maximum_axis,
+                            axis)
+
+    def minimum(self, axis: Union[int, Iterable[int]]=None) -> Array:
+        """
+        Get Minimum Value
+
+        Parameters
+        ----------
+        axis : int, optional
+            Reduction array
+
+        Returns
+        -------
+        vulkpy.Array
+            Minimum array
+        """
+        return self._reduce(self._minimum,
+                            self._minimum_v1_3,
+                            self._minimum_axis,
+                            axis)
+
+    def mean(self, axis: Union[int, Iterable[int]]=None) -> Array:
+        """
+        Get Mean Value
+
+        Parameters
+        ----------
+        axis : int, optional
+            Reduction array
+
+        Returns
+        -------
+        vulkpy.Array
+            Mean array
+        """
+        n_before = self.buffer.size()
+
+        ret = self.sum(axis)
+        n_after = ret.size()
+
+        ret *= (n_after/n_before)
+        return ret
