@@ -70,6 +70,15 @@ class TestRandom(unittest.TestCase):
         self.assertTrue((0 <= np.asarray(a)).all())
         self.assertTrue((np.asarray(a) < 1.0).all())
 
+    def test_normal(self):
+        rng1 = vk.random.Xoshiro128pp(self.gpu, seed=0)
+        rng2 = vk.random.Xoshiro128pp(self.gpu, seed=0)
+
+        a1 = rng1.normal(shape=(10,))
+        a2 = rng2.normal(shape=(10,), mean=5, stddev=3)
+
+        np.testing.assert_allclose((a2 - 5) / a1, np.full((10,), 3), rtol=1e-6)
+
 if __name__ == "__main__":
     enable_debug(api_dump=False)
     unittest.main()
