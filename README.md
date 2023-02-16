@@ -58,9 +58,11 @@ print(c)
   * [x] `exp2(inplace=False)`, `log2(inplace=False)`
   * [x] `sqrt(inplace=False)`, `invsqrt(inplace=False)`
   * [x] `clamp(min, max, inplace=False)`
-* Reduction
-  * [x] sum
-  * [ ] mean, max, min, prod, ...
+* Reduction as `Array`'s member function
+  * [x] `sum(axis=None)`, `prod(axis=None)`
+  * [x] `maximum(axis=None)`, `minimum(axis=None)`
+  * [x] `mean(axis=None)`
+  * [ ] ...
 * Bload Cast
   * [ ] ???
 * Pseudo Random Number Generator (PRNG)
