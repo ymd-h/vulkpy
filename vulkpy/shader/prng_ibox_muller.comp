@@ -19,9 +19,9 @@ void main(){
   const uint k = j + 1;
   if(j >= params.size){ return; }
 
-  const float r = sqrt(-2 * log(1.0 - a[j])) * scalar[1];
+  const float r = sqrt(-2 * log(1.0 - a[j])) * params.scalar[1];
   const float angle = 6.28318530718f * a[k];
 
-  a[j] = scalar[0] + r * sin(angle);
-  a[k] = scalar[0] + r * cos(angle);
+  a[j] = params.scalar[0] + r * sin(angle);
+  a[k] = params.scalar[0] + r * cos(angle);
 }
