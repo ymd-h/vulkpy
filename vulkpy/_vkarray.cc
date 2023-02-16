@@ -8,6 +8,7 @@
 #include <memory>
 #include <string_view>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 #include <random>
 
@@ -298,6 +299,9 @@ public:
   }
 };
 
+template<std::uint32_t N, typename Parameter>
+using Op_t = std::shared_ptr<Op<N, Parameter>>;
+
 class Job {
 private:
   std::shared_ptr<GPU> gpu;
@@ -306,14 +310,15 @@ private:
   vk::UniqueFence fence;
   std::function<vk::Result(std::uint64_t)> w;
 public:
-  template<std::uint32_t N, typename Parameters>
+  template<std::uint32_t N, typename Parameter>
   Job(std::shared_ptr<GPU> gpu,
       vk::UniqueDevice& device,
       vk::CommandPoolCreateInfo info,
       vk::Queue& queue,
-      std::shared_ptr<Op<N, Parameters>> op,
+      Op_t<N, Parameter> op,
+      const vk::DescriptorBufferInfo (&infos)[N],
       const DataShape& shape,
-      const Parameters& params,
+      const Parameter& params,
       const std::vector<std::shared_ptr<Job>>& wait) : gpu(gpu)
   {
     this->pool = device->createCommandPoolUnique(info);
@@ -335,6 +340,7 @@ public:
     //       we temporary wait depending job with fence.
     for(auto& ws: wait){ ws->wait(); }
 
+    op->writeDescriptorSet(device, infos);
     auto submit = op->getSubmitInfo(this->buffer, shape, params);
     queue.submit(submit, this->fence.get());
   }
@@ -358,6 +364,21 @@ public:
   }
 };
 
+using OpVariant_t = std::variant<
+  Op_t<1, OpParams::Vector>,
+  Op_t<2, OpParams::Vector>,
+  Op_t<3, OpParams::Vector>,
+  Op_t<4, OpParams::Vector>,
+  Op_t<2, OpParams::MultiVector<2>>,
+  Op_t<1, OpParams::VectorScalar<float>>,
+  Op_t<2, OpParams::VectorScalar<float>>,
+  Op_t<3, OpParams::VectorScalar<float>>,
+  Op_t<1, OpParams::VectorMultiScalar<float, 2>>,
+  Op_t<2, OpParams::VectorMultiScalar<float, 2>>,
+  Op_t<3, OpParams::MatMul<float>>,
+  Op_t<2, OpParams::AxisReduction>,
+  Op_t<2, OpParams::ShiftVector>
+  >;
 
 class GPU : public std::enable_shared_from_this<GPU> {
 private:
@@ -369,7 +390,7 @@ private:
   vk::DeviceCreateInfo deviceInfo;
   vk::UniqueDevice device;
   vk::Queue queue;
-  std::unordered_map<std::string_view, std::shared_ptr<Op>> opMap;
+  std::unordered_map<std::string_view, OpVariant_t> opMap;
 public:
   GPU(std::size_t id, float priority = 0.0f): priority(priority) {
     this->instance = vk::createInstanceUnique(vk::InstanceCreateInfo{});
@@ -409,21 +430,19 @@ public:
                      this->device, this->physical.getMemoryProperties(), n);
   }
 
-  template<std::uint32_t N, typename Parameters>
+  template<std::uint32_t N, typename Parameter>
   std::shared_ptr<Job> submit(std::string_view spv,
                               std::uint32_t x, std::uint32_t y, std::uint32_t z,
                               const vk::DescriptorBufferInfo (&info)[N],
-                              const DataShape& shape, const Parameters& params = {},
+                              const DataShape& shape, const Parameter& params = {},
                               const std::vector<std::shared_ptr<Job>>& wait = {}){
     if(!this->opMap.contains(spv)){
-      this->opMap.insert(std::shared_ptr(new Op<N, Parameters>{
+      this->opMap.emplace(spv, Op_t<N, Parameter>(new Op<N, Parameter>{
             this->shared_from_this(),
             this->device, spv, x, y, z
           }));
     }
-    auto op = this->opMap[spv];
-    op->writeDescriptorSet(this->device, info);
-
+    auto op = std::get<Op_t<N, Parameter>>(this->opMap[spv]);
     return std::shared_ptr<Job>(new Job{
         this->shared_from_this(),
         this->device,
@@ -431,7 +450,7 @@ public:
           .flags=vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
           .queueFamilyIndex=this->queueFamilyIndex
         },
-        this->queue, op, shape, params, wait
+        this->queue, op, info, shape, params, wait
       });
   }
 
@@ -471,7 +490,7 @@ namespace PRNG {
     std::shared_ptr<GPU> gpu;
     std::shared_ptr<Job> job;
     Buffer<std::uint32_t> state;
-    Op<2, OpParams::ShiftVector> op;
+    std::string_view spv;
 
     std::uint64_t splitmix64(std::uint64_t x) const noexcept {
       // https://prng.di.unimi.it/splitmix64.c
@@ -534,7 +553,7 @@ namespace PRNG {
         gpu(gpu),
         job(),
         state(gpu->createBuffer<std::uint32_t>(4 * size)),
-        op(gpu->createOp<2, OpParams::ShiftVector>(spv, 64, 1, 1))
+        spv(spv)
     {
       std::vector<std::uint32_t> state_vec{};
       state_vec.reserve(4 * this->size);
@@ -566,18 +585,21 @@ namespace PRNG {
     std::shared_ptr<Job> random(std::uint32_t n,
                                 const vk::DescriptorBufferInfo& info){
       vk::DescriptorBufferInfo b[]{ this->state.info(), info };
+      auto f = [this, &b](std::uint32_t i, std::uint32_t n){
+        return this->gpu->submit<2>(this->spv, 64, 1, 1, b, {n, 1, 1},
+                                    OpParams::ShiftVector{i, n}, {});
+      };
 
       if(n <= this->size){
         if(this->job){ this->job->wait(); }
-        this->job = this->gpu->submit(this->op, b, { n, 1, 1 }, { 0, n }, {});
+        this->job = f(0, n);
         return this->job;
       }
 
       for(std::uint32_t i = 0; i < n; i += this->size){
         if(this->job){ this->job->wait(); }
         auto local_size = std::min(this->size, (n-i));
-        this->job = this->gpu->submit(this->op, b,
-                                      { local_size, 1, 1 }, { i, local_size }, {});
+        this->job = f(i, local_size);
       }
       return this->job;
     }
@@ -587,16 +609,16 @@ namespace PRNG {
 
 
 // Helper Functions
-template<typename Parameters, pybind11::size_t ...I>
-auto submit(GPU& m, const Parameters&,
+template<typename Parameter, pybind11::size_t ...I>
+auto submit(GPU& m,
             std::string_view spv,
             std::uint32_t x, std::uint32_t y, std::uint32_t z,
             const pybind11::list& py_info,
             const DataShape& shape,
-            const Parameters& params,
+            const Parameter& params,
             const std::vector<std::shared_ptr<Job>>& wait){
   using F = std::function<std::shared_ptr<Job>()>;
-  using Tuple = std::tuple<std::uint32_t, F>>;
+  using Tuple = std::tuple<std::uint32_t, F>;
   using B = vk::DescriptorBufferInfo;
 
   auto ops = {
@@ -604,7 +626,7 @@ auto submit(GPU& m, const Parameters&,
     // so that we manually convert from Python's `list`.
     Tuple(std::uint32_t(I), [&](){
       return util::pylist2array<B>([&](const B (&info)[I]){
-        return m.submit<I, Parameters>(spv, x, y, z, info, shape, params, wait);
+        return m.submit<I, Parameter>(spv, x, y, z, info, shape, params, wait);
       }, py_info, std::make_index_sequence<I>());
     })...
   };
