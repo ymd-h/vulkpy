@@ -32,15 +32,17 @@ for shader in ["add", "sub", "mul", "div",
                "prod", ("prod_v1.3", "--target-env=vulkan1.1"), "prod_axis"]:
     if isinstance(shader, tuple):
         shader, flag = shader
+        flag = (flag,)
     else:
-        shader, flag = shader, ""
+        shader = shader
+        flag = tuple()
     s = os.path.join(pkg, "shader", shader)
     spv = s+".spv"
     comp = s+".comp"
 
     if ((not os.path.exists(spv)) or
         (os.path.exists(comp) and (os.stat(comp).st_mtime > os.stat(spv).st_mtime))):
-        cmd = subprocess.run(["glslc", flag, "-o", spv, comp],
+        cmd = subprocess.run(["glslc", *flag, "-o", spv, comp],
                              capture_output=True, text=True)
         if cmd.stdout:
             print(cmd.stdout)
