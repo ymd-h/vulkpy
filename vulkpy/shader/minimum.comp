@@ -1,11 +1,9 @@
 #version 460
-#extension GL_KHR_shader_subgroup_arithmetic: enable
-
 layout(local_size_x = 64) in;
 
 
 layout(push_constant) uniform constants {
-  uint size;
+  uint size[2];
 } params;
 
 
@@ -19,11 +17,14 @@ layout(std430, binding = 1) writeonly buffer B {
 
 void main(){
   uint i = gl_GlobalInvocationID.x;
-  if(i >= params.size){ return; }
+  uint sizeA = params.size[0];
+  uint sizeB = params.size[1];
+  if(i >= sizeB){ return; }
 
-  float partial_min = subgroupMin(a[i]);
-
-  if(subgroupElect()){
-    b[gl_SubgroupID] = partial_min;
+  float partial_min = a[i];
+  for(uint j = i; j < sizeA; j += sizeB){
+    partial_min = min(partial_min, a[j]);
   }
+
+  b[i] = partial_min;
 }
