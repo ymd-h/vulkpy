@@ -1039,29 +1039,16 @@ class Array:
 
         return ret
 
-    def sum(self, axis: Union[int, Iterable[int]]=None) -> Array:
-        """
-        Summarize
-
-        Parameters
-        ----------
-        axis : int, optional
-            Reduction array
-
-        Returns
-        -------
-        vulkpy.Array
-            Summarized array
-        """
+    def _reduce(self, spv, spv_v1_3, spv_axis, axis):
         if axis is None:
             _local_size = 64
             if self._gpu.canSubgroupArithmetic:
-                f = lambda tmp, ret: self._opVec(self._sum_v1_3, [tmp, ret])
+                f = lambda tmp, ret: self._opVec(spv_v1_3, [tmp, ret])
             else:
                 def f(tmp, ret):
                     b = [tmp.buffer, ret.buffer]
                     p = _vkarray.MultiVector2Params(*[bb.size() for bb in b])
-                    return self._gpu._submit(self._sum, _local_size, 1, 1,
+                    return self._gpu._submit(spv, _local_size, 1, 1,
                                              b, _vkarray.DataShape(64,1,1), p,
                                              [tmp.job] if tmp.job else [])
 
@@ -1079,4 +1066,20 @@ class Array:
                 n = m
                 tmp = ret
         else:
-            return self._axis_reduction(self._sum_axis, axis)
+            return self._axis_reduction(spv_axis, axis)
+
+    def sum(self, axis: Union[int, Iterable[int]]=None) -> Array:
+        """
+        Summarize
+
+        Parameters
+        ----------
+        axis : int, optional
+            Reduction array
+
+        Returns
+        -------
+        vulkpy.Array
+            Summarized array
+        """
+        return self._reduce(self._sum, self._sum_v1_3, self._sum_axis, axis)
