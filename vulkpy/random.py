@@ -60,17 +60,16 @@ class _ConvertMixin:
         n = int(np.prod(buffer.shape))
         floor_n = n // 2
         dshape = _vkarray.DataShape(floor_n, 1, 1)
+        p = _vkarray.VectorScalar2Params(n, mean, stddev)
         if n % 2 == 0:
             # Even: Reuse `buffer`
             buffer = self.random(buffer=buffer)
-            p = _vkarray.VectorScalar2Params(floor_n, mean, stddev)
             buffer.job = self._gpu._submit(self._ibox_muller,
                                            _local_size, 1, 1,
                                            [buffer], dshape, p)
         else:
             # Odd: Require additional space for intermediate [0, 1)
             rng = self.random(shape=floor_n + 1)
-            p = _vkarray.VectorScalar2Params(floor_n+1, mean, float)
             buffer.job = self._gpu._submit(self._box_muller,
                                            _local_size, 1, 1,
                                            [rng, buffer], dshape, p)
