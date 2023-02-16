@@ -845,6 +845,55 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(b, x.sum(axis=(1, 2, 5)))
 
+    def test_prod(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        b = a.prod()
+        b.wait()
+
+        np.testing.assert_allclose(b, (6,))
+
+    def test_prod_large(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(65,)))
+        b = a.prod()
+        b.wait()
+
+        np.testing.assert_allclose(b, (1,))
+
+    def test_prod_axis(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+
+        b = a.prod(axis=0)
+        b.wait()
+
+        np.testing.assert_allclose(b, (6, ))
+
+    def test_prod_axis_multi(self):
+        x = np.asarray([[1, 2], [3, 4]])
+        a = vk.Array(self.gpu, data=x)
+
+        b = a.prod(axis=1)
+        b.wait()
+
+        np.testing.assert_allclose(b, x.prod(axis=1))
+
+    def test_prod_axis_multi_axis(self):
+        x = np.ones(shape=(2,3,4,2))
+        a = vk.Array(self.gpu, data=x)
+
+        b = a.prod(axis=(1, 2))
+        b.wait()
+
+        np.testing.assert_allclose(b, x.prod(axis=(1, 2)))
+
+    def test_prod_axis_multi_axis_large(self):
+        x = np.ones(shape=(2,3,4,2,2,4,3))
+        a = vk.Array(self.gpu, data=x)
+
+        b = a.prod(axis=(1, 2, 5))
+        b.wait()
+
+        np.testing.assert_allclose(b, x.prod(axis=(1, 2, 5)))
+
 if __name__ == "__main__":
     enable_debug(api_dump=False)
     unittest.main()

@@ -209,6 +209,9 @@ class Array:
     _sum = getShader("sum.spv")
     _sum_v1_3 = getShader("sum_v1.3.spv")
     _sum_axis = getShader("sum_axis.spv")
+    _prod = getShader("prod.spv")
+    _prod_v1_3 = getShader("prod_v1.3.spv")
+    _prod_axis = getShader("prod_axis.spv")
 
     def __init__(self, gpu: GPU, *, data = None, shape = None):
         """
@@ -1083,3 +1086,19 @@ class Array:
             Summarized array
         """
         return self._reduce(self._sum, self._sum_v1_3, self._sum_axis, axis)
+
+    def prod(self, axis: Union[int, Iterable[int]]=None) -> Array:
+        """
+        Product
+
+        Parameters
+        ----------
+        axis : int, optional
+            Reduction array
+
+        Returns
+        -------
+        vulkpy.Array
+            Producted array
+        """
+        return self._reduce(self._prod, self._prod_v1_3, self._prod_axis, axis)
