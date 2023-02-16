@@ -67,8 +67,9 @@ print(c)
   * [ ] ???
 * Pseudo Random Number Generator (PRNG)
   * [x] xoshiro128++ (`vulkpy.random.Xoshiro128pp(gpu, *, size=None, data=None)`)
+    * `[0, 1)` uniform (`.random(shape=None, buffer=None)`)
+    * Gaussian with Box-Muller (`.normal(shape=None, buffer=None, mean=0.0, stddev=1.0)`)
   * [ ] pcg32
-  * [ ] Conversion from uniform to normal
 * Neural Network
   * [ ] dense, conv, ...
   * [ ] sgd, adam, ...
