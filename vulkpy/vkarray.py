@@ -1164,7 +1164,7 @@ class Array:
         n_before = self.buffer.size()
 
         ret = self.sum(axis)
-        n_after = ret.size()
+        n_after = ret.buffer.size()
 
         ret *= (n_after/n_before)
         return ret
