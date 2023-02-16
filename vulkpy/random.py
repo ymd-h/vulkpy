@@ -13,6 +13,8 @@ __all__ = ["Xoshiro128pp"]
 
 class Xoshiro128pp:
     _spv = getShader("prng_xoshiro128pp.spv")
+    _box_muller = getShader("prng_box_muller.spv")
+    _ibox_muller = getShader("prng_ibox_muller.spv")
 
     def __init__(self, gpu: vk.GPU, size: int = 64, *, seed: Optional[int] = None):
         """
@@ -63,4 +65,67 @@ class Xoshiro128pp:
 
         n = int(np.prod(buffer.shape.prod()))
         buffer.job = self.rng.random(n, buffer.buffer.info())
+        return buffer
+
+    def normal(self, *,
+               shape: Optional[Iterable[int]] = None,
+               buffer: Optional[vk.Array] = None,
+               mean: float = 0.0,
+               stddev: float = 1.0) -> vk.Array:
+        """
+        Generate Normal Distributing numbers
+
+        Parameters
+        ----------
+        shape : iterable of ints, optional
+            If specified, new ``vulkpy.Array`` with ``shape`` will be returned.
+        buffer : vulkpy.Array
+            If specified, generated numbers will be stored.
+
+        Returns
+        -------
+        vulkpy.Array
+            Array which will get random numbers.
+
+        Raises
+        ------
+        ValueError
+            If neither `shape` or `buffer` are specified
+
+        Notes
+        -----
+        This method first generates [0, 1) uniform random numbers,
+        then transforms them to normal distribution with Box-Muller method.
+        Box-Muller might have problem in terms of random number quality,
+        however, it is quite GPU friendly.
+        """
+        _local_size = 64
+        if buffer is None:
+            if shape is None:
+                raise ValueError("One of `shape` and  `buffer` must be specified.")
+
+            buffer = vk.Array(self._gpu, shape=shape)
+        else:
+            # For safety, we wait output buffer job.
+            buffer.wait()
+
+        n = int(np.prod(buffer.shape))
+        floor_n = n // 2
+        dshape = _vkarray.DataShape(floor_n, 1, 1)
+        if n % 2 == 0:
+            # Even: Reuse `buffer`
+            buffer = self.random(buffer=buffer)
+            p = _vkarray.VectorScalar2Params(floor_n, mean, float)
+            buffer.job = self._gpu._submit(self._ibox_muller,
+                                           _local_size, 1, 1,
+                                           [buffer.buffer], dshape, p, [buffer.job])
+        else:
+            # Odd: Require additional space for intermediate [0, 1)
+            rng = self.random(shape=floor_n + 1)
+            p = _vkarray.VectorScalar2Params(floor_n+1, mean, float)
+            buffer.job = self._gpu._submit(self._box_muller,
+                                           _local_size, 1, 1,
+                                           [rng.buffer, buffer.buffer],
+                                           dshape, p, [rng.job])
+
         return buffer
