@@ -104,7 +104,6 @@ class GPU:
         """
         op = self._createOp(spv, len(buffers), params,
                             local_size_x, local_size_y, local_size_z)
-        size = buffers[0].size()
         return self.gpu.submit(op, [b.info() for b in buffers], shape, params, jobs)
 
     def flush(self, arrays: Iterable[Array]):
