@@ -1084,7 +1084,7 @@ class Array:
         Parameters
         ----------
         axis : int, optional
-            Reduction array
+            Reduction axis
 
         Returns
         -------
@@ -1100,7 +1100,7 @@ class Array:
         Parameters
         ----------
         axis : int, optional
-            Reduction array
+            Reduction axis
 
         Returns
         -------
@@ -1116,7 +1116,7 @@ class Array:
         Parameters
         ----------
         axis : int, optional
-            Reduction array
+            Reduction axis
 
         Returns
         -------
@@ -1135,7 +1135,7 @@ class Array:
         Parameters
         ----------
         axis : int, optional
-            Reduction array
+            Reduction axis
 
         Returns
         -------
@@ -1154,7 +1154,7 @@ class Array:
         Parameters
         ----------
         axis : int, optional
-            Reduction array
+            Reduction axis
 
         Returns
         -------
