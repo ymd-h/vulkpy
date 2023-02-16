@@ -63,7 +63,7 @@ class _ConvertMixin:
         if n % 2 == 0:
             # Even: Reuse `buffer`
             buffer = self.random(buffer=buffer)
-            p = _vkarray.VectorScalar2Params(floor_n, mean, float)
+            p = _vkarray.VectorScalar2Params(floor_n, mean, stddev)
             buffer.job = self._gpu._submit(self._ibox_muller,
                                            _local_size, 1, 1,
                                            [buffer], dshape, p)
