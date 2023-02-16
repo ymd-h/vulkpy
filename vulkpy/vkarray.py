@@ -75,10 +75,9 @@ class GPU:
     def _submit(self,
                 spv: str,
                 local_size_x: int, local_size_y: int, local_size_z: int,
-                buffers: Iterable[_vkarray.Buffer],
+                arrays: Iterable[Array],
                 shape: _vkarray.DataShape,
-                params: Params,
-                jobs: Iterable[_vkarray.Job]) -> _vkarray.Job:
+                params: Params) -> _vkarray.Job:
         """
         Submit GPU Operation
 
@@ -88,23 +87,23 @@ class GPU:
             Compute Shader file name of SPIR-V (.spv)
         local_size_x, local_size_y, local_size_z : int
             Subgroup size of compute shader
-        buffers : iterable of _vkarray.Buffer
-            Buffers to be submitted.
+        arrays : iterable of vulkpy.Array
+            Arrays to be used
         shape : _vkarray.DataShape
             Shape of data
         params : _vkarray.VectorParams, _vkarrayVectorScalarParams
             Parameters
-        jobs : iterable of _vkarray.Job
-            Depending Semaphores to be waited.
 
         Returns
         -------
         _vkarray.Job
             Job
         """
-        op = self._createOp(spv, len(buffers), params,
+        op = self._createOp(spv, len(arrays), params,
                             local_size_x, local_size_y, local_size_z)
-        return self.gpu.submit(op, [b.info() for b in buffers], shape, params, jobs)
+        infos = [a.buffer.info() for a in arrays]
+        jobs = [a.job for a in arrays if a.job is not None]
+        return self.gpu.submit(op, infos, shape, params, jobs)
 
     def flush(self, arrays: Iterable[Array]):
         """
@@ -258,13 +257,12 @@ class Array:
         if not np.array_equal(self.shape, other.shape):
             raise ValueError(f"Incompatible shapes: {self.shape} vs {other.shape}")
 
-    def _opVec(self, spv, buffers):
+    def _opVec(self, spv, arrays):
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
-                                 [b.buffer for b in buffers],
+                                 arrays,
                                  _vkarray.DataShape(size, 1, 1),
-                                 _vkarray.VectorParams(size),
-                                 [b.job for b in buffers if b.job is not None])
+                                 _vkarray.VectorParams(size))
 
     def _opVec3(self, spv, other):
         self._check_shape(other)
@@ -284,13 +282,12 @@ class Array:
     def _opVec1(self, spv):
         self.job = self._opVec(spv, [self])
 
-    def _opVecScalar(self, spv, buffers, scalar):
+    def _opVecScalar(self, spv, arrays, scalar):
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
-                                 [b.buffer for b in buffers],
+                                 arrays,
                                  _vkarray.DataShape(size, 1, 1),
-                                 _vkarray.VectorScalarParams(size, scalar),
-                                 [b.job for b in buffers if b.job is not None])
+                                 _vkarray.VectorScalarParams(size, scalar))
 
     def _opVecScalar2(self, spv, other):
         ret = Array(self._gpu, shape=self.shape)
@@ -300,13 +297,12 @@ class Array:
     def _opVecScalar1(self, spv, other):
         self.job = self._opVecScalar(spv, [self], other)
 
-    def _opVec2Scalar(self, spv, buffers, scalars):
+    def _opVec2Scalar(self, spv, arrays, scalars):
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
-                                 [b.buffer for b in buffers],
+                                 arrays,
                                  _vkarray.DataShape(size, 1, 1),
-                                 _vkarray.VectorScalar2Params(size, *scalars),
-                                 [b.job for b in buffers if b.job is not None])
+                                 _vkarray.VectorScalar2Params(size, *scalars))
 
     def __add__(self, other: Union[Self, float]) -> Array:
         if isinstance(other, Array):
@@ -388,11 +384,9 @@ class Array:
 
         ret = Array(self._gpu, shape=shape)
         ret.job = self._gpu._submit(self._matmul, 1, 64, 1,
-                                    [self.buffer, other.buffer, ret.buffer],
+                                    [self, other, ret],
                                     _vkarray.DataShape(rowA, columnB, 1),
-                                    _vkarray.MatMulParams(rowA,contractSize,columnB),
-                                    [b.job for b in [self, other]
-                                     if b.job is not None])
+                                    _vkarray.MatMulParams(rowA,contractSize,columnB))
         return ret
 
     def wait(self):
@@ -1035,14 +1029,12 @@ class Array:
             ret = Array(self._gpu, shape=np.concatenate((tmp.shape[:a],
                                                          tmp.shape[a+1:]),
                                                         axis=0))
-            jobs = [] if tmp.job is None else [tmp.job]
             ret.job = self._gpu._submit(spv, 1, 64, 1,
-                                        [tmp.buffer, ret.buffer],
+                                        [tmp, ret],
                                         _vkarray.DataShape(prev_prod, post_prod, 1),
                                         _vkarray.AxisReductionParams(prev_prod,
                                                                      axis_size,
-                                                                     post_prod),
-                                        jobs)
+                                                                     post_prod))
             tmp = ret
 
         return ret
@@ -1054,11 +1046,10 @@ class Array:
                 f = lambda tmp, ret: self._opVec(spv_v1_3, [tmp, ret])
             else:
                 def f(tmp, ret):
-                    b = [tmp.buffer, ret.buffer]
-                    p = _vkarray.MultiVector2Params(*[bb.size() for bb in b])
+                    b = [tmp, ret]
+                    p = _vkarray.MultiVector2Params(*[bb.buffer.size() for bb in b])
                     return self._gpu._submit(spv, _local_size, 1, 1,
-                                             b, _vkarray.DataShape(64,1,1), p,
-                                             [tmp.job] if tmp.job else [])
+                                             b, _vkarray.DataShape(64,1,1), p)
 
             n = self.buffer.size()
             tmp = self
