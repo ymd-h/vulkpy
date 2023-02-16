@@ -21,10 +21,10 @@ void main(){
   uint sizeB = params.size[1];
   if(i >= sizeB){ return; }
 
-  float partial_min = a[i];
+  float partial_max = a[i];
   for(uint j = i; j < sizeA; j += sizeB){
-    partial_min = min(partial_min, a[j]);
+    partial_max = max(partial_max, a[j]);
   }
 
-  b[i] = partial_min;
+  b[i] = partial_max;
 }
