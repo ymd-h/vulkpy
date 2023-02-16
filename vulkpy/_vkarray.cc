@@ -7,6 +7,7 @@
 #include <limits>
 #include <memory>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 #include <random>
 
@@ -161,7 +162,7 @@ struct DataShape {
 };
 
 template <std::uint32_t N, typename Parameters = OpParams::Empty>
-class Op {
+class Op : std::enable_shared_from_this<Op<N, Parameters>> {
 private:
   std::uint32_t x, y, z;
   std::shared_ptr<GPU> gpu;
@@ -310,7 +311,7 @@ public:
       vk::UniqueDevice& device,
       vk::CommandPoolCreateInfo info,
       vk::Queue& queue,
-      const Op<N, Parameters>& op,
+      std::shared_ptr<Op<N, Parameters>> op,
       const DataShape& shape,
       const Parameters& params,
       const std::vector<std::shared_ptr<Job>>& wait) : gpu(gpu)
@@ -334,7 +335,7 @@ public:
     //       we temporary wait depending job with fence.
     for(auto& ws: wait){ ws->wait(); }
 
-    auto submit = op.getSubmitInfo(this->buffer, shape, params);
+    auto submit = op->getSubmitInfo(this->buffer, shape, params);
     queue.submit(submit, this->fence.get());
   }
 
@@ -368,6 +369,7 @@ private:
   vk::DeviceCreateInfo deviceInfo;
   vk::UniqueDevice device;
   vk::Queue queue;
+  std::unordered_map<std::string_view, std::shared_ptr<Op>> opMap;
 public:
   GPU(std::size_t id, float priority = 0.0f): priority(priority) {
     this->instance = vk::createInstanceUnique(vk::InstanceCreateInfo{});
@@ -408,17 +410,19 @@ public:
   }
 
   template<std::uint32_t N, typename Parameters>
-  Op<N, Parameters> createOp(std::string_view spv,
-                             std::uint32_t x, std::uint32_t y, std::uint32_t z){
-    return Op<N, Parameters>{this->shared_from_this(), this->device, spv, x, y, z};
-  }
-
-  template<std::uint32_t N, typename Parameters>
-  std::shared_ptr<Job> submit(const Op<N, Parameters>& op,
+  std::shared_ptr<Job> submit(std::string_view spv,
+                              std::uint32_t x, std::uint32_t y, std::uint32_t z,
                               const vk::DescriptorBufferInfo (&info)[N],
                               const DataShape& shape, const Parameters& params = {},
                               const std::vector<std::shared_ptr<Job>>& wait = {}){
-    op.writeDescriptorSet(this->device, info);
+    if(!this->opMap.contains(spv)){
+      this->opMap.insert(std::shared_ptr(new Op<N, Parameters>{
+            this->shared_from_this(),
+            this->device, spv, x, y, z
+          }));
+    }
+    auto op = this->opMap[spv];
+    op->writeDescriptorSet(this->device, info);
 
     return std::shared_ptr<Job>(new Job{
         this->shared_from_this(),
@@ -584,37 +588,34 @@ namespace PRNG {
 
 // Helper Functions
 template<typename Parameters, pybind11::size_t ...I>
-pybind11::object createOp(GPU& m, int n, const Parameters&,
-                          std::string_view spv,
-                          std::uint32_t x, std::uint32_t y, std::uint32_t z){
-  using pybind11::cast;
-  using Tuple = std::tuple<int, std::function<pybind11::object()>>;
+auto submit(GPU& m, const Parameters&,
+            std::string_view spv,
+            std::uint32_t x, std::uint32_t y, std::uint32_t z,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const Parameters& params,
+            const std::vector<std::shared_ptr<Job>>& wait){
+  using F = std::function<std::shared_ptr<Job>()>;
+  using Tuple = std::tuple<std::uint32_t, F>>;
+  using B = vk::DescriptorBufferInfo;
+
   auto ops = {
-    Tuple(int(I), [&](){ return cast(m.createOp<I, Parameters>(spv, x, y, z)); })...
+    // Automatic conversion cannot work for `const T(&)[N]`,
+    // so that we manually convert from Python's `list`.
+    Tuple(std::uint32_t(I), [&](){
+      return util::pylist2array<B>([&](const B (&info)[I]){
+        return m.submit<I, Parameters>(spv, x, y, z, info, shape, params, wait);
+      }, py_info, std::make_index_sequence<I>());
+    })...
   };
 
+  std::uint32_t n = py_info.size();
   for(auto op : ops){
     auto [i, f] = op;
     if(i == n){ return f(); }
   }
 
   throw std::runtime_error("Unknown Operation");
-}
-
-template<std::size_t N, typename Parameters>
-auto submit(GPU& m,
-            const Op<N, Parameters>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const Parameters& params,
-            const std::vector<std::shared_ptr<Job>>& wait){
-  // Automatic conversion cannot work for `const T(&)[N]`,
-  // so that we manually convert from Python's `list`.
-
-  using B = vk::DescriptorBufferInfo;
-  return util::pylist2array<B>([&](const B (&info)[N]){
-    return m.submit(op, info, shape, params, wait);
-  }, py_info, std::make_index_sequence<N>());
 }
 
 
@@ -628,62 +629,29 @@ PYBIND11_MODULE(_vkarray, m){
         "Create GPU");
 
   pybind11::class_<GPU, std::shared_ptr<GPU>>(m, "GPU")
-    .def("toBuffer", &GPU::toBuffer<float>, "Copy to GPU Buffer")
-    .def("createBuffer", &GPU::createBuffer<float>, "Create GPU Buffer")
-    .def("createOp", &createOp<OpParams::Vector, 1, 2, 3, 4>,
-         "Create Vector Operation")
-    .def("createOp", &createOp<OpParams::MultiVector<2>, 2>,
-         "Create MultiVector[2] Operation")
-    .def("createOp", &createOp<OpParams::VectorScalar<float>, 1, 2, 3>,
-         "Create Vector-Scalar Operation")
-    .def("createOp", &createOp<OpParams::VectorMultiScalar<float, 2>, 1, 2>,
-         "Create Vector-Scalar[2] Operation")
-    .def("createOp", &createOp<OpParams::MatMul<float>, 3>,
-         "Create Matrix Multiplication Operation")
-    .def("createOp", &createOp<OpParams::AxisReduction, 2>,
-         "Create Axis Reduction Operation")
-    .def("submit", &submit<1, OpParams::Vector>, "Submit Vector Operation",
+    .def("toBuffer", &GPU::toBuffer<float>)
+    .def("createBuffer", &GPU::createBuffer<float>)
+    .def("submit", &submit<OpParams::Vector, 1, 2, 3, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<2, OpParams::Vector>, "Submit Vector Operation",
+    .def("submit", &submit<OpParams::MultiVector<2>, 2>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<3, OpParams::Vector>, "Submit Vector Operation",
+    .def("submit", &submit<OpParams::VectorScalar<float>, 1, 2, 3>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<4, OpParams::Vector>, "Submit Vector Operation",
+    .def("submit", &submit<OpParams::VectorMultiScalar<float, 2>, 1, 2>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<2, OpParams::MultiVector<2>>,
-         "Submit MultiVector<2> Operation",
+    .def("submit", &submit<OpParams::MatMul<float>, 3>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<1, OpParams::VectorScalar<float>>,
-         "Submit Vector-Scalar Operation",
+    .def("submit", &submit<OpParams::AxisReduction, 2>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<2, OpParams::VectorScalar<float>>,
-         "Submit Vector-Scalar Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<3, OpParams::VectorScalar<float>>,
-         "Submit Vector-Scalar Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<1, OpParams::VectorMultiScalar<float, 2>>,
-         "Submit Vector-Scalar[2] Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<2, OpParams::VectorMultiScalar<float, 2>>,
-         "Submit Vector-Scalar[2] Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<3, OpParams::MatMul<float>>,
-         "Submit Matrix Multiplication Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<2, OpParams::AxisReduction>,
-         "Submit Axis Reduction Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("wait", &GPU::wait, "Wait all submission")
+    .def("wait", &GPU::wait)
     .def("flush",
-         [](GPU& m, const std::vector<vk::MappedMemoryRange>& r){ m.flush(r); },
-         "Flush Memories to GPU")
+         [](GPU& m, const std::vector<vk::MappedMemoryRange>& r){ m.flush(r); })
     .def("canSubgroupArithmetic", &GPU::canSubgroupArithmetic);
 
   pybind11::class_<Buffer<float>>(m, "Buffer", pybind11::buffer_protocol())
-    .def("info", &Buffer<float>::info, "Get Buffer Info")
-    .def("range", &Buffer<float>::range, "Get Buffer Range")
-    .def("size", &Buffer<float>::size, "Get Buffer Size")
+    .def("info", &Buffer<float>::info)
+    .def("range", &Buffer<float>::range)
+    .def("size", &Buffer<float>::size)
     .def_buffer([](Buffer<float>& m) {
       return pybind11::buffer_info {
         .ptr=m.data(),
@@ -715,19 +683,6 @@ PYBIND11_MODULE(_vkarray, m){
 
   pybind11::class_<DataShape>(m, "DataShape")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
-
-  pybind11::class_<Op<1, OpParams::Vector>>(m, "OpVec1");
-  pybind11::class_<Op<2, OpParams::Vector>>(m, "OpVec2");
-  pybind11::class_<Op<3, OpParams::Vector>>(m, "OpVec3");
-  pybind11::class_<Op<4, OpParams::Vector>>(m, "OpVec4");
-  pybind11::class_<Op<2, OpParams::MultiVector<2>>>(m, "Op2MultiVec2");
-  pybind11::class_<Op<1, OpParams::VectorScalar<float>>>(m, "OpVecScalar1");
-  pybind11::class_<Op<2, OpParams::VectorScalar<float>>>(m, "OpVecScalar2");
-  pybind11::class_<Op<3, OpParams::VectorScalar<float>>>(m, "OpVecScalar3");
-  pybind11::class_<Op<1, OpParams::VectorMultiScalar<float, 2>>>(m, "OpVec2Scalar1");
-  pybind11::class_<Op<2, OpParams::VectorMultiScalar<float, 2>>>(m, "OpVec2Scalar2");
-  pybind11::class_<Op<3, OpParams::MatMul<float>>>(m, "OpMatMul");
-  pybind11::class_<Op<2, OpParams::AxisReduction>>(m, "OpAxisReduction");
 
   pybind11::class_<Job, std::shared_ptr<Job>>(m, "Job")
     .def("wait", &Job::wait, "Wait for this Job",
