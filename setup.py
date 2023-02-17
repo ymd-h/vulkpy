@@ -70,10 +70,18 @@ ext = [Extension(f"{pkg}._vkarray",
                  libraries=["vulkan"],
                  **extra_args)]
 
+desc = {}
+README = "README.md"
+if os.path.exists(README):
+    with open(README) as f:
+        desc["long_description"] = f.read()
+        desc["long_description_content_type"] = "text/markdown"
+
 setup(name="vulkpy",
       version="0.0.0",
       author="H. Yamada",
       description="GPGPU array on Vulkan",
+      **desc,
       packages=find_packages(),
       ext_modules=ext,
       include_package_data=True,
