@@ -55,8 +55,8 @@ for shader in ["add", "sub", "mul", "div",
 
 if platform.system() != "Windows":
     extra_args = {
-        "extra_compile_args": ["-std=c++20", "-O3", "-march=native", "-Wall"],
-        "extra_link_args": ["-std=c++20"],
+        "extra_compile_args": ["-std=c++2a", "-O3", "-march=native", "-Wall"],
+        "extra_link_args": ["-std=c++2a"],
     }
 else:
     extra_args = {
@@ -76,7 +76,7 @@ setup(name="vulkpy",
       description="GPGPU array on Vulkan",
       packages=find_packages(),
       ext_modules=ext,
-      package_data={f"{pkg}.shader": [os.path.join(f"{pkg}", "shader", "*.spv")]},
+      include_package_data=True,
       install_requires=["numpy", "well-behaved-logging"],
       classifiers=[
           "Development Status :: 4 - Beta",
