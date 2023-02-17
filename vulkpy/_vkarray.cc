@@ -11,6 +11,7 @@
 #include <variant>
 #include <vector>
 #include <random>
+#include <tuple>
 
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
@@ -162,33 +163,28 @@ struct DataShape {
   std::uint32_t x, y, z;
 };
 
+using DescriptorSet = std::tuple<vk::UniqueDescriptorPool, vk::UniqueDescriptorSet>;
+
 template <std::uint32_t N, typename Parameters = OpParams::Empty>
 class Op : std::enable_shared_from_this<Op<N, Parameters>> {
 private:
   std::uint32_t x, y, z;
   std::shared_ptr<GPU> gpu;
-  vk::UniqueDescriptorPool pool;
+  vk::PipelineCache cache;
   vk::UniqueShaderModule shader;
   vk::UniqueDescriptorSetLayout dlayout;
   vk::UniquePipelineLayout playout;
-  vk::UniquePipeline pipe;
-  vk::UniqueDescriptorSet desc;
+  std::function<vk::UniquePipeline()> pipe;
+  std::function<DescriptorSet()> desc;
 public:
   Op(std::shared_ptr<GPU> gpu, vk::UniqueDevice& device,
      std::string_view spv, std::uint32_t x, std::uint32_t y = 1, std::uint32_t z = 1)
-    : x(x), y(y), z(z), gpu(gpu)
+    : x(x), y(y), z(z), gpu(gpu), cache(device->createPipelineCache({}))
   {
     auto psize = vk::DescriptorPoolSize{
       .type=vk::DescriptorType::eStorageBuffer,
       .descriptorCount=N
     };
-    auto pool = vk::DescriptorPoolCreateInfo{
-      .flags=vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-      .maxSets=1,
-      .poolSizeCount=1,
-      .pPoolSizes=&psize,
-    };
-    this->pool = device->createDescriptorPoolUnique(pool);
 
     auto code = util::readCode(spv);
 
@@ -207,11 +203,11 @@ public:
       };
     }, N);
 
-    auto dlayout = vk::DescriptorSetLayoutCreateInfo{
+    auto dlinfo = vk::DescriptorSetLayoutCreateInfo{
       .bindingCount=N,
       .pBindings=dbind.data()
     };
-    this->dlayout = device->createDescriptorSetLayoutUnique(dlayout);
+    this->dlayout = device->createDescriptorSetLayoutUnique(dlinfo);
 
     auto params = vk::PushConstantRange{
       .stageFlags=vk::ShaderStageFlagBits::eCompute,
@@ -232,33 +228,56 @@ public:
       .module=this->shader.get(),
       .pName="main"
     };
-    auto pipe = vk::ComputePipelineCreateInfo{
+    auto pinfo = vk::ComputePipelineCreateInfo{
       .stage=ssinfo,
       .layout=this->playout.get()
     };
-    auto p = device->createComputePipelineUnique({}, pipe);
 
-    switch(p.result){
-    case vk::Result::eSuccess:
-      this->pipe = std::move(p.value);
-      break;
-    default:
-      throw std::runtime_error("Fail: createComputePipeline");
-    }
+    this->pipe = [this, ssinfo, pinfo, &device](){
+      auto p = device->createComputePipelineUnique(this->cache, pinfo);
 
-    auto desc = vk::DescriptorSetAllocateInfo{
-      .descriptorPool=this->pool.get(),
-      .descriptorSetCount=1,
-      .pSetLayouts=&this->dlayout.get()
+      switch(p.result){
+      case vk::Result::eSuccess:
+        break;
+      default:
+        throw std::runtime_error("Fail: createComputePipeline");
+      }
+
+      return std::move(p.value);
     };
-    this->desc = std::move(device->allocateDescriptorSetsUnique(desc)[0]);
+
+    this->desc = [this, &device, psize](){
+      auto pool = device->createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
+          .flags=vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+          .maxSets=1,
+          .poolSizeCount=1,
+          .pPoolSizes=&psize,
+        });
+
+      auto d = vk::DescriptorSetAllocateInfo{
+        .descriptorPool=pool.get(),
+        .descriptorSetCount=1,
+        .pSetLayouts=&this->dlayout.get()
+      };
+      return std::make_tuple(std::move(pool),
+                             std::move(device->allocateDescriptorSetsUnique(d)[0]));
+    };
+  }
+
+  DescriptorSet createDescriptorSet() const {
+    return this->desc();
+  }
+
+  vk::UniquePipeline createPipeline(){
+    return this->pipe();
   }
 
   void writeDescriptorSet(vk::UniqueDevice& device,
+                          vk::UniqueDescriptorSet& desc,
                           const vk::DescriptorBufferInfo (&info)[N]) const {
-    auto w = util::generate_from_range([this, &info](auto i){
+    auto w = util::generate_from_range([this, &info, &desc](auto i){
       return vk::WriteDescriptorSet{
-        .dstSet=this->desc.get(),
+        .dstSet=desc.get(),
         .dstBinding=i,
         .descriptorCount=1,
         .descriptorType=vk::DescriptorType::eStorageBuffer,
@@ -273,14 +292,16 @@ public:
   }
 
   vk::SubmitInfo getSubmitInfo(vk::UniqueCommandBuffer& buffer,
+                               const vk::UniquePipeline& pipe,
+                               const vk::UniqueDescriptorSet& desc,
                                const DataShape& shape,
                                const Parameters& params) const {
     buffer->begin(vk::CommandBufferBeginInfo{});
-    buffer->bindPipeline(vk::PipelineBindPoint::eCompute, this->pipe.get());
+    buffer->bindPipeline(vk::PipelineBindPoint::eCompute, pipe.get());
     buffer->bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                                this->playout.get(),
                                0,
-                               this->desc.get(),
+                               desc.get(),
                                nullptr);
     buffer->pushConstants(this->playout.get(),
                           vk::ShaderStageFlagBits::eCompute,
@@ -302,25 +323,46 @@ public:
 template<std::uint32_t N, typename Parameter>
 using Op_t = std::shared_ptr<Op<N, Parameter>>;
 
+using OpVariant_t = std::variant<
+  Op_t<1, OpParams::Vector>,
+  Op_t<2, OpParams::Vector>,
+  Op_t<3, OpParams::Vector>,
+  Op_t<4, OpParams::Vector>,
+  Op_t<2, OpParams::MultiVector<2>>,
+  Op_t<1, OpParams::VectorScalar<float>>,
+  Op_t<2, OpParams::VectorScalar<float>>,
+  Op_t<3, OpParams::VectorScalar<float>>,
+  Op_t<1, OpParams::VectorMultiScalar<float, 2>>,
+  Op_t<2, OpParams::VectorMultiScalar<float, 2>>,
+  Op_t<3, OpParams::MatMul<float>>,
+  Op_t<2, OpParams::AxisReduction>,
+  Op_t<2, OpParams::ShiftVector>
+  >;
+
+
 class Job {
 private:
-  std::shared_ptr<GPU> gpu;
+  OpVariant_t opV;
+  vk::UniquePipeline pipe;
+  vk::UniqueDescriptorPool dpool;
+  vk::UniqueDescriptorSet desc;
   vk::UniqueCommandPool pool;
   vk::UniqueCommandBuffer buffer;
   vk::UniqueFence fence;
   std::function<vk::Result(std::uint64_t)> w;
 public:
   template<std::uint32_t N, typename Parameter>
-  Job(std::shared_ptr<GPU> gpu,
-      vk::UniqueDevice& device,
+  Job(vk::UniqueDevice& device,
       vk::CommandPoolCreateInfo info,
       vk::Queue& queue,
       Op_t<N, Parameter> op,
       const vk::DescriptorBufferInfo (&infos)[N],
       const DataShape& shape,
       const Parameter& params,
-      const std::vector<std::shared_ptr<Job>>& wait) : gpu(gpu)
+      const std::vector<std::shared_ptr<Job>>& wait)
+    : opV(op), pipe(op->createPipeline())
   {
+    std::tie(this->dpool, this->desc) = op->createDescriptorSet();
     this->pool = device->createCommandPoolUnique(info);
 
     auto alloc = vk::CommandBufferAllocateInfo{
@@ -340,8 +382,9 @@ public:
     //       we temporary wait depending job with fence.
     for(auto& ws: wait){ ws->wait(); }
 
-    op->writeDescriptorSet(device, infos);
-    auto submit = op->getSubmitInfo(this->buffer, shape, params);
+    op->writeDescriptorSet(device, this->desc, infos);
+    auto submit = op->getSubmitInfo(this->buffer, this->pipe, this->desc,
+                                    shape, params);
     queue.submit(submit, this->fence.get());
   }
 
@@ -364,21 +407,6 @@ public:
   }
 };
 
-using OpVariant_t = std::variant<
-  Op_t<1, OpParams::Vector>,
-  Op_t<2, OpParams::Vector>,
-  Op_t<3, OpParams::Vector>,
-  Op_t<4, OpParams::Vector>,
-  Op_t<2, OpParams::MultiVector<2>>,
-  Op_t<1, OpParams::VectorScalar<float>>,
-  Op_t<2, OpParams::VectorScalar<float>>,
-  Op_t<3, OpParams::VectorScalar<float>>,
-  Op_t<1, OpParams::VectorMultiScalar<float, 2>>,
-  Op_t<2, OpParams::VectorMultiScalar<float, 2>>,
-  Op_t<3, OpParams::MatMul<float>>,
-  Op_t<2, OpParams::AxisReduction>,
-  Op_t<2, OpParams::ShiftVector>
-  >;
 
 class GPU : public std::enable_shared_from_this<GPU> {
 private:
@@ -444,7 +472,6 @@ public:
     }
     auto op = std::get<Op_t<N, Parameter>>(this->opMap[spv]);
     return std::shared_ptr<Job>(new Job{
-        this->shared_from_this(),
         this->device,
         vk::CommandPoolCreateInfo{
           .flags=vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
