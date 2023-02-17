@@ -76,7 +76,7 @@ setup(name="vulkpy",
       description="GPGPU array on Vulkan",
       packages=find_packages(),
       ext_modules=ext,
-      package_data={f"{pkg}.shader": [os.path.join(f"{pkg}", "shader", "*.spv")]},
+      package_data={f"{pkg}.shader": ["*.spv"]},
       install_requires=["numpy", "well-behaved-logging"],
       classifiers=[
           "Development Status :: 4 - Beta",
