@@ -6,5 +6,6 @@ RUN --mount=type=cache,target=/var/lib/apt/lists \
     http://packages.lunarg.com/vulkan/lunarg-vulkan-focal.list && \
     apt update && \
     apt install -y \
-    libvulkan1 libvulkan-dev vulkan-headers shaderc vulkan-validationlayers
+    libvulkan1 libvulkan-dev vulkan-headers shaderc \
+    vulkan-validationlayers lunarg-vulkan-layers
 RUN --mount=type=cache,target=/root/.cache/pip pip install numpy
