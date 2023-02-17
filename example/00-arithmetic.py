@@ -8,8 +8,8 @@ def main():
     gpu = vk.GPU()
 
     shape = (100,)
-    a = vk.Buffer(gpu, data=np.full(shape, 3))
-    b = vk.Buffer(gpu, data=np.full(shape, 5))
+    a = vk.Array(gpu, data=np.full(shape, 3))
+    b = vk.Array(gpu, data=np.full(shape, 5))
 
     c = a + b
     c.wait()
