@@ -7,8 +7,11 @@
 #include <limits>
 #include <memory>
 #include <string_view>
+#include <unordered_map>
+#include <variant>
 #include <vector>
 #include <random>
+#include <tuple>
 
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
@@ -160,33 +163,28 @@ struct DataShape {
   std::uint32_t x, y, z;
 };
 
+using DescriptorSet = std::tuple<vk::UniqueDescriptorPool, vk::UniqueDescriptorSet>;
+
 template <std::uint32_t N, typename Parameters = OpParams::Empty>
-class Op {
+class Op : std::enable_shared_from_this<Op<N, Parameters>> {
 private:
   std::uint32_t x, y, z;
   std::shared_ptr<GPU> gpu;
-  vk::UniqueDescriptorPool pool;
+  vk::PipelineCache cache;
   vk::UniqueShaderModule shader;
   vk::UniqueDescriptorSetLayout dlayout;
   vk::UniquePipelineLayout playout;
-  vk::UniquePipeline pipe;
-  vk::UniqueDescriptorSet desc;
+  std::function<vk::UniquePipeline()> pipe;
+  std::function<DescriptorSet()> desc;
 public:
   Op(std::shared_ptr<GPU> gpu, vk::UniqueDevice& device,
      std::string_view spv, std::uint32_t x, std::uint32_t y = 1, std::uint32_t z = 1)
-    : x(x), y(y), z(z), gpu(gpu)
+    : x(x), y(y), z(z), gpu(gpu), cache(device->createPipelineCache({}))
   {
     auto psize = vk::DescriptorPoolSize{
       .type=vk::DescriptorType::eStorageBuffer,
       .descriptorCount=N
     };
-    auto pool = vk::DescriptorPoolCreateInfo{
-      .flags=vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-      .maxSets=1,
-      .poolSizeCount=1,
-      .pPoolSizes=&psize,
-    };
-    this->pool = device->createDescriptorPoolUnique(pool);
 
     auto code = util::readCode(spv);
 
@@ -205,11 +203,11 @@ public:
       };
     }, N);
 
-    auto dlayout = vk::DescriptorSetLayoutCreateInfo{
+    auto dlinfo = vk::DescriptorSetLayoutCreateInfo{
       .bindingCount=N,
       .pBindings=dbind.data()
     };
-    this->dlayout = device->createDescriptorSetLayoutUnique(dlayout);
+    this->dlayout = device->createDescriptorSetLayoutUnique(dlinfo);
 
     auto params = vk::PushConstantRange{
       .stageFlags=vk::ShaderStageFlagBits::eCompute,
@@ -230,33 +228,56 @@ public:
       .module=this->shader.get(),
       .pName="main"
     };
-    auto pipe = vk::ComputePipelineCreateInfo{
+    auto pinfo = vk::ComputePipelineCreateInfo{
       .stage=ssinfo,
       .layout=this->playout.get()
     };
-    auto p = device->createComputePipelineUnique({}, pipe);
 
-    switch(p.result){
-    case vk::Result::eSuccess:
-      this->pipe = std::move(p.value);
-      break;
-    default:
-      throw std::runtime_error("Fail: createComputePipeline");
-    }
+    this->pipe = [this, ssinfo, pinfo, &device](){
+      auto p = device->createComputePipelineUnique(this->cache, pinfo);
 
-    auto desc = vk::DescriptorSetAllocateInfo{
-      .descriptorPool=this->pool.get(),
-      .descriptorSetCount=1,
-      .pSetLayouts=&this->dlayout.get()
+      switch(p.result){
+      case vk::Result::eSuccess:
+        break;
+      default:
+        throw std::runtime_error("Fail: createComputePipeline");
+      }
+
+      return std::move(p.value);
     };
-    this->desc = std::move(device->allocateDescriptorSetsUnique(desc)[0]);
+
+    this->desc = [this, &device, psize](){
+      auto pool = device->createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
+          .flags=vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+          .maxSets=1,
+          .poolSizeCount=1,
+          .pPoolSizes=&psize,
+        });
+
+      auto d = vk::DescriptorSetAllocateInfo{
+        .descriptorPool=pool.get(),
+        .descriptorSetCount=1,
+        .pSetLayouts=&this->dlayout.get()
+      };
+      return std::make_tuple(std::move(pool),
+                             std::move(device->allocateDescriptorSetsUnique(d)[0]));
+    };
+  }
+
+  DescriptorSet createDescriptorSet() const {
+    return this->desc();
+  }
+
+  vk::UniquePipeline createPipeline(){
+    return this->pipe();
   }
 
   void writeDescriptorSet(vk::UniqueDevice& device,
+                          vk::UniqueDescriptorSet& desc,
                           const vk::DescriptorBufferInfo (&info)[N]) const {
-    auto w = util::generate_from_range([this, &info](auto i){
+    auto w = util::generate_from_range([this, &info, &desc](auto i){
       return vk::WriteDescriptorSet{
-        .dstSet=this->desc.get(),
+        .dstSet=desc.get(),
         .dstBinding=i,
         .descriptorCount=1,
         .descriptorType=vk::DescriptorType::eStorageBuffer,
@@ -271,14 +292,16 @@ public:
   }
 
   vk::SubmitInfo getSubmitInfo(vk::UniqueCommandBuffer& buffer,
+                               const vk::UniquePipeline& pipe,
+                               const vk::UniqueDescriptorSet& desc,
                                const DataShape& shape,
                                const Parameters& params) const {
     buffer->begin(vk::CommandBufferBeginInfo{});
-    buffer->bindPipeline(vk::PipelineBindPoint::eCompute, this->pipe.get());
+    buffer->bindPipeline(vk::PipelineBindPoint::eCompute, pipe.get());
     buffer->bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                                this->playout.get(),
                                0,
-                               this->desc.get(),
+                               desc.get(),
                                nullptr);
     buffer->pushConstants(this->playout.get(),
                           vk::ShaderStageFlagBits::eCompute,
@@ -297,24 +320,49 @@ public:
   }
 };
 
+template<std::uint32_t N, typename Parameter>
+using Op_t = std::shared_ptr<Op<N, Parameter>>;
+
+using OpVariant_t = std::variant<
+  Op_t<1, OpParams::Vector>,
+  Op_t<2, OpParams::Vector>,
+  Op_t<3, OpParams::Vector>,
+  Op_t<4, OpParams::Vector>,
+  Op_t<2, OpParams::MultiVector<2>>,
+  Op_t<1, OpParams::VectorScalar<float>>,
+  Op_t<2, OpParams::VectorScalar<float>>,
+  Op_t<3, OpParams::VectorScalar<float>>,
+  Op_t<1, OpParams::VectorMultiScalar<float, 2>>,
+  Op_t<2, OpParams::VectorMultiScalar<float, 2>>,
+  Op_t<3, OpParams::MatMul<float>>,
+  Op_t<2, OpParams::AxisReduction>,
+  Op_t<2, OpParams::ShiftVector>
+  >;
+
+
 class Job {
 private:
-  std::shared_ptr<GPU> gpu;
+  OpVariant_t opV;
+  vk::UniquePipeline pipe;
+  vk::UniqueDescriptorPool dpool;
+  vk::UniqueDescriptorSet desc;
   vk::UniqueCommandPool pool;
   vk::UniqueCommandBuffer buffer;
   vk::UniqueFence fence;
   std::function<vk::Result(std::uint64_t)> w;
 public:
-  template<std::uint32_t N, typename Parameters>
-  Job(std::shared_ptr<GPU> gpu,
-      vk::UniqueDevice& device,
+  template<std::uint32_t N, typename Parameter>
+  Job(vk::UniqueDevice& device,
       vk::CommandPoolCreateInfo info,
       vk::Queue& queue,
-      const Op<N, Parameters>& op,
+      Op_t<N, Parameter> op,
+      const vk::DescriptorBufferInfo (&infos)[N],
       const DataShape& shape,
-      const Parameters& params,
-      const std::vector<std::shared_ptr<Job>>& wait) : gpu(gpu)
+      const Parameter& params,
+      const std::vector<std::shared_ptr<Job>>& wait)
+    : opV(op), pipe(op->createPipeline())
   {
+    std::tie(this->dpool, this->desc) = op->createDescriptorSet();
     this->pool = device->createCommandPoolUnique(info);
 
     auto alloc = vk::CommandBufferAllocateInfo{
@@ -334,7 +382,9 @@ public:
     //       we temporary wait depending job with fence.
     for(auto& ws: wait){ ws->wait(); }
 
-    auto submit = op.getSubmitInfo(this->buffer, shape, params);
+    op->writeDescriptorSet(device, this->desc, infos);
+    auto submit = op->getSubmitInfo(this->buffer, this->pipe, this->desc,
+                                    shape, params);
     queue.submit(submit, this->fence.get());
   }
 
@@ -368,6 +418,7 @@ private:
   vk::DeviceCreateInfo deviceInfo;
   vk::UniqueDevice device;
   vk::Queue queue;
+  std::unordered_map<std::string_view, OpVariant_t> opMap;
 public:
   GPU(std::size_t id, float priority = 0.0f): priority(priority) {
     this->instance = vk::createInstanceUnique(vk::InstanceCreateInfo{});
@@ -407,27 +458,26 @@ public:
                      this->device, this->physical.getMemoryProperties(), n);
   }
 
-  template<std::uint32_t N, typename Parameters>
-  Op<N, Parameters> createOp(std::string_view spv,
-                             std::uint32_t x, std::uint32_t y, std::uint32_t z){
-    return Op<N, Parameters>{this->shared_from_this(), this->device, spv, x, y, z};
-  }
-
-  template<std::uint32_t N, typename Parameters>
-  std::shared_ptr<Job> submit(const Op<N, Parameters>& op,
+  template<std::uint32_t N, typename Parameter>
+  std::shared_ptr<Job> submit(std::string_view spv,
+                              std::uint32_t x, std::uint32_t y, std::uint32_t z,
                               const vk::DescriptorBufferInfo (&info)[N],
-                              const DataShape& shape, const Parameters& params = {},
+                              const DataShape& shape, const Parameter& params = {},
                               const std::vector<std::shared_ptr<Job>>& wait = {}){
-    op.writeDescriptorSet(this->device, info);
-
+    if(!this->opMap.contains(spv)){
+      this->opMap.emplace(spv, Op_t<N, Parameter>(new Op<N, Parameter>{
+            this->shared_from_this(),
+            this->device, spv, x, y, z
+          }));
+    }
+    auto op = std::get<Op_t<N, Parameter>>(this->opMap[spv]);
     return std::shared_ptr<Job>(new Job{
-        this->shared_from_this(),
         this->device,
         vk::CommandPoolCreateInfo{
           .flags=vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
           .queueFamilyIndex=this->queueFamilyIndex
         },
-        this->queue, op, shape, params, wait
+        this->queue, op, info, shape, params, wait
       });
   }
 
@@ -467,7 +517,7 @@ namespace PRNG {
     std::shared_ptr<GPU> gpu;
     std::shared_ptr<Job> job;
     Buffer<std::uint32_t> state;
-    Op<2, OpParams::ShiftVector> op;
+    std::string_view spv;
 
     std::uint64_t splitmix64(std::uint64_t x) const noexcept {
       // https://prng.di.unimi.it/splitmix64.c
@@ -530,7 +580,7 @@ namespace PRNG {
         gpu(gpu),
         job(),
         state(gpu->createBuffer<std::uint32_t>(4 * size)),
-        op(gpu->createOp<2, OpParams::ShiftVector>(spv, 64, 1, 1))
+        spv(spv)
     {
       std::vector<std::uint32_t> state_vec{};
       state_vec.reserve(4 * this->size);
@@ -562,18 +612,21 @@ namespace PRNG {
     std::shared_ptr<Job> random(std::uint32_t n,
                                 const vk::DescriptorBufferInfo& info){
       vk::DescriptorBufferInfo b[]{ this->state.info(), info };
+      auto f = [this, &b](std::uint32_t i, std::uint32_t n){
+        return this->gpu->submit<2>(this->spv, 64, 1, 1, b, {n, 1, 1},
+                                    OpParams::ShiftVector{i, n}, {});
+      };
 
       if(n <= this->size){
         if(this->job){ this->job->wait(); }
-        this->job = this->gpu->submit(this->op, b, { n, 1, 1 }, { 0, n }, {});
+        this->job = f(0, n);
         return this->job;
       }
 
       for(std::uint32_t i = 0; i < n; i += this->size){
         if(this->job){ this->job->wait(); }
         auto local_size = std::min(this->size, (n-i));
-        this->job = this->gpu->submit(this->op, b,
-                                      { local_size, 1, 1 }, { i, local_size }, {});
+        this->job = f(i, local_size);
       }
       return this->job;
     }
@@ -583,38 +636,35 @@ namespace PRNG {
 
 
 // Helper Functions
-template<typename Parameters, pybind11::size_t ...I>
-pybind11::object createOp(GPU& m, int n, const Parameters&,
-                          std::string_view spv,
-                          std::uint32_t x, std::uint32_t y, std::uint32_t z){
-  using pybind11::cast;
-  using Tuple = std::tuple<int, std::function<pybind11::object()>>;
+template<typename Parameter, pybind11::size_t ...I>
+auto submit(GPU& m,
+            std::string_view spv,
+            std::uint32_t x, std::uint32_t y, std::uint32_t z,
+            const pybind11::list& py_info,
+            const DataShape& shape,
+            const Parameter& params,
+            const std::vector<std::shared_ptr<Job>>& wait){
+  using F = std::function<std::shared_ptr<Job>()>;
+  using Tuple = std::tuple<std::uint32_t, F>;
+  using B = vk::DescriptorBufferInfo;
+
   auto ops = {
-    Tuple(int(I), [&](){ return cast(m.createOp<I, Parameters>(spv, x, y, z)); })...
+    // Automatic conversion cannot work for `const T(&)[N]`,
+    // so that we manually convert from Python's `list`.
+    Tuple(std::uint32_t(I), [&](){
+      return util::pylist2array<B>([&](const B (&info)[I]){
+        return m.submit<I, Parameter>(spv, x, y, z, info, shape, params, wait);
+      }, py_info, std::make_index_sequence<I>());
+    })...
   };
 
+  std::uint32_t n = py_info.size();
   for(auto op : ops){
     auto [i, f] = op;
     if(i == n){ return f(); }
   }
 
   throw std::runtime_error("Unknown Operation");
-}
-
-template<std::size_t N, typename Parameters>
-auto submit(GPU& m,
-            const Op<N, Parameters>& op,
-            const pybind11::list& py_info,
-            const DataShape& shape,
-            const Parameters& params,
-            const std::vector<std::shared_ptr<Job>>& wait){
-  // Automatic conversion cannot work for `const T(&)[N]`,
-  // so that we manually convert from Python's `list`.
-
-  using B = vk::DescriptorBufferInfo;
-  return util::pylist2array<B>([&](const B (&info)[N]){
-    return m.submit(op, info, shape, params, wait);
-  }, py_info, std::make_index_sequence<N>());
 }
 
 
@@ -628,62 +678,29 @@ PYBIND11_MODULE(_vkarray, m){
         "Create GPU");
 
   pybind11::class_<GPU, std::shared_ptr<GPU>>(m, "GPU")
-    .def("toBuffer", &GPU::toBuffer<float>, "Copy to GPU Buffer")
-    .def("createBuffer", &GPU::createBuffer<float>, "Create GPU Buffer")
-    .def("createOp", &createOp<OpParams::Vector, 1, 2, 3, 4>,
-         "Create Vector Operation")
-    .def("createOp", &createOp<OpParams::MultiVector<2>, 2>,
-         "Create MultiVector[2] Operation")
-    .def("createOp", &createOp<OpParams::VectorScalar<float>, 1, 2, 3>,
-         "Create Vector-Scalar Operation")
-    .def("createOp", &createOp<OpParams::VectorMultiScalar<float, 2>, 1, 2>,
-         "Create Vector-Scalar[2] Operation")
-    .def("createOp", &createOp<OpParams::MatMul<float>, 3>,
-         "Create Matrix Multiplication Operation")
-    .def("createOp", &createOp<OpParams::AxisReduction, 2>,
-         "Create Axis Reduction Operation")
-    .def("submit", &submit<1, OpParams::Vector>, "Submit Vector Operation",
+    .def("toBuffer", &GPU::toBuffer<float>)
+    .def("createBuffer", &GPU::createBuffer<float>)
+    .def("submit", &submit<OpParams::Vector, 1, 2, 3, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<2, OpParams::Vector>, "Submit Vector Operation",
+    .def("submit", &submit<OpParams::MultiVector<2>, 2>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<3, OpParams::Vector>, "Submit Vector Operation",
+    .def("submit", &submit<OpParams::VectorScalar<float>, 1, 2, 3>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<4, OpParams::Vector>, "Submit Vector Operation",
+    .def("submit", &submit<OpParams::VectorMultiScalar<float, 2>, 1, 2>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<2, OpParams::MultiVector<2>>,
-         "Submit MultiVector<2> Operation",
+    .def("submit", &submit<OpParams::MatMul<float>, 3>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<1, OpParams::VectorScalar<float>>,
-         "Submit Vector-Scalar Operation",
+    .def("submit", &submit<OpParams::AxisReduction, 2>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<2, OpParams::VectorScalar<float>>,
-         "Submit Vector-Scalar Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<3, OpParams::VectorScalar<float>>,
-         "Submit Vector-Scalar Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<1, OpParams::VectorMultiScalar<float, 2>>,
-         "Submit Vector-Scalar[2] Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<2, OpParams::VectorMultiScalar<float, 2>>,
-         "Submit Vector-Scalar[2] Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<3, OpParams::MatMul<float>>,
-         "Submit Matrix Multiplication Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<2, OpParams::AxisReduction>,
-         "Submit Axis Reduction Operation",
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("wait", &GPU::wait, "Wait all submission")
+    .def("wait", &GPU::wait)
     .def("flush",
-         [](GPU& m, const std::vector<vk::MappedMemoryRange>& r){ m.flush(r); },
-         "Flush Memories to GPU")
+         [](GPU& m, const std::vector<vk::MappedMemoryRange>& r){ m.flush(r); })
     .def("canSubgroupArithmetic", &GPU::canSubgroupArithmetic);
 
   pybind11::class_<Buffer<float>>(m, "Buffer", pybind11::buffer_protocol())
-    .def("info", &Buffer<float>::info, "Get Buffer Info")
-    .def("range", &Buffer<float>::range, "Get Buffer Range")
-    .def("size", &Buffer<float>::size, "Get Buffer Size")
+    .def("info", &Buffer<float>::info)
+    .def("range", &Buffer<float>::range)
+    .def("size", &Buffer<float>::size)
     .def_buffer([](Buffer<float>& m) {
       return pybind11::buffer_info {
         .ptr=m.data(),
@@ -715,19 +732,6 @@ PYBIND11_MODULE(_vkarray, m){
 
   pybind11::class_<DataShape>(m, "DataShape")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
-
-  pybind11::class_<Op<1, OpParams::Vector>>(m, "OpVec1");
-  pybind11::class_<Op<2, OpParams::Vector>>(m, "OpVec2");
-  pybind11::class_<Op<3, OpParams::Vector>>(m, "OpVec3");
-  pybind11::class_<Op<4, OpParams::Vector>>(m, "OpVec4");
-  pybind11::class_<Op<2, OpParams::MultiVector<2>>>(m, "Op2MultiVec2");
-  pybind11::class_<Op<1, OpParams::VectorScalar<float>>>(m, "OpVecScalar1");
-  pybind11::class_<Op<2, OpParams::VectorScalar<float>>>(m, "OpVecScalar2");
-  pybind11::class_<Op<3, OpParams::VectorScalar<float>>>(m, "OpVecScalar3");
-  pybind11::class_<Op<1, OpParams::VectorMultiScalar<float, 2>>>(m, "OpVec2Scalar1");
-  pybind11::class_<Op<2, OpParams::VectorMultiScalar<float, 2>>>(m, "OpVec2Scalar2");
-  pybind11::class_<Op<3, OpParams::MatMul<float>>>(m, "OpMatMul");
-  pybind11::class_<Op<2, OpParams::AxisReduction>>(m, "OpAxisReduction");
 
   pybind11::class_<Job, std::shared_ptr<Job>>(m, "Job")
     .def("wait", &Job::wait, "Wait for this Job",

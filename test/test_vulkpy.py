@@ -28,6 +28,15 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(d, np.asarray([10, 10, 10]))
 
+    def test_parallel_with_unrelated_buffer(self):
+        a = vk.Array(self.gpu, data=[5, 5, 5])
+        b = vk.Array(self.gpu, data=[1, 1, 1])
+        c = vk.Array(self.gpu, data=[2, 2, 2])
+        d = vk.Array(self.gpu, data=[4, 4, 4])
+
+        e = a + b
+        f = c + d
+        np.testing.assert_allclose(e, f)
 
     def test_sub(self):
         a = vk.Array(self.gpu, data=[4, 4, 4])

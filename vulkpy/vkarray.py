@@ -18,12 +18,6 @@ Params = Union[_vkarray.VectorParams,
                _vkarray.VectorScalar2Params,
                _vkarray.MatMulParams,
                _vkarray.AxisReductionParams]
-Op = Union[_vkarray.OpVec1, _vkarray.OpVec2, _vkarray.OpVec3, _vkarray.OpVec4,
-           _vkarray.Op2MultiVec2,
-           _vkarray.OpVecScalar1, _vkarray.OpVecScalar2, _vkarray.OpVecScalar3,
-           _vkarray.OpVec2Scalar1, _vkarray.OpVec2Scalar2,
-           _vkarray.OpMatMul,
-           _vkarray.OpAxisReduction]
 
 logger = wblog.getLogger()
 
@@ -42,35 +36,6 @@ class GPU:
         self.gpu = _vkarray.createGPU(idx, priority)
         self.canSubgroupArithmetic = self.gpu.canSubgroupArithmetic()
         logger.info(f"GPU {idx}: Subgroup Arithmetic: {self.canSubgroupArithmetic}")
-
-    @functools.cache
-    def _createOp(self, spv: str,
-                  n: int,
-                  params: Params,
-                  local_size_x: int,
-                  local_size_y: int,
-                  local_size_z: int) -> Op:
-        """
-        Create GPU Operation
-
-        Parameters
-        ----------
-        spv : str
-            Compute Shader file name of SPIR-V (.spv)
-        n : int
-            Number of buffers
-        params : Params
-            Parameters
-        local_size_x, local_size_y, local_size_z : int
-            Subgroup size of compute shader
-
-        Returns
-        -------
-        std::shared_ptr<Op>
-           Operation
-        """
-        return self.gpu.createOp(n, params,
-                                 spv, local_size_x, local_size_y, local_size_z)
 
     def _submit(self,
                 spv: str,
@@ -99,11 +64,10 @@ class GPU:
         _vkarray.Job
             Job
         """
-        op = self._createOp(spv, len(arrays), params,
-                            local_size_x, local_size_y, local_size_z)
         infos = [a.buffer.info() for a in arrays]
         jobs = [a.job for a in arrays if a.job is not None]
-        return self.gpu.submit(op, infos, shape, params, jobs)
+        return self.gpu.submit(spv, local_size_x, local_size_y, local_size_z,
+                               infos, shape, params, jobs)
 
     def flush(self, arrays: Iterable[Array]):
         """
