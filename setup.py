@@ -55,8 +55,8 @@ for shader in ["add", "sub", "mul", "div",
 
 if platform.system() != "Windows":
     extra_args = {
-        "extra_compile_args": ["-std=c++20", "-O3", "-march=native", "-Wall"],
-        "extra_link_args": ["-std=c++20"],
+        "extra_compile_args": ["-std=c++2a", "-O3", "-march=native", "-Wall"],
+        "extra_link_args": ["-std=c++2a"],
     }
 else:
     extra_args = {
