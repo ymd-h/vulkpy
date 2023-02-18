@@ -49,6 +49,7 @@ print(c)
 * Matrix Multiplication Operator between 1d/2d `Array`s.
   * [x] `@`
 * Element-wise math functions as `Array`'s member function
+  * [x] `max(other, inplace=False)`, `min(other, inplace=False)`
   * [x] `abs(inplace=False)`, `sign(inplace=False)`
   * [x] `sin(inplace=False)`, `cos(inplace=False)`, `tan(inplace=False)`
   * [x] `asin(inplace=False)`, `acos(inplace=False)`, `atan(inplace=False)`
