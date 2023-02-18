@@ -64,6 +64,8 @@ print(c)
   * [x] `maximum(axis=None)`, `minimum(axis=None)`
   * [x] `mean(axis=None)`
   * [ ] ...
+* General Tensor Product
+  * [ ] tensordot
 * Bload Cast
   * [ ] ???
 * Pseudo Random Number Generator (PRNG)
