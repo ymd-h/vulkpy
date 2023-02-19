@@ -6,4 +6,6 @@
 ... automodapi:: vulkpy.vkarray
 
 ... automodapi:: vulkpy.random
+
+... automodapi:: vulkpy.util
 ```

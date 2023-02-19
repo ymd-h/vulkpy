@@ -1,22 +1,54 @@
+"""
+Utility Module (:mod:`vulkpy.util`)
+===================================
+
+
+Examples
+--------
+>>> from vulkpy.util import enable_debug
+>>> enable_debug(api_dump=False)
+"""
+
 import os
 import logging
 
 import wblog
+logger = wblog.getLogger()
 
-def enable_debug(*, validation=True, api_dump=True):
+
+def enable_debug(*, validation: bool = True, api_dump: bool = True):
     """
     Enable debug message
+
+    Parameters
+    ----------
+    validation : bool, optional
+        If ``True`` (default), enable vulkan validation.
+        This requires validation layers.
+    api_dump : bool, optional
+        If ``True`` (default), enable Vulkan API dump.
+        This requires LunarG api dump layer.
+
+    References
+    ----------
+    .. [1] VK_LAYER_KHRONOS_validation
+       https://github.com/KhronosGroup/Vulkan-ValidationLayers
+    .. [2] VK_LAYER_LUNARG_api_dump
+       https://github.com/LunarG/VulkanTools/blob/main/layersvt/api_dump_layer.md
     """
+    wblog.start_logging("vulkpy", level=logging.DEBUG)
+    logger.debug("Enable debug mode")
+
     layers = []
     if validation:
         layers.append("VK_LAYER_KHRONOS_validation")
+        logger.debug("Enable Vulkan Validation")
     if api_dump:
         layers.append("VK_LAYER_LUNARG_api_dump")
+        logger.debug("Enable Vulkan API dump")
 
     if len(layers) > 0:
         os.environ["VK_INSTANCE_LAYERS"] = ":".join(layers)
-
-    wblog.start_logging("vulkpy", level=logging.DEBUG)
 
 
 def getShader(name: str):

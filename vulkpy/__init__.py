@@ -8,6 +8,7 @@ See Also
 --------
 vulkpy.vkarray : Core Module
 vulkpy.random : Random Module
+vulkpy.util : Utility Module
 
 
 Examples
