@@ -64,7 +64,7 @@ class _ConvertMixin:
         Raises
         ------
         ValueError
-            If neither `shape` or `buffer` are specified
+            If neither ``shape`` or ``buffer`` are specified
 
         Notes
         -----
