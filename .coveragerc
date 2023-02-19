@@ -1,7 +1,6 @@
 [run]
 branch = True
 parallel = True
-source = vulkpy
 relative_files = True
 
 [report]

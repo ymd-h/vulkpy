@@ -19,9 +19,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY setup.py pyproject.toml MANIFEST.in .
 COPY vulkpy vulkpy
 RUN --mount=type=cache,target=/root/.cache/pip pip install .[test]
-COPY .coveragerc .coveragerc
 COPY test test
-RUN coverage run -m xmlrunner discover test || true
+WORKDIR /vulkpy-ci/test
+COPY .coveragerc .coveragerc
+RUN coverage run --source /vulkpy-ci/vulkpy -m xmlrunner discover || true
 RUN mkdir -p /coverage && cp -v .coverage.* /coverage && \
     mkdir -p /unittest && cp *.xml /unittest
 
