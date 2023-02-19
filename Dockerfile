@@ -7,7 +7,7 @@ RUN --mount=type=cache,target=/var/lib/apt/lists \
     apt update && \
     apt install -y --no-install-recommends \
     libvulkan1 libvulkan-dev vulkan-headers shaderc \
-    vulkan-validationlayers lunarg-vulkan-layers
+    vulkan-validationlayers lunarg-vulkan-layers mesa-vulkan-drivers
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install numpy pybind11 well-behaved-logging
 
