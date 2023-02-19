@@ -14,7 +14,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{github.ref_name}}
           cache-from: type=gha,scope=${{github.ref_name}}
           load: true
-          file: Dockerfile-ci
+          file: Dockerfile
       - run: |
           docker create --name results vulkpy/results:latest
           docker cp results:/coverage/. coverage/
