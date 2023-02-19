@@ -156,6 +156,10 @@ class Xoshiro128pp(_ConvertMixin):
         -------
         vulkpy.Array
             Array which will get random numbers.
+
+        Raises
+        ------
+        ValueError : If neither ``shape`` or ``buffer`` are sprcified.
         """
         if buffer is None:
             if shape is None:
