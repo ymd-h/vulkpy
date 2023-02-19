@@ -12,22 +12,27 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install numpy pybind11 well-behaved-logging
 
 
-FROM vulkpy-env AS vulkpy-test
+FROM vulkpy-env AS vulkpy-install
 WORKDIR /vulkpy-ci
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install coverage unittest-xml-reporting
 COPY setup.py pyproject.toml MANIFEST.in .
 COPY vulkpy vulkpy
-RUN --mount=type=cache,target=/root/.cache/pip pip install .[test]
+RUN --mount=type=cache,target=/root/.cache/pip pip install .[test] && \
+    rm -rf vulkpy && \
+    rm setup.py pyproject.toml MANIFEST.in
+
+
+FROM vulkpy-install AS vulkpy-test
 COPY test test
 WORKDIR /vulkpy-ci/test
 COPY .coveragerc .coveragerc
-RUN coverage run --source /vulkpy-ci/vulkpy -m xmlrunner discover || true
+RUN coverage run --source vulkpy -m xmlrunner discover || true
 RUN mkdir -p /coverage && cp -v .coverage.* /coverage && \
     mkdir -p /unittest && cp *.xml /unittest
 
 
-FROM python:latest AS vulkpy-combine
+FROM vulkpy-install AS vulkpy-combine
 WORKDIR /coverage
 RUN --mount=type=cache,target=/root/.cache/pip pip install coverage
 COPY vulkpy /vulkpy-ci/vulkpy
