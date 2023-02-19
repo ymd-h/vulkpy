@@ -24,10 +24,14 @@ def enable_debug(*, validation: bool = True, api_dump: bool = True):
     ----------
     validation : bool, optional
         If ``True`` (default), enable vulkan validation.
-        This requires validation layers.
     api_dump : bool, optional
         If ``True`` (default), enable Vulkan API dump.
-        This requires LunarG api dump layer.
+
+    Notes
+    -----
+    ``validation`` requires validation layer [1]_.
+    ``api_dump`` requires LunarG API dump layer [2]_.
+    If required layers are not installed, the options are ignored.
 
     References
     ----------
