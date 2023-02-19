@@ -8,4 +8,4 @@ RUN --mount=type=cache,target=/var/lib/apt/lists \
     apt install -y \
     libvulkan1 libvulkan-dev vulkan-headers shaderc \
     vulkan-validationlayers lunarg-vulkan-layers
-RUN --mount=type=cache,target=/root/.cache/pip pip install numpy
+RUN --mount=type=cache,target=/root/.cache/pip pip install numpy well-behaved-logging
