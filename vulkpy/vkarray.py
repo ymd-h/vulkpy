@@ -8,16 +8,20 @@ import numpy as np
 import wblog
 
 from .util import getShader
-from . import _vkarray
+from ._vkarray import createGPU, DataShape, Job
+from ._vkarray import (VectorParams, MultiVector2Params,
+                       VectorScalarParams, VectorScalar2Params,
+                       MatMulParams,
+                       AxisReductionParams)
 
 __all__ = ["GPU", "Array"]
 
-Params = Union[_vkarray.VectorParams,
-               _vkarray.MultiVector2Params,
-               _vkarray.VectorScalarParams,
-               _vkarray.VectorScalar2Params,
-               _vkarray.MatMulParams,
-               _vkarray.AxisReductionParams]
+Params = Union[VectorParams,
+               MultiVector2Params,
+               VectorScalarParams,
+               VectorScalar2Params,
+               MatMulParams,
+               AxisReductionParams]
 
 logger = wblog.getLogger()
 
@@ -33,7 +37,7 @@ class GPU:
         priority : float, optional
             GPU priority. Default is ``0.0``.
         """
-        self.gpu = _vkarray.createGPU(idx, priority)
+        self.gpu = createGPU(idx, priority)
         self.canSubgroupArithmetic = self.gpu.canSubgroupArithmetic()
         logger.info(f"GPU {idx}: Subgroup Arithmetic: {self.canSubgroupArithmetic}")
 
@@ -41,29 +45,8 @@ class GPU:
                 spv: str,
                 local_size_x: int, local_size_y: int, local_size_z: int,
                 arrays: Iterable[Array],
-                shape: _vkarray.DataShape,
-                params: Params) -> _vkarray.Job:
-        """
-        Submit GPU Operation
-
-        Parameters
-        ----------
-        spv : str
-            Compute Shader file name of SPIR-V (.spv)
-        local_size_x, local_size_y, local_size_z : int
-            Subgroup size of compute shader
-        arrays : iterable of vulkpy.Array
-            Arrays to be used
-        shape : _vkarray.DataShape
-            Shape of data
-        params : _vkarray.VectorParams, _vkarrayVectorScalarParams
-            Parameters
-
-        Returns
-        -------
-        _vkarray.Job
-            Job
-        """
+                shape: DataShape,
+                params: Params) -> Job:
         infos = [a.buffer.info() for a in arrays]
         jobs = [a.job for a in arrays if a.job is not None]
         return self.gpu.submit(spv, local_size_x, local_size_y, local_size_z,
@@ -225,8 +208,8 @@ class Array:
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
                                  arrays,
-                                 _vkarray.DataShape(size, 1, 1),
-                                 _vkarray.VectorParams(size))
+                                 DataShape(size, 1, 1),
+                                 VectorParams(size))
 
     def _opVec3(self, spv, other):
         self._check_shape(other)
@@ -250,8 +233,8 @@ class Array:
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
                                  arrays,
-                                 _vkarray.DataShape(size, 1, 1),
-                                 _vkarray.VectorScalarParams(size, scalar))
+                                 DataShape(size, 1, 1),
+                                 VectorScalarParams(size, scalar))
 
     def _opVecScalar2(self, spv, other):
         ret = Array(self._gpu, shape=self.shape)
@@ -265,8 +248,8 @@ class Array:
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
                                  arrays,
-                                 _vkarray.DataShape(size, 1, 1),
-                                 _vkarray.VectorScalar2Params(size, *scalars))
+                                 DataShape(size, 1, 1),
+                                 VectorScalar2Params(size, *scalars))
 
     def __add__(self, other: Union[Array, float]) -> Array:
         if isinstance(other, Array):
@@ -349,8 +332,8 @@ class Array:
         ret = Array(self._gpu, shape=shape)
         ret.job = self._gpu._submit(self._matmul, 1, 64, 1,
                                     [self, other, ret],
-                                    _vkarray.DataShape(rowA, columnB, 1),
-                                    _vkarray.MatMulParams(rowA,contractSize,columnB))
+                                    DataShape(rowA, columnB, 1),
+                                    MatMulParams(rowA,contractSize,columnB))
         return ret
 
     def wait(self):
@@ -995,10 +978,10 @@ class Array:
                                                         axis=0))
             ret.job = self._gpu._submit(spv, 1, 64, 1,
                                         [tmp, ret],
-                                        _vkarray.DataShape(prev_prod, post_prod, 1),
-                                        _vkarray.AxisReductionParams(prev_prod,
-                                                                     axis_size,
-                                                                     post_prod))
+                                        DataShape(prev_prod, post_prod, 1),
+                                        AxisReductionParams(prev_prod,
+                                                            axis_size,
+                                                            post_prod))
             tmp = ret
 
         if keepdims:
@@ -1016,9 +999,9 @@ class Array:
             else:
                 def f(tmp, ret):
                     b = [tmp, ret]
-                    p = _vkarray.MultiVector2Params(*[bb.buffer.size() for bb in b])
+                    p = MultiVector2Params(*[bb.buffer.size() for bb in b])
                     return self._gpu._submit(spv, _local_size, 1, 1,
-                                             b, _vkarray.DataShape(64,1,1), p)
+                                             b, DataShape(64,1,1), p)
 
             n = self.buffer.size()
             tmp = self
