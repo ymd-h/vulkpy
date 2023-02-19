@@ -1030,7 +1030,9 @@ class Array:
 
                 if m == 1:
                     if keepdims:
-                        ret.reshape(np.ones(shape=(np.asarray(self.shape).ndim,)))
+                        shape = np.ones(shape=(np.asarray(self.shape).ndim,),
+                                        dtype=int)
+                        ret.reshape(shape)
                     return ret
 
                 n = m
