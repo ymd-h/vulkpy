@@ -1,5 +1,7 @@
 # vulkpy: GPGPU array on Vulkan
 
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/ymd-h/vulkpy/vulkpy.yaml)
+
 vulkpy is a Python package providing GPGPU computation based on Vulkan.
 
 
