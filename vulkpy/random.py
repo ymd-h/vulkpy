@@ -103,11 +103,25 @@ class _ConvertMixin:
         return buffer
 
 class Xoshiro128pp(_ConvertMixin):
+    """
+    xoshiro128++: Pseudo Random Number Generator
+
+    Notes
+    -----
+    This class implements xoshiro128++ [1]_. Initial internal states are
+    sequentially generated during construction on CPU and are spaced 2^64 steps.
+    Generating (pseudo-)random numbers are executed parallelly on GPU.
+
+    References
+    ----------
+    .. [1] S. Vigna "xoshiro / xoroshiro generators and the PRNG shootout",
+       https://prng.di.unimi.it/
+    """
     _spv = getShader("prng_xoshiro128pp.spv")
 
     def __init__(self, gpu: vk.GPU, size: int = 64, *, seed: Optional[int] = None):
         """
-        xoshiro128++: Pseudo Random Number Generator
+        Initialize Xoshiro128pp
 
         Parameters
         ----------
@@ -117,17 +131,6 @@ class Xoshiro128pp(_ConvertMixin):
             Number of internal states. These states generate random number parallelly.
         seed : int, optional
             Random seed. If ``None`` (default), use hardware random instead.
-
-        Notes
-        -----
-        This class implements xoshiro128++ [1]_. Initial internal states are
-        sequentially generated during construction on CPU and are spaced 2^64 steps.
-        Generating (pseudo-)random numbers are executed parallelly on GPU.
-
-        References
-        ----------
-        .. [1] S. Vigna "xoshiro / xoroshiro generators and the PRNG shootout",
-           https://prng.di.unimi.it/
         """
         self._gpu = gpu
 

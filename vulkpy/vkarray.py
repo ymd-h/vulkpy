@@ -35,9 +35,12 @@ Params = Union[VectorParams,
 logger = wblog.getLogger()
 
 class GPU:
+    """
+    GPU instance
+    """
     def __init__(self, idx: int=0, priority: float=0.0):
         """
-        GPU
+        Initialize GPU
 
         Parameters
         ----------
@@ -80,6 +83,9 @@ class GPU:
 
 
 class Array:
+    """
+    GPU Array for float (32bit)
+    """
     _add = getShader("add.spv")
     _sub = getShader("sub.spv")
     _mul = getShader("mul.spv")
@@ -175,7 +181,7 @@ class Array:
 
     def __init__(self, gpu: GPU, *, data = None, shape = None):
         """
-        Array for float (32bit)
+        Initialize Array
 
         Parameters
         ----------
