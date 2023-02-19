@@ -13,6 +13,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 
 FROM vulkpy-env AS vulkpy-test
+WORKDIR /vulkpy-ci
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install coverage unittest-xml-reporting
 COPY setup.py pyproject.toml MANIFEST.in .
