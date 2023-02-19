@@ -1041,7 +1041,7 @@ class Array:
     def sum(self, axis: Union[int, Iterable[int]]=None,
             keepdims: bool = False) -> Array:
         """
-        Summarize
+        Calculate Sum of Elements
 
         Parameters
         ----------
@@ -1061,7 +1061,7 @@ class Array:
     def prod(self, axis: Union[int, Iterable[int]]=None,
              keepdims: bool = False) -> Array:
         """
-        Product
+        Calculate Product of Elements
 
         Parameters
         ----------
@@ -1130,7 +1130,7 @@ class Array:
     def mean(self, axis: Union[int, Iterable[int]]=None,
              keepdims: bool = False) -> Array:
         """
-        Get Mean Value
+        Calculate Mean Value
 
         Parameters
         ----------
