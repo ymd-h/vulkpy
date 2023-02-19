@@ -43,5 +43,4 @@ autodoc_default_options = {
     'member-order': 'bysource',
     'class-doc-from':'both',
     'exclude-members': '__dict__, __weakref__, __module__, __new__, __reduce__, __setstate__',
-    'inherited-members': True
 }
