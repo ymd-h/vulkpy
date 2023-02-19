@@ -44,3 +44,5 @@ autodoc_default_options = {
     'class-doc-from':'both',
     'exclude-members': '__dict__, __weakref__, __module__, __new__, __reduce__, __setstate__',
 }
+
+automodsumm_inherited_members = True
