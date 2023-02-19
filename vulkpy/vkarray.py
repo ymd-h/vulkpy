@@ -979,7 +979,7 @@ class Array:
                 self.job = self._opVec2Scalar(self._iclamp_ss, [self], [min, max])
 
 
-    def _axis_reduction(self, spv, axis):
+    def _axis_reduction(self, spv, axis, keepdims):
         # Ensure axis is flattened decending unique indices set.
         axis = np.unique(axis, axis=None)[::-1]
 
@@ -1001,9 +1001,14 @@ class Array:
                                                                      post_prod))
             tmp = ret
 
+        if keepdims:
+            shape = np.array(self.shape)
+            for a in axis:
+                shape[a] = 1
+            ret.reshape(shape)
         return ret
 
-    def _reduce(self, spv, spv_v1_3, spv_axis, axis):
+    def _reduce(self, spv, spv_v1_3, spv_axis, axis, keepdims):
         if axis is None:
             _local_size = 64
             if self._gpu.canSubgroupArithmetic:
@@ -1024,14 +1029,17 @@ class Array:
                 ret.job = f(tmp, ret)
 
                 if m == 1:
+                    if keepdims:
+                        ret.reshape(np.ones(shape=(np.asarray(self.shape).ndim,)))
                     return ret
 
                 n = m
                 tmp = ret
         else:
-            return self._axis_reduction(spv_axis, axis)
+            return self._axis_reduction(spv_axis, axis, keepdims)
 
-    def sum(self, axis: Union[int, Iterable[int]]=None) -> Array:
+    def sum(self, axis: Union[int, Iterable[int]]=None,
+            keepdims: bool = False) -> Array:
         """
         Summarize
 
@@ -1039,15 +1047,19 @@ class Array:
         ----------
         axis : int, optional
             Reduction axis
+        keepdims : bool, optional
+            When `True`, reduced dimensions are keeped with size one.
+            Default is `False`.
 
         Returns
         -------
         vulkpy.Array
             Summarized array
         """
-        return self._reduce(self._sum, self._sum_v1_3, self._sum_axis, axis)
+        return self._reduce(self._sum, self._sum_v1_3, self._sum_axis, axis, keepdims)
 
-    def prod(self, axis: Union[int, Iterable[int]]=None) -> Array:
+    def prod(self, axis: Union[int, Iterable[int]]=None,
+             keepdims: bool = False) -> Array:
         """
         Product
 
@@ -1055,15 +1067,20 @@ class Array:
         ----------
         axis : int, optional
             Reduction axis
+        keepdims : bool, optional
+            When `True`, reduced dimensions are keeped with size one.
+            Default is `False`.
 
         Returns
         -------
         vulkpy.Array
             Producted array
         """
-        return self._reduce(self._prod, self._prod_v1_3, self._prod_axis, axis)
+        return self._reduce(self._prod, self._prod_v1_3, self._prod_axis,
+                            axis, keepdims)
 
-    def maximum(self, axis: Union[int, Iterable[int]]=None) -> Array:
+    def maximum(self, axis: Union[int, Iterable[int]]=None,
+                keepdims: bool = False) -> Array:
         """
         Get Maximum Value
 
@@ -1071,6 +1088,9 @@ class Array:
         ----------
         axis : int, optional
             Reduction axis
+        keepdims : bool, optional
+            When `True`, reduced dimensions are keeped with size one.
+            Default is `False`.
 
         Returns
         -------
@@ -1080,9 +1100,11 @@ class Array:
         return self._reduce(self._maximum,
                             self._maximum_v1_3,
                             self._maximum_axis,
-                            axis)
+                            axis,
+                            keepdims)
 
-    def minimum(self, axis: Union[int, Iterable[int]]=None) -> Array:
+    def minimum(self, axis: Union[int, Iterable[int]]=None,
+                keepdims: bool = False) -> Array:
         """
         Get Minimum Value
 
@@ -1090,6 +1112,9 @@ class Array:
         ----------
         axis : int, optional
             Reduction axis
+        keepdims : bool, optional
+            When `True`, reduced dimensions are keeped with size one.
+            Default is `False`.
 
         Returns
         -------
@@ -1099,9 +1124,11 @@ class Array:
         return self._reduce(self._minimum,
                             self._minimum_v1_3,
                             self._minimum_axis,
-                            axis)
+                            axis,
+                            keepdims)
 
-    def mean(self, axis: Union[int, Iterable[int]]=None) -> Array:
+    def mean(self, axis: Union[int, Iterable[int]]=None,
+             keepdims: bool = False) -> Array:
         """
         Get Mean Value
 
@@ -1109,6 +1136,9 @@ class Array:
         ----------
         axis : int, optional
             Reduction axis
+        keepdims : bool, optional
+            When `True`, reduced dimensions are keeped with size one.
+            Default is `False`.
 
         Returns
         -------
@@ -1117,7 +1147,7 @@ class Array:
         """
         n_before = self.buffer.size()
 
-        ret = self.sum(axis)
+        ret = self.sum(axis, keepdims)
         n_after = ret.buffer.size()
 
         ret *= (n_after/n_before)
