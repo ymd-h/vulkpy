@@ -157,6 +157,11 @@ namespace OpParams {
     std::uint32_t axis_size;
     std::uint32_t post_prod;
   };
+
+  struct Broadcast {
+    std::uint32_t size[2];
+    std::uint32_t ndim;
+  };
 }
 
 struct DataShape {
@@ -336,7 +341,8 @@ using OpVariant_t = std::variant<
   Op_t<2, OpParams::VectorMultiScalar<float, 2>>,
   Op_t<3, OpParams::MatMul<float>>,
   Op_t<2, OpParams::AxisReduction>,
-  Op_t<2, OpParams::ShiftVector>
+  Op_t<2, OpParams::ShiftVector>,
+  Op_t<4, OpParams::Broadcast>
   >;
 
 
@@ -680,6 +686,7 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<GPU, std::shared_ptr<GPU>>(m, "GPU")
     .def("toBuffer", &GPU::toBuffer<float>)
     .def("createBuffer", &GPU::createBuffer<float>)
+    .def("toShapeBuffer", &GPU::toBuffer<std::uint32_t>)
     .def("submit", &submit<OpParams::Vector, 1, 2, 3, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::MultiVector<2>, 2>,
@@ -691,6 +698,8 @@ PYBIND11_MODULE(_vkarray, m){
     .def("submit", &submit<OpParams::MatMul<float>, 3>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::AxisReduction, 2>,
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit", &submit<OpParams::Broadcast, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait)
     .def("flush",
@@ -712,6 +721,21 @@ PYBIND11_MODULE(_vkarray, m){
       };
     });
 
+  pybind11::class_<Buffer<std::uint32_t>>(m, "Shape", pybind11::buffer_protocol())
+    .def("info", &Buffer<std::uint32_t>::info)
+    .def("range", &Buffer<std::uint32_t>::range)
+    .def("size", &Buffer<std::uint32_t>::size)
+    .def_buffer([](Buffer<std::uint32_t>& m) {
+      return pybind11::buffer_info {
+        .ptr=m.data(),
+        .itemsize=sizeof(std::uint32_t),
+        .format=pybind11::format_descriptor<std::uint32_t>::format(),
+        .ndim=1,
+        .shape={ m.size() },
+        .strides={ sizeof(std::uint32_t) }
+      };
+    });
+
   pybind11::class_<OpParams::Vector>(m, "VectorParams")
     .def(pybind11::init<std::uint32_t>());
 
@@ -728,6 +752,9 @@ PYBIND11_MODULE(_vkarray, m){
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
   pybind11::class_<OpParams::AxisReduction>(m, "AxisReductionParams")
+    .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
+
+  pybind11::class_<OpParams::Broadcast>(m, "BroadcastParams")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
   pybind11::class_<DataShape>(m, "DataShape")

@@ -31,7 +31,8 @@ for shader in ["add", "sub", "mul", "div",
                "sum", ("sum_v1.3", "--target-env=vulkan1.1"), "sum_axis",
                "prod", ("prod_v1.3", "--target-env=vulkan1.1"), "prod_axis",
                "maximum", ("maximum_v1.3", "--target-env=vulkan1.1"), "maximum_axis",
-               "minimum", ("minimum_v1.3", "--target-env=vulkan1.1"), "minimum_axis"]:
+               "minimum", ("minimum_v1.3", "--target-env=vulkan1.1"), "minimum_axis",
+               "broadcast"]:
     if isinstance(shader, tuple):
         shader, flag = shader
         flag = (flag,)

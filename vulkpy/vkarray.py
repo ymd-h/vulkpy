@@ -18,19 +18,27 @@ import wblog
 
 from .util import getShader
 from ._vkarray import createGPU, DataShape, Job
-from ._vkarray import (VectorParams, MultiVector2Params,
-                       VectorScalarParams, VectorScalar2Params,
-                       MatMulParams,
-                       AxisReductionParams)
+from ._vkarray import (
+    VectorParams,
+    MultiVector2Params,
+    VectorScalarParams,
+    VectorScalar2Params,
+    MatMulParams,
+    AxisReductionParams,
+    BroadcastParams
+)
 
 __all__ = ["GPU", "Array"]
 
-Params = Union[VectorParams,
-               MultiVector2Params,
-               VectorScalarParams,
-               VectorScalar2Params,
-               MatMulParams,
-               AxisReductionParams]
+Params = Union[
+    VectorParams,
+    MultiVector2Params,
+    VectorScalarParams,
+    VectorScalar2Params,
+    MatMulParams,
+    AxisReductionParams,
+    BroadcastParams
+]
 
 logger = wblog.getLogger()
 
@@ -80,6 +88,22 @@ class GPU:
         Wait All GPU Operations
         """
         self.gpu.wait()
+
+
+class Shape:
+    """
+    GPU Array of uint (32bit) for shape
+    """
+    def __init__(self, gpu: GPU, data: Iterable[int]):
+        self._gpu = gpu
+
+        data = np.asarray(data, dtype=np.uint32)
+        self.shape = data.shape
+        self.buffer = self._gpu.gpu.toShapeBuffer(np.ravel(data))
+
+        self.array = np.asarray(self.buffer)
+        self.array.shape = self.shape
+        self.job = None
 
 
 class Array:
@@ -178,6 +202,7 @@ class Array:
     _minimum = getShader("minimum.spv")
     _minimum_v1_3 = getShader("minimum_v1.3.spv")
     _minimum_axis = getShader("minimum_axis.spv")
+    _broadcast = getShader("broadcast.spv")
 
     def __init__(self, gpu: GPU, *, data = None, shape = None):
         """
@@ -1151,4 +1176,47 @@ class Array:
         n_after = ret.buffer.size()
 
         ret *= (n_after/n_before)
+        return ret
+
+    def broadcast_to(self, shape: Iterable[int]) -> Array:
+        """
+        Broadcast to new shape
+
+        Parameters
+        ----------
+        shape : iterable of ints
+            Shape of broadcast target
+
+        Returns
+        -------
+        vulkpy.Array
+            Broadcasted array
+
+        Raises
+        ------
+        ValueError
+            If ``shape`` is not compatible.
+        """
+        shape = np.asarray(shape, dtype=int)
+        if np.all(np.broadcast_shapes(self.shape, shape) != shape):
+            raise ValueError(f"Cannot broadcast to {shape}")
+
+        ret = Array(self._gpu, shape=shape)
+
+        self_shape = self.shape
+        dim_diff = len(shape) - len(self_shape)
+        if dim_diff > 0:
+            self_shape = np.concatenate((np.ones(shape=(dim_diff,)), self_shape),
+                                        axis=0)
+
+        shapeA = Shape(self._gpu, data=self_shape)
+        shapeB = Shape(self._gpu, data=shape)
+
+        ret.job = self._gpu._submit(self._broadcast, 64, 1, 1,
+                                    [self, ret, shapeA, shapeB],
+                                    DataShape(ret.buffer.size(), 1, 1),
+                                    BroadcastParams(self.buffer.size(),
+                                                    ret.buffer.size(),
+                                                    len(shape)))
+
         return ret
