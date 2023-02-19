@@ -87,6 +87,10 @@ setup(name="vulkpy",
       ext_modules=ext,
       include_package_data=True,
       install_requires=["numpy", "well-behaved-logging"],
+      extras_require={
+          "test": ["coverage", "unittest-xml-reporting"],
+          "doc": ["sphinx", "sphinx-rtd-theme", "myst-parser"],
+      },
       classifiers=[
           "Development Status :: 4 - Beta",
           "Environment :: GPU",
