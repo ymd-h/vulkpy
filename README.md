@@ -1,5 +1,8 @@
 # vulkpy: GPGPU array on Vulkan
 
+vulkpy is a Python package providing GPGPU computation based on Vulkan.
+
+
 ## Requirements
 
 * C++20 compatible compiler
