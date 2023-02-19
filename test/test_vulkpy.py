@@ -1120,6 +1120,26 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(b, x.mean(axis=(1, 2, 5)))
 
+    def test_broadcast(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(1, 2, 2)))
+        b = a.broadcast_to((3, 2, 2))
+        b.wait()
+
+        np.testing.assert_allclose(b, np.ones(shape=(3, 2, 2)))
+
+    def test_broadcast_new_dim(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2, 2)))
+        b = a.broadcast_to((3, 2, 2))
+        b.wait()
+
+        np.testing.assert_allclose(b, np.ones(shape=(3, 2, 2)))
+
+    def test_broadcast_error(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(3,)))
+
+        with self.assertRaises(ValueError):
+            b = a.broadcast_to((4,))
+
 if __name__ == "__main__":
     enable_debug(api_dump=False)
     unittest.main()
