@@ -1,0 +1,77 @@
+name: vulkpy
+on: [push, pull_request]
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-buildx-action@v2
+      - uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: false
+          tags: vulkpy/results:latest
+          cache-to: type=gha,mode=max,scope=${{github.ref_name}}
+          cache-from: type=gha,scope=${{github.ref_name}}
+          load: true
+          file: Dockerfile-ci
+      - run: |
+          docker create --name results vulkpy/results:latest
+          docker cp results:/coverage/. coverage/
+          docker cp results:/unittest/. unittest/
+          docker cp results:/dist/. dist/
+          docker cp results:/html/. html/
+        name: Extract Results
+      - uses: actions/upload-artifact@v3
+        with:
+          name: coverage
+          path: coverage
+      - uses: actions/upload-artifact@v3
+        with:
+          name: unittest
+          path: unittest
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist
+      - uses: actions/upload-artifact@v3
+        with:
+          name: html
+          path: html
+      - uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          junit_files: "unittest/**/*.xml"
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request'
+        with:
+          recreate: true
+          path: coverage/summary.md
+      - name: Write to Job Summary
+        run: cat coverage/summary.md >> $GITHUB_STEP_SUMMARY
+      - name: Publish package
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_PASS }}
+      - uses: actions/configure-pages@v2
+      - uses: actions/upload-pages-artifact@v1
+        with:
+          path: html
+  deploy:
+    concurrency:
+      group: vulkpy-deploy
+      cancel-in-progress: true
+    if: github.ref_name == 'master'
+    needs: ci
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v1
