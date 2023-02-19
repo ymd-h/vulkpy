@@ -812,6 +812,13 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(b, (6,))
 
+    def test_sum_keepdims(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2, 2)))
+        b = a.sum(keepdims=True)
+        b.wait()
+
+        np.testing.assert_allclose(b, [[4]])
+
     def test_sum_large(self):
         a = vk.Array(self.gpu, data=np.ones(shape=(65,)))
         b = a.sum()
@@ -826,6 +833,13 @@ class TestBuffer(unittest.TestCase):
         b.wait()
 
         np.testing.assert_allclose(b, (6, ))
+
+    def test_sum_axis_keepdims(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = a.sum(axis=0, keepdims=True)
+        b.wait()
+
+        np.testing.assert_allclose(b, [[2, 2]])
 
     def test_sum_axis_multi(self):
         x = np.asarray([[1, 2], [3, 4]])
@@ -861,6 +875,13 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(b, (6,))
 
+    def test_prod_keepdims(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2, 2)))
+        b = a.prod(keepdims=True)
+        b.wait()
+
+        np.testing.assert_allclose(b, [[1]])
+
     def test_prod_large(self):
         a = vk.Array(self.gpu, data=np.ones(shape=(65,)))
         b = a.prod()
@@ -875,6 +896,13 @@ class TestBuffer(unittest.TestCase):
         b.wait()
 
         np.testing.assert_allclose(b, (6, ))
+
+    def test_prod_axis_keepdims(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = a.prod(axis=0, keepdims=True)
+        b.wait()
+
+        np.testing.assert_allclose(b, [[1, 1]])
 
     def test_prod_axis_multi(self):
         x = np.asarray([[1, 2], [3, 4]])
@@ -910,6 +938,13 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(b, (3,))
 
+    def test_maximum_keepdims(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = a.maximum(keepdims=True)
+        b.wait()
+
+        np.testing.assert_allclose(b, [[1]])
+
     def test_maximum_large(self):
         a = vk.Array(self.gpu, data=np.ones(shape=(65,)))
         b = a.maximum()
@@ -924,6 +959,13 @@ class TestBuffer(unittest.TestCase):
         b.wait()
 
         np.testing.assert_allclose(b, (3,))
+
+    def test_maximum_axis_keepdims(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = a.maximum(axis=0, keepdims=True)
+        b.wait()
+
+        np.testing.assert_allclose(b, [[1, 1]])
 
     def test_maximum_axis_multi(self):
         x = np.asarray([[1, 2], [3, 4]])
@@ -959,6 +1001,13 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(b, (1,))
 
+    def test_minimum_keepdims(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = a.minimum(keepdims=True)
+        b.wait()
+
+        np.testing.assert_allclose(b, [[1]])
+
     def test_minimum_large(self):
         a = vk.Array(self.gpu, data=np.ones(shape=(65,)))
         b = a.minimum()
@@ -973,6 +1022,13 @@ class TestBuffer(unittest.TestCase):
         b.wait()
 
         np.testing.assert_allclose(b, (1, ))
+
+    def test_minimum_axis_keepdims(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = a.minimum(axis=0, keepdims=True)
+        b.wait()
+
+        np.testing.assert_allclose(b, [[1,1]])
 
     def test_minimum_axis_multi(self):
         x = np.asarray([[1, 2], [3, 4]])
@@ -1008,6 +1064,13 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(b, (2,))
 
+    def test_mean_keepdims(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = a.mean(keepdims=True)
+        b.wait()
+
+        np.testing.assert_allclose(b, [[1]])
+
     def test_mean_large(self):
         a = vk.Array(self.gpu, data=np.ones(shape=(65,)))
         b = a.mean()
@@ -1022,6 +1085,13 @@ class TestBuffer(unittest.TestCase):
         b.wait()
 
         np.testing.assert_allclose(b, (2,))
+
+    def test_mean_axis_keepdims(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = a.mean(axis=0, keepdims=True)
+        b.wait()
+
+        np.testing.assert_allclose(b, [[1,1]])
 
     def test_mean_axis_multi(self):
         x = np.asarray([[1, 2], [3, 4]])
