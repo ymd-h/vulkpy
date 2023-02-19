@@ -2,3 +2,5 @@ a.out
 *.spv
 *.egg-info
 *.so
+.DS_Store
+__pycache__
