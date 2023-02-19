@@ -30,7 +30,7 @@ RUN mkdir -p /coverage && cp -v .coverage.* /coverage && \
 FROM python:latest AS vulkpy-combine
 WORKDIR /coverage
 RUN --mount=type=cache,target=/root/.cache/pip pip install coverage
-COPY vulkpy vulkpy
+COPY vulkpy /vulkpy-ci/vulkpy
 COPY .coveragerc .coveragerc
 COPY --from=vulkpy-test /coverage /coverage
 RUN coverage combine && \
