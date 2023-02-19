@@ -1,3 +1,12 @@
+"""
+vulkpy Core Module (:mod:`vulkpy.vkarray`)
+==========================================
+
+
+* GPU
+* Array
+"""
+
 from __future__ import annotations
 
 import os
