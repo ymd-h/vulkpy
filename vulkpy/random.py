@@ -160,7 +160,7 @@ class Xoshiro128pp(_ConvertMixin):
         Raises
         ------
         ValueError
-            If neither ``shape`` or ``buffer`` are sprcified.
+            If neither ``shape`` or ``buffer`` are specified.
         """
         if buffer is None:
             if shape is None:
