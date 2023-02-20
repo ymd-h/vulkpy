@@ -1279,5 +1279,6 @@ class Array:
                                     BroadcastParams(self.buffer.size(),
                                                     ret.buffer.size(),
                                                     shape.ndim))
+        self._keep.extend([shapeA, shapeB])
 
         return ret
