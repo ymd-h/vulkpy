@@ -143,6 +143,7 @@ class Array:
     _sub_broadcast = getShader("sub_broadcast.spv")
     _mul_broadcast = getShader("mul_broadcast.spv")
     _div_broadcast = getShader("div_broadcast.spv")
+    _iadd_broadcast = getShader("iadd_broadcast.spv")
     _matmul = getShader("matmul.spv")
     _max = getShader("max.spv")
     _min = getShader("min.spv")
@@ -343,12 +344,33 @@ class Array:
     def __truediv__(self, other: Union[Array, float]) -> Array:
         return self._op(other, self._div, self._div_scalar, self._div_broadcast)
 
-    def __iadd__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            self._opVec2(self._iadd, other)
+    def _iop(self, other, spv, spv_scalar, spv_broadcast):
+        if not isinstance(other, Array):
+            self._opVecScalar1(spv_scalar, other)
+        elif np.array_equal(self.shape, other.shape):
+            self._opVec2(spv, other)
         else:
-            self._opVecScalar1(self._iadd_scalar, other)
+            shape = np.broadcast_shapes(self.shape, other.shape)
+            if not np.array_equal(shape, self.shape):
+                raise ValueError("Incompatible shape")
+            ndim = shape[0]
+
+            shapeAB = Shape(self._gpu, ndim=2*ndim)
+            shapeAB.array[:] = 1
+            shapeAB.array[:ndim] = shape
+            shapeAB.array[:-other.array.ndim] = other.shape
+
+            self.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
+                                         [self, other, shapeAB],
+                                         DataShape(self.buffer.size(), 1, 1),
+                                         BroadcastParams(self.buffer.size(),
+                                                         other.buffer.size(),
+                                                         ndim))
+
         return self
+
+    def __iadd__(self, other: Union[Array, float]) -> Array:
+        return self._iop(other, self._iadd, self._iadd_scalar, self._iadd_broadcast)
 
     def __isub__(self, other: Union[Array, float]) -> Array:
         if isinstance(other, Array):
