@@ -141,6 +141,7 @@ class Array:
     _rdiv_scalar = getShader("rdiv_scalar.spv")
     _add_broadcast = getShader("add_broadcast.spv")
     _sub_broadcast = getShader("sub_broadcast.spv")
+    _mul_broadcast = getShader("mul_broadcast.spv")
     _matmul = getShader("matmul.spv")
     _max = getShader("max.spv")
     _min = getShader("min.spv")
@@ -336,10 +337,7 @@ class Array:
         return self._op(other, self._sub, self._sub_scalar, self._sub_broadcast)
 
     def __mul__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            return self._opVec3(self._mul, other)
-        else:
-            return self._opVecScalar2(self._mul_scalar, other)
+        return self._op(other, self._mul, self._mul_scalar, self._mul_broadcast)
 
     def __truediv__(self, other: Union[Array, float]) -> Array:
         if isinstance(other, Array):
