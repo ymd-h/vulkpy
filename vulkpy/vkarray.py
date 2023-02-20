@@ -314,13 +314,13 @@ class Array:
             return self._opVec3(spv, other)
 
         shape = np.broadcast_shapes(self.shape, other.shape)
-        size = shape[0]
+        ndim = shape[0]
 
-        shapeABC = Shape(self._gpu, ndim=3*size)
+        shapeABC = Shape(self._gpu, ndim=3*ndim)
         shapeABC.array[:] = 1
-        shapeABC.array[size-self.array.ndim:size] = self.shape
-        shapeABC.array[2*size-other.array.ndim:2*size] = other.shape
-        shapeABC.array[2*size:] = shape
+        shapeABC.array[  ndim- self.array.ndim:  ndim] = self.shape
+        shapeABC.array[2*ndim-other.array.ndim:2*ndim] = other.shape
+        shapeABC.array[2*ndim                 :      ] = ndim
 
         ret = Array(self._gpu, shape=shape)
         ret.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
@@ -329,7 +329,7 @@ class Array:
                                     Multi3BroadcastParams(self.buffer.size(),
                                                           other.buffer.size(),
                                                           ret.buffer.size(),
-                                                          size))
+                                                          ndim))
         return ret
 
     def __add__(self, other: Union[Array, float]) -> Array:
