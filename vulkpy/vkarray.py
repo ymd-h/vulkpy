@@ -116,6 +116,18 @@ class Shape:
         self.array.shape = self.shape
         self.job = None
 
+    def __getitem__(self, key) -> Union[float, np.ndarray]:
+        return self.array[key]
+
+    def __setitem__(self, key, value):
+        self.array[key] = value
+
+    def flush(self):
+        """
+        Flush Buffer to GPU
+        """
+        self._gpu.flush([self])
+
 
 class Array:
     """
