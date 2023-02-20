@@ -329,10 +329,10 @@ class Array:
         ndim = shape[0]
 
         shapeABC = Shape(self._gpu, ndim=3*ndim)
-        shapeABC.array[:] = 1
-        shapeABC.array[  ndim- self.array.ndim:  ndim] = self.shape
-        shapeABC.array[2*ndim-other.array.ndim:2*ndim] = other.shape
-        shapeABC.array[2*ndim                 :      ] = ndim
+        shapeABC[:] = 1
+        shapeABC[  ndim- self.array.ndim:  ndim] = self.shape
+        shapeABC[2*ndim-other.array.ndim:2*ndim] = other.shape
+        shapeABC[2*ndim                 :      ] = ndim
 
         ret = Array(self._gpu, shape=shape)
         ret.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
@@ -368,9 +368,9 @@ class Array:
             ndim = shape[0]
 
             shapeAB = Shape(self._gpu, ndim=2*ndim)
-            shapeAB.array[:] = 1
-            shapeAB.array[:ndim] = shape
-            shapeAB.array[:-other.array.ndim] = other.shape
+            shapeAB[:] = 1
+            shapeAB[:ndim] = shape
+            shapeAB[:-other.array.ndim] = other.shape
 
             self.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
                                          [self, other, shapeAB],
