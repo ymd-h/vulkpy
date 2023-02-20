@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 import functools
-from typing import Iterable, Optional, Union
+from typing import Iterable, List, Optional, Union
 
 import numpy as np
 import wblog
@@ -266,8 +266,13 @@ class Array:
 
         self.array = np.asarray(self.buffer)
         self.array.shape = self.shape
-        self.job = None
-        self._keep = []
+
+        # Pipeline job to write this Array.
+        self.job: Optional[Job] = None
+
+        # Hold temporary resources until pipeline job finish
+        # to avoid freeing memories in use.
+        self._keep: List[Union[Shape, Array]] = []
 
     def __del__(self):
         self.wait()
