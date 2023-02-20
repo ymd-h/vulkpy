@@ -333,6 +333,7 @@ class Array:
         shapeABC[  ndim- self.array.ndim:  ndim] = self.shape
         shapeABC[2*ndim-other.array.ndim:2*ndim] = other.shape
         shapeABC[2*ndim                 :      ] = ndim
+        shapeABC.flush()
 
         ret = Array(self._gpu, shape=shape)
         ret.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
@@ -371,6 +372,7 @@ class Array:
             shapeAB[:] = 1
             shapeAB[:ndim] = shape
             shapeAB[:-other.array.ndim] = other.shape
+            shapeAB.flush()
 
             self.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
                                          [self, other, shapeAB],
