@@ -1281,6 +1281,6 @@ class Array:
                                     DataShape(ret.buffer.size(), 1, 1),
                                     BroadcastParams(self.buffer.size(),
                                                     ret.buffer.size(),
-                                                    len(shape)))
+                                                    shape.ndim))
 
         return ret
