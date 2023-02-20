@@ -1230,6 +1230,60 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(a, 2*np.ones(shape=(2,2)))
 
+    def test_isub_broadcast(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = vk.Array(self.gpu, data=np.ones(shape=(2,1)))
+
+        a -= b
+        a.wait()
+
+        np.testing.assert_allclose(a, np.zeros(shape=(2,2)))
+
+    def test_isub_broadcast_newaxis(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = vk.Array(self.gpu, data=np.ones(shape=(2,)))
+
+        a -= b
+        a.wait()
+
+        np.testing.assert_allclose(a, np.zeros(shape=(2,2)))
+
+    def test_imul_broadcast(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = vk.Array(self.gpu, data=np.ones(shape=(2,1)))
+
+        a *= b
+        a.wait()
+
+        np.testing.assert_allclose(a, np.ones(shape=(2,2)))
+
+    def test_imul_broadcast_newaxis(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2,2)))
+        b = vk.Array(self.gpu, data=np.ones(shape=(2,)))
+
+        a *= b
+        a.wait()
+
+        np.testing.assert_allclose(a, np.ones(shape=(2,2)))
+
+    def test_idiv_broadcast(self):
+        a = vk.Array(self.gpu, data=2*np.ones(shape=(2,2)))
+        b = vk.Array(self.gpu, data=np.ones(shape=(2,1)))
+
+        a /= b
+        a.wait()
+
+        np.testing.assert_allclose(a, 2*np.ones(shape=(2,2)))
+
+    def test_idiv_broadcast_newaxis(self):
+        a = vk.Array(self.gpu, data=2*np.ones(shape=(2,2)))
+        b = vk.Array(self.gpu, data=np.ones(shape=(2,)))
+
+        a /= b
+        a.wait()
+
+        np.testing.assert_allclose(a, 2*np.ones(shape=(2,2)))
+
 if __name__ == "__main__":
     enable_debug(api_dump=False)
     unittest.main()

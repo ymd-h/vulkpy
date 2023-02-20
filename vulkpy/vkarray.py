@@ -156,6 +156,9 @@ class Array:
     _mul_broadcast = getShader("mul_broadcast.spv")
     _div_broadcast = getShader("div_broadcast.spv")
     _iadd_broadcast = getShader("iadd_broadcast.spv")
+    _isub_broadcast = getShader("isub_broadcast.spv")
+    _imul_broadcast = getShader("imul_broadcast.spv")
+    _idiv_broadcast = getShader("idiv_broadcast.spv")
     _matmul = getShader("matmul.spv")
     _max = getShader("max.spv")
     _min = getShader("min.spv")
@@ -387,25 +390,13 @@ class Array:
         return self._iop(other, self._iadd, self._iadd_scalar, self._iadd_broadcast)
 
     def __isub__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            self._opVec2(self._isub, other)
-        else:
-            self._opVecScalar1(self._isub_scalar, other)
-        return self
+        return self._iop(other, self._isub, self._isub_scalar, self._isub_broadcast)
 
     def __imul__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            self._opVec2(self._imul, other)
-        else:
-            self._opVecScalar1(self._imul_scalar, other)
-        return self
+        return self._iop(other, self._imul, self._imul_scalar, self._imul_broadcast)
 
     def __itruediv__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            self._opVec2(self._idiv, other)
-        else:
-            self._opVecScalar1(self._idiv_scalar, other)
-        return self
+        return self._iop(other, self._idiv, self._idiv_scalar, self._idiv_broadcast)
 
     def __radd__(self, other: float) -> Array:
         return self._opVecScalar2(self._add_scalar, other)
