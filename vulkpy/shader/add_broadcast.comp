@@ -1,0 +1,45 @@
+#version 460
+layout(local_size_x = 64) in;
+
+
+layout(push_constant) uniform constants {
+  uint size[3];
+  uint ndim;
+} params;
+
+
+layout(std430, binding = 0) readonly buffer A {
+  float a[];
+};
+layout(std430, binding = 1) readonly buffer B {
+  float b[];
+};
+layout(std430, binding = 2) writeonly buffer C {
+  float c[];
+};
+layout(std430, binding = 3) readonly buffer D {
+  uint shapeABC[]; // [a0, ..., an, b0, ..., bn, c0, ..., cn] for n = ndim-1
+};
+
+
+void main(){
+  const uint ci = gl_GlobalInvocationID.x;
+  if(ci >= params.size[2]){ return; }
+  uvec3 size = uvec3(params.size[0], params.size[1], params.size[2]);
+
+  uvec2 abi = uvec2(0, 0);
+  uint ci_tmp = ci;
+  for(uint dim = 0; dim < params.ndim; dim++){
+    uvec3 sABC = uvec3(params.shapeABC[dim],
+                       params.shapeABC[dim + ndim],
+                       params.shapeABC[dim + ndim * 2]);
+    size = size / sABC;
+
+    uint d = ci_tmp / size.z;
+    abi += size.xy * min(uvec2(d, d), sABC.xy - 1);
+
+    ci_tmp = ci_tmp % size.z;
+  }
+
+  c[ci] = a[abi.x] + b[abi.y];
+}
