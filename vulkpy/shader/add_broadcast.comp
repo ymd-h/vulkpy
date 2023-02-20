@@ -30,9 +30,9 @@ void main(){
   uvec2 abi = uvec2(0, 0);
   uint ci_tmp = ci;
   for(uint dim = 0; dim < params.ndim; dim++){
-    uvec3 sABC = uvec3(params.shapeABC[dim],
-                       params.shapeABC[dim + ndim],
-                       params.shapeABC[dim + ndim * 2]);
+    uvec3 sABC = uvec3(shapeABC[dim],
+                       shapeABC[dim + params.ndim],
+                       shapeABC[dim + params.ndim * 2]);
     size = size / sABC;
 
     uint d = ci_tmp / size.z;

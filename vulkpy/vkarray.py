@@ -25,7 +25,8 @@ from ._vkarray import (
     VectorScalar2Params,
     MatMulParams,
     AxisReductionParams,
-    BroadcastParams
+    BroadcastParams,
+    Multi3BroadcastParams,
 )
 
 __all__ = ["GPU", "Array"]
@@ -37,7 +38,8 @@ Params = Union[
     VectorScalar2Params,
     MatMulParams,
     AxisReductionParams,
-    BroadcastParams
+    BroadcastParams,
+    Multi3BroadcastParams,
 ]
 
 logger = wblog.getLogger()
@@ -94,12 +96,21 @@ class Shape:
     """
     GPU Array of uint (32bit) for shape
     """
-    def __init__(self, gpu: GPU, data: Iterable[int]):
+    def __init__(self, gpu: GPU, *,
+                 data: Optional[Iterable[int]] = None,
+                 ndim: Optional[int] = None):
         self._gpu = gpu
 
-        data = np.asarray(data, dtype=np.uint32)
-        self.shape = data.shape
-        self.buffer = self._gpu.gpu.toShapeBuffer(np.ravel(data))
+        if data is not None:
+            data = np.asarray(data, dtype=np.uint32)
+            self.shape = data.shape
+            self.buffer = self._gpu.gpu.toShapeBuffer(np.ravel(data))
+        else:
+            if ndim is None:
+                raise ValueError("One of `data` or `ndim` must be specified.")
+
+            self.buffer = self._gpu.gpu.createShapeBuffer(ndim)
+            self.shape = np.asarray((ndim,), dtype=int)
 
         self.array = np.asarray(self.buffer)
         self.array.shape = self.shape
@@ -128,6 +139,7 @@ class Array:
     _idiv_scalar = getShader("idiv_scalar.spv")
     _rsub_scalar = getShader("rsub_scalar.spv")
     _rdiv_scalar = getShader("rdiv_scalar.spv")
+    _add_broadcast = getShader("add_broadcast.spv")
     _matmul = getShader("matmul.spv")
     _max = getShader("max.spv")
     _min = getShader("min.spv")
@@ -291,11 +303,33 @@ class Array:
                                  DataShape(size, 1, 1),
                                  VectorScalar2Params(size, *scalars))
 
+    def _op(self, other, spv, spv_scalar, spv_broadcast):
+        if not isinstance(other, Array):
+            return self._opVecScalar2(spv_scalar, other)
+        if np.array_equal(self.shape, other.shape):
+            return self._opVec3(spv, other)
+
+        shape = np.broadcast_shapes(self.shape, other.shape)
+        size = shape[0]
+
+        shapeABC = Shape(self._gpu, ndim=3*size)
+        shapeABC.array[:] = 1
+        shapeABC.array[size-self.array.ndim:size] = self.shape
+        shapeABC.array[2*size-other.array.ndim:2*size] = other.shape
+        shapeABC.array[2*size:] = shape
+
+        ret = Array(self._gpu, shape=shape)
+        ret.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
+                                    [self, other, ret, shapeABC],
+                                    DataShape(ret.buffer.size(), 1, 1),
+                                    Multi3BroadcastParams(self.buffer.size(),
+                                                          other.buffer.size(),
+                                                          ret.buffer.size(),
+                                                          size))
+        return ret
+
     def __add__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            return self._opVec3(self._add, other)
-        else:
-            return self._opVecScalar2(self._add_scalar, other)
+        return self._op(other, self._add, self._add_scalar, self._add_broadcast)
 
     def __sub__(self, other: Union[Array, float]) -> Array:
         if isinstance(other, Array):

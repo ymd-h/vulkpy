@@ -1140,6 +1140,15 @@ class TestBuffer(unittest.TestCase):
         with self.assertRaises(ValueError):
             b = a.broadcast_to((4,))
 
+    def test_add_broadcast(self):
+        a = vk.Array(self.gpu, data=np.ones(shape=(2, 1)))
+        b = vk.Array(self.gpu, data=np.ones(shape=(2, 2)))
+
+        c = a + b
+        c.wait()
+
+        np.testing.assert_allclose(c, [[2, 2], [2, 2]])
+
 if __name__ == "__main__":
     enable_debug(api_dump=False)
     unittest.main()
