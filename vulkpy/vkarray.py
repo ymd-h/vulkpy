@@ -267,6 +267,7 @@ class Array:
         self.array = np.asarray(self.buffer)
         self.array.shape = self.shape
         self.job = None
+        self._keep = []
 
     def __del__(self):
         self.wait()
@@ -346,6 +347,8 @@ class Array:
                                                           other.buffer.size(),
                                                           ret.buffer.size(),
                                                           ndim))
+
+        ret._keep.append(shapeABC)
         return ret
 
     def __add__(self, other: Union[Array, float]) -> Array:
@@ -383,6 +386,7 @@ class Array:
                                          BroadcastParams(self.buffer.size(),
                                                          other.buffer.size(),
                                                          ndim))
+            self._keep.append(shapeAB)
 
         return self
 
@@ -438,6 +442,8 @@ class Array:
         if self.job is not None:
             self.job.wait()
             self.job = None
+
+        self._keep = []
 
     def flush(self):
         """
