@@ -230,15 +230,19 @@ class Array:
     _sum = getShader("sum.spv")
     _sum_v1_3 = getShader("sum_v1.3.spv")
     _sum_axis = getShader("sum_axis.spv")
+    _sum_axis_rebroadcast = getShader("sum_axis_rebroadcast.spv")
     _prod = getShader("prod.spv")
     _prod_v1_3 = getShader("prod_v1.3.spv")
     _prod_axis = getShader("prod_axis.spv")
+    _prod_axis_rebroadcast = getShader("prod_axis_rebroadcast.spv")
     _maximum = getShader("maximum.spv")
     _maximum_v1_3 = getShader("maximum_v1.3.spv")
     _maximum_axis = getShader("maximum_axis.spv")
+    _maximum_axis_rebroadcast = getShader("maximum_axis_rebroadcast.spv")
     _minimum = getShader("minimum.spv")
     _minimum_v1_3 = getShader("minimum_v1.3.spv")
     _minimum_axis = getShader("minimum_axis.spv")
+    _minimum_axis_rebroadcast = getShader("minimum_axis_rebroadcast.spv")
     _broadcast = getShader("broadcast.spv")
 
     def __init__(self, gpu: GPU, *, data = None, shape = None):
@@ -1093,6 +1097,7 @@ class Array:
                                         AxisReductionParams(prev_prod,
                                                             axis_size,
                                                             post_prod))
+            ret._keep.append(tmp)
             tmp = ret
 
         if keepdims:
@@ -1102,7 +1107,28 @@ class Array:
             ret.reshape(shape)
         return ret
 
-    def _reduce(self, spv, spv_v1_3, spv_axis, axis, keepdims):
+    def _reduce(self,
+                spv, spv_v1_3, spv_axis, spv_rebroadcast,
+                axis, keepdims, rebroadcast):
+        if rebroadcast:
+            if not isinstance(axis, int):
+                raise ValueError("When `rebroadcast` is specified, " +
+                                 "`axis` must be `int`")
+
+            prev_prod = int(np.prod(self.shape[:axis]))
+            axis_size = int(self.shape[axis])
+            post_prod = int(np.prod(self.shape[axis+1:]))
+
+            ret = Array(self._gpu, shape=self.shape)
+            ret.job = self._gpu._submit(spv_rebroadcast, 1, 64, 1,
+                                        [self, ret],
+                                        DataShape(prev_prod, post_prod, 1),
+                                        AxisReductionParams(prev_prod,
+                                                            axis_size,
+                                                            post_prod))
+            ret._keep.append(self)
+            return ret
+
         if axis is None:
             _local_size = 64
             if self._gpu.canSubgroupArithmetic:
@@ -1121,6 +1147,7 @@ class Array:
                 m = (n // _local_size) + ((n % _local_size) != 0)
                 ret = Array(self._gpu, shape=(m,))
                 ret.job = f(tmp, ret)
+                ret._keep.append(tmp)
 
                 if m == 1:
                     if keepdims:
@@ -1135,7 +1162,8 @@ class Array:
             return self._axis_reduction(spv_axis, axis, keepdims)
 
     def sum(self, axis: Union[int, Iterable[int]]=None,
-            keepdims: bool = False) -> Array:
+            keepdims: bool = False,
+            rebroadcast: bool = False) -> Array:
         """
         Calculate Sum of Elements
 
@@ -1146,16 +1174,26 @@ class Array:
         keepdims : bool, optional
             When `True`, reduced dimensions are keeped with size one.
             Default is `False`.
+        rebroadcast : bool, optional
+            When `True`, keep shape by re-broadcasting after reduce.
+            Default is `False`.
 
         Returns
         -------
         vulkpy.Array
             Summarized array
         """
-        return self._reduce(self._sum, self._sum_v1_3, self._sum_axis, axis, keepdims)
+        return self._reduce(self._sum,
+                            self._sum_v1_3,
+                            self._sum_axis,
+                            self._sum_axis_rebroadcast,
+                            axis,
+                            keepdims,
+                            rebroadcast)
 
     def prod(self, axis: Union[int, Iterable[int]]=None,
-             keepdims: bool = False) -> Array:
+             keepdims: bool = False,
+             rebroadcast: bool = False) -> Array:
         """
         Calculate Product of Elements
 
@@ -1166,17 +1204,26 @@ class Array:
         keepdims : bool, optional
             When `True`, reduced dimensions are keeped with size one.
             Default is `False`.
+        rebroadcast : bool, optional
+            When `True`, keep shape by re-broadcasting after reduce.
+            Default is `False`.
 
         Returns
         -------
         vulkpy.Array
             Producted array
         """
-        return self._reduce(self._prod, self._prod_v1_3, self._prod_axis,
-                            axis, keepdims)
+        return self._reduce(self._prod,
+                            self._prod_v1_3,
+                            self._prod_axis,
+                            self._prod_axis_rebroadcast,
+                            axis,
+                            keepdims,
+                            rebroadcast)
 
     def maximum(self, axis: Union[int, Iterable[int]]=None,
-                keepdims: bool = False) -> Array:
+                keepdims: bool = False,
+                rebroadcast: bool = False) -> Array:
         """
         Get Maximum Value
 
@@ -1187,6 +1234,9 @@ class Array:
         keepdims : bool, optional
             When `True`, reduced dimensions are keeped with size one.
             Default is `False`.
+        rebroadcast : bool, optional
+            When `True`, keep shape by re-broadcasting after reduce.
+            Default is `False`.
 
         Returns
         -------
@@ -1196,11 +1246,14 @@ class Array:
         return self._reduce(self._maximum,
                             self._maximum_v1_3,
                             self._maximum_axis,
+                            self._maximum_axis_rebroadcast,
                             axis,
-                            keepdims)
+                            keepdims,
+                            rebroadcast)
 
     def minimum(self, axis: Union[int, Iterable[int]]=None,
-                keepdims: bool = False) -> Array:
+                keepdims: bool = False,
+                rebroadcast: bool = False) -> Array:
         """
         Get Minimum Value
 
@@ -1211,6 +1264,9 @@ class Array:
         keepdims : bool, optional
             When `True`, reduced dimensions are keeped with size one.
             Default is `False`.
+        rebroadcast : bool, optional
+            When `True`, keep shape by re-broadcasting after reduce.
+            Default is `False`.
 
         Returns
         -------
@@ -1220,11 +1276,14 @@ class Array:
         return self._reduce(self._minimum,
                             self._minimum_v1_3,
                             self._minimum_axis,
+                            self._minimum_axis_rebroadcast,
                             axis,
-                            keepdims)
+                            keepdims,
+                            rebroadcast)
 
     def mean(self, axis: Union[int, Iterable[int]]=None,
-             keepdims: bool = False) -> Array:
+             keepdims: bool = False,
+             rebroadcast: bool = False) -> Array:
         """
         Calculate Mean Value
 
@@ -1234,6 +1293,9 @@ class Array:
             Reduction axis
         keepdims : bool, optional
             When `True`, reduced dimensions are keeped with size one.
+            Default is `False`.
+        rebroadcast : bool, optional
+            When `True`, keep shape by re-broadcasting after reduce.
             Default is `False`.
 
         Returns
