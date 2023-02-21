@@ -168,6 +168,10 @@ class Array:
     _min_scalar = getShader("min_scalar.spv")
     _imax_scalar = getShader("imax_scalar.spv")
     _imin_scalar = getShader("imin_scalar.spv")
+    _max_broadcast = getShader("max_broadcast.spv")
+    _min_broadcast = getShader("min_broadcast.spv")
+    _imax_broadcast = getShader("imax_broadcast.spv")
+    _imin_broadcast = getShader("imin_broadcast.spv")
     _abs = getShader("abs.spv")
     _sign = getShader("sign.spv")
     _iabs = getShader("iabs.spv")
@@ -213,6 +217,8 @@ class Array:
     _pow_scalar = getShader("pow_scalar.spv")
     _ipow_scalar = getShader("ipow_scalar.spv")
     _rpow_scalar = getShader("rpow_scalar.spv")
+    _pow_broadcast = getShader("pow_broadcast.spv")
+    _ipow_broadcast = getShader("ipow_broadcast.spv")
     _clamp = getShader("clamp.spv")
     _iclamp = getShader("iclamp.spv")
     _clamp_sv = getShader("clamp_sv.spv")
@@ -518,16 +524,9 @@ class Array:
         ValueError
             If shape is not same.
         """
-        if isinstance(other, Array):
-            if inplace:
-                self._opVec2(self._imax, other)
-            else:
-                return self._opVec3(self._max, other)
-        else:
-            if inplace:
-                self._opVecScalar1(self._imax_scalar, other)
-            else:
-                return self._opVecScalar2(self._max_scalar, other)
+        if not inplace:
+            return self._op(other, self._max, self._max_scalar, self._max_broadcast)
+        self._iop(other, self._imax, self._imax_scalar, self._imax_broadcast)
 
     def min(self, other: Union[Array, float],
             inplace: bool = False) -> Optional[Array]:
@@ -553,16 +552,9 @@ class Array:
         ValueError
             If shape is not same.
         """
-        if isinstance(other, Array):
-            if inplace:
-                self._opVec2(self._imin, other)
-            else:
-                return self._opVec3(self._min, other)
-        else:
-            if inplace:
-                self._opVecScalar1(self._imin_scalar, other)
-            else:
-                return self._opVecScalar2(self._min_scalar, other)
+        if not inplace:
+            return self._op(other, self._min, self._min_scalar, self._min_broadcast)
+        self._iop(other, self._imin, self._imin_scalar, self._imin_broadcast)
 
     def abs(self, inplace: bool = False) -> Optional[Array]:
         """
@@ -1005,16 +997,10 @@ class Array:
             return self._opVec2(self._invsqrt)
 
     def __pow__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            return self._opVec3(self._pow, other)
-        else:
-            return self._opVecScalar2(self._pow_scalar, other)
+        return self._op(other, self._pow, self._pow_scalar, self._pow_broadcast)
 
     def __ipow__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            self._opVec2(self._ipow, other)
-        else:
-            self._opVecScalar1(self._ipow_scalar, other)
+        self._iop(other, self._ipow, self._ipow_scalar, self._ipow_broadcast)
         return self
 
     def __rpow__(self, other: float) -> Array:
