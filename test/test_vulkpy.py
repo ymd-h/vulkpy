@@ -1127,6 +1127,12 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(b, np.ones(shape=(3, 2, 2)))
 
+    def test_broadcast_unique(self):
+        a = vk.Array(self.gpu, data=[1, 2, 3])
+        b = a.broadcast_to((2, 3))
+
+        np.testing.assert_allclose(b, np.asarray([[1, 2, 3], [1, 2, 3]]))
+
     def test_broadcast_new_dim(self):
         a = vk.Array(self.gpu, data=np.ones(shape=(2, 2)))
         b = a.broadcast_to((3, 2, 2))
