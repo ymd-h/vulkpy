@@ -1026,24 +1026,40 @@ class Array:
         Array
             When ``replace=False``.
         """
+        shape_set = [self.shape]
         min_is_array = isinstance(min, Array)
         if min_is_array:
-            self._check_shape(min)
+            shape_set.append(min.shape)
 
         max_is_array = isinstance(max, Array)
         if max_is_array:
-            self._check_shape(max)
+            shape_set.append(max.shape)
+
+        _s = self
+        if len(shape_set) > 1:
+            shape = np.broadcast_shapes(*shape_set)
+
+            if not np.array_equal(shape, self.shape):
+                if inplace:
+                    raise ValueError(f"Incompatible shape")
+                _s = self.broadcast_to(shape)
+
+            if min_is_array and not np.array_equal(shape, min.shape):
+                min = min.broadcast_to(shape)
+
+            if max_is_array and not np.array_equal(shape, max.shape):
+                max = max.broadcast_to(shape)
 
         if not inplace:
-            ret = Array(self._gpu, shape=self.shape)
+            ret = Array(self._gpu, shape=_s.shape)
             if min_is_array and max_is_array:
-                ret.job = self._opVec(self._clamp, [self, min, max, ret])
+                ret.job = _s._opVec(self._clamp, [_s, min, max, ret])
             elif max_is_array:
-                ret.job = self._opVecScalar(self._clamp_sv, [self, max, ret], min)
+                ret.job = _s._opVecScalar(self._clamp_sv, [_s, max, ret], min)
             elif min_is_array:
-                ret.job = self._opVecScalar(self._clamp_vs, [self, min, ret], max)
+                ret.job = _s._opVecScalar(self._clamp_vs, [_s, min, ret], max)
             else:
-                ret.job = self._opVec2Scalar(self._clamp_ss, [self, ret], [min, max])
+                ret.job = _s._opVec2Scalar(self._clamp_ss, [_s, ret], [min, max])
             return ret
         else:
             # inplace
