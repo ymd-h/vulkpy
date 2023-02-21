@@ -1284,6 +1284,114 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(a, 2*np.ones(shape=(2,2)))
 
+    def test_max_broadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[[2, 3]])
+
+        c = a.max(b)
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([[2, 3], [3, 4]]))
+
+    def test_max_broadcast_newaxis(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[2, 3])
+
+        c = a.max(b)
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([[2, 3], [3, 4]]))
+
+    def test_imax_broadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[[2, 3]])
+
+        a.max(b, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([[2, 3], [3, 4]]))
+
+    def test_imax_broadcast_newaxis(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[2, 3])
+
+        a.max(b, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([[2, 3], [3, 4]]))
+
+    def test_min_broadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[[2, 3]])
+
+        c = a.min(b)
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([[1, 2], [2, 3]]))
+
+    def test_min_broadcast_newaxis(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[2, 3])
+
+        c = a.min(b)
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([[1, 2], [2, 3]]))
+
+    def test_imin_broadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[[2, 3]])
+
+        a.min(b, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([[1, 2], [2, 3]]))
+
+    def test_imin_broadcast_newaxis(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[2, 3])
+
+        a.min(b, inplace=True)
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([[1, 2], [2, 3]]))
+
+    def test_pow_broadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[[2, 3]])
+
+        c = a ** b
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([[1**2, 2**3], [3**2, 4**3]]))
+
+    def test_pow_broadcast_newaxis(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[2, 3])
+
+        c = a ** b
+        c.wait()
+
+        np.testing.assert_allclose(c, np.asarray([[1**2, 2**3], [3**2, 4**3]]))
+
+    def test_ipow_broadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[[2, 3]])
+
+        a **= b
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([[1**2, 2**3], [3**2, 4**3]]))
+
+    def test_ipow_broadcast_newaxis(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[2, 3])
+
+        a **= b
+        a.wait()
+
+        np.testing.assert_allclose(a, np.asarray([[1**2, 2**3], [3**2, 4**3]]))
+
 if __name__ == "__main__":
     enable_debug(api_dump=False)
     unittest.main()
