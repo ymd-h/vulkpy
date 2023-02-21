@@ -1392,6 +1392,40 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(a, np.asarray([[1**2, 2**3], [3**2, 4**3]]))
 
+    def test_clamp_broadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[[2, 3]])
+        c = vk.Array(self.gpu, data=[2, 3])
+
+        np.testing.assert_allclose(a.clamp(b, c), np.asarray([[2, 3], [2, 3]]))
+        np.testing.assert_allclose(a.clamp(b, 5), np.asarray([[2, 3], [3, 4]]))
+        np.testing.assert_allclose(a.clamp(2, c), np.asarray([[2, 2], [2, 3]]))
+
+    def test_iclamp_broadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[[2, 3]])
+        c = vk.Array(self.gpu, data=[2, 3])
+
+        a.clamp(b, c, inplace=True)
+        np.testing.assert_allclose(a, np.asarray([[2, 3], [2, 3]]))
+
+    def test_iclamp_vs_broadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[[2, 3]])
+        c = vk.Array(self.gpu, data=[2, 3])
+
+        a.clamp(b, 5, inplace=True)
+        np.testing.assert_allclose(a, np.asarray([[2, 3], [3, 4]]))
+
+    def test_iclamp_vs_broadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = vk.Array(self.gpu, data=[[2, 3]])
+        c = vk.Array(self.gpu, data=[2, 3])
+
+        a.clamp(2, c, inplace=True)
+        np.testing.assert_allclose(a, np.asarray([[2, 2], [2, 3]]))
+
+
 if __name__ == "__main__":
     enable_debug(api_dump=False)
     unittest.main()
