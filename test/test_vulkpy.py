@@ -1431,6 +1431,30 @@ class TestBuffer(unittest.TestCase):
         a.clamp(2, c, inplace=True)
         np.testing.assert_allclose(a, np.asarray([[2, 2], [2, 3]]))
 
+    def test_sum_rebroadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = a.sum(axis=0, rebroadcast=True)
+
+        np.testing.assert_allclose(b, np.asarray([[4, 6], [4, 6]]))
+
+    def test_prod_rebroadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = a.prod(axis=0, rebroadcast=True)
+
+        np.testing.assert_allclose(b, np.asarray([[3, 8], [3, 8]]))
+
+    def test_maximum_rebroadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = a.maximum(axis=0, rebroadcast=True)
+
+        np.testing.assert_allclose(b, np.asarray([[3, 4], [3, 4]]))
+
+    def test_minimum_rebroadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = a.minimum(axis=0, rebroadcast=True)
+
+        np.testing.assert_allclose(b, np.asarray([[1, 2], [1, 2]]))
+
 
 if __name__ == "__main__":
     enable_debug(api_dump=False)
