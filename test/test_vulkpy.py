@@ -1455,6 +1455,12 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(b, np.asarray([[1, 2], [1, 2]]))
 
+    def test_mean_rebroadcast(self):
+        a = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        b = a.mean(axis=0, rebroadcast=True)
+
+        np.testing.assert_allclose(b, np.asarray([[2, 3], [2, 3]]))
+
 
 if __name__ == "__main__":
     enable_debug(api_dump=False)

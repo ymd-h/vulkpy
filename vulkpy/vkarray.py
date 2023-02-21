@@ -1305,10 +1305,14 @@ class Array:
         """
         n_before = self.buffer.size()
 
-        ret = self.sum(axis, keepdims)
-        n_after = ret.buffer.size()
+        ret = self.sum(axis, keepdims, rebroadcast)
 
-        ret *= (n_after/n_before)
+        if rebroadcast:
+            ret /= self.shape[axis]
+        else:
+            n_after = ret.buffer.size()
+            ret *= (n_after/n_before)
+
         return ret
 
     def broadcast_to(self, shape: Iterable[int]) -> Array:
