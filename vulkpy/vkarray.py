@@ -1288,7 +1288,7 @@ class Array:
                                     DataShape(ret.buffer.size(), 1, 1),
                                     BroadcastParams(self.buffer.size(),
                                                     ret.buffer.size(),
-                                                    shape.ndim))
+                                                    shapeA.buffer.size()))
         self._keep.extend([shapeA, shapeB])
 
         return ret
