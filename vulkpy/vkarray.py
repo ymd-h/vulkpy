@@ -375,6 +375,7 @@ class Array:
             self._opVecScalar1(spv_scalar, other)
         elif np.array_equal(self.shape, other.shape):
             self._opVec2(spv, other)
+            self._keep.append(other)
         else:
             shape = np.broadcast_shapes(self.shape, other.shape)
             if not np.array_equal(shape, self.shape):
@@ -393,7 +394,7 @@ class Array:
                                          BroadcastParams(self.buffer.size(),
                                                          other.buffer.size(),
                                                          ndim))
-            self._keep.append(shapeAB)
+            self._keep.extend([shapeAB, other])
 
         return self
 
