@@ -332,7 +332,9 @@ class Array:
         if not isinstance(other, Array):
             return self._opVecScalar2(spv_scalar, other)
         if np.array_equal(self.shape, other.shape):
-            return self._opVec3(spv, other)
+            ret = self._opVec3(spv, other)
+            ret._keep.append(other)
+            return ret
 
         shape = np.broadcast_shapes(self.shape, other.shape)
         ndim = shape[0]
@@ -353,7 +355,7 @@ class Array:
                                                           ret.buffer.size(),
                                                           ndim))
 
-        ret._keep.append(shapeABC)
+        ret._keep.extend([shapeABC, other])
         return ret
 
     def __add__(self, other: Union[Array, float]) -> Array:
