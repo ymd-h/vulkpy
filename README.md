@@ -75,8 +75,9 @@ print(c)
   * [ ] tensordot
 * Bloadcast
   * [x] Explicit broadcast copy (memory inefficient, fallback option)
-    * `broadcast_to(shape)`
-  * [ ] Special support for element-wise arithmetic operators
+    * `broadcast_to(shape)` (used at `clamp`)
+  * [x] Special implementations for element-wise arithmetic operators
+    * `+`, `-`, `*`, `/`, `**`, `+=`, `-=`, `*=`, `/=`, `**=`
   * [ ] Reduction with re-broadcast
 * Pseudo Random Number Generator (PRNG)
   * [x] xoshiro128++ (`vulkpy.random.Xoshiro128pp(gpu, *, size=None, data=None)`)
