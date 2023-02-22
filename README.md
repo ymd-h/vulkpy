@@ -73,8 +73,13 @@ print(c)
   * [ ] ...
 * General Tensor Product
   * [ ] tensordot
-* Bload Cast
-  * [ ] ???
+* Bloadcast
+  * [x] Explicit broadcast copy (memory inefficient, fallback option)
+    * `broadcast_to(shape)` (used at `clamp`)
+  * [x] Special implementations for element-wise arithmetic operators
+    * `+`, `-`, `*`, `/`, `**`, `+=`, `-=`, `*=`, `/=`, `**=`
+  * [x] Reduction with re-broadcast
+    * `sum`, `prod`, `maximum`, `minimum`, `mean`
 * Pseudo Random Number Generator (PRNG)
   * [x] xoshiro128++ (`vulkpy.random.Xoshiro128pp(gpu, *, size=None, data=None)`)
     * `[0, 1)` uniform (`.random(shape=None, buffer=None)`)

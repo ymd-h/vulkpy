@@ -1,0 +1,35 @@
+#version 460
+layout(local_size_x = 1, local_size_y = 64, local_size_z = 1) in;
+
+
+layout(push_constant) uniform constants {
+  uint prev_prod; // Global x
+  uint axis_size;
+  uint post_prod; // Global y
+} params;
+
+
+layout(std430, binding = 0) readonly buffer A {
+  float a[]; // [prev..., axis, post...]
+};
+layout(std430, binding = 1) writeonly buffer B {
+  float b[]; // [prev..., post...]
+};
+
+
+void main(){
+  uint i = gl_GlobalInvocationID.x;
+  uint j = gl_GlobalInvocationID.y;
+  if((i >= params.prev_prod) || (j >= params.post_prod)){ return; }
+
+  const uint ij = (i * params.axis_size * params.post_prod) + j;
+
+  float partial_min = a[ij];
+  for(uint k=0; k<params.axis_size; k++){
+    partial_min = min(partial_min, a[(k * params.post_prod) + ij]);
+  }
+
+  for(uint k=0; k<params.axis_size; k++){
+    b[(k * params.post_prod) + ij] = partial_min;
+  }
+}

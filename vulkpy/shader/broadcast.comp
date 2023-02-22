@@ -1,0 +1,44 @@
+#version 460
+layout(local_size_x = 64) in;
+
+
+layout(push_constant) uniform constants {
+  uint size[2];
+  uint ndim;
+} params;
+
+
+layout(std430, binding = 0) readonly buffer A {
+  float a[];
+};
+layout(std430, binding = 1) writeonly buffer B {
+  float b[];
+};
+layout(std430, binding = 2) readonly buffer C {
+  uint a_shape[];
+};
+layout(std430, binding = 3) readonly buffer D {
+  uint b_shape[];
+};
+
+
+void main(){
+  uint i = gl_GlobalInvocationID.x;
+  if(i >= params.size[1]){ return; }
+
+  uint i_tmp = i;
+  uint j = 0;
+  uint sizeA = params.size[0];
+  uint sizeB = params.size[1];
+  for(uint dim = 0; dim < params.ndim; dim++){
+    sizeA = sizeA / a_shape[dim];
+    sizeB = sizeB / b_shape[dim];
+
+    uint d = min(i_tmp / sizeB, a_shape[dim]-1);
+    j += d * sizeA;
+
+    i_tmp = i_tmp % sizeB;
+  }
+
+  b[i] = a[j];
+}

@@ -11,26 +11,36 @@ from __future__ import annotations
 
 import os
 import functools
-from typing import Iterable, Optional, Union
+from typing import Iterable, List, Optional, Union
 
 import numpy as np
 import wblog
 
 from .util import getShader
 from ._vkarray import createGPU, DataShape, Job
-from ._vkarray import (VectorParams, MultiVector2Params,
-                       VectorScalarParams, VectorScalar2Params,
-                       MatMulParams,
-                       AxisReductionParams)
+from ._vkarray import (
+    VectorParams,
+    MultiVector2Params,
+    VectorScalarParams,
+    VectorScalar2Params,
+    MatMulParams,
+    AxisReductionParams,
+    BroadcastParams,
+    Multi3BroadcastParams,
+)
 
 __all__ = ["GPU", "Array"]
 
-Params = Union[VectorParams,
-               MultiVector2Params,
-               VectorScalarParams,
-               VectorScalar2Params,
-               MatMulParams,
-               AxisReductionParams]
+Params = Union[
+    VectorParams,
+    MultiVector2Params,
+    VectorScalarParams,
+    VectorScalar2Params,
+    MatMulParams,
+    AxisReductionParams,
+    BroadcastParams,
+    Multi3BroadcastParams,
+]
 
 logger = wblog.getLogger()
 
@@ -82,6 +92,43 @@ class GPU:
         self.gpu.wait()
 
 
+class Shape:
+    """
+    GPU Array of uint (32bit) for shape
+    """
+    def __init__(self, gpu: GPU, *,
+                 data: Optional[Iterable[int]] = None,
+                 ndim: Optional[int] = None):
+        self._gpu = gpu
+
+        if data is not None:
+            data = np.asarray(data, dtype=np.uint32)
+            self.shape = data.shape
+            self.buffer = self._gpu.gpu.toShapeBuffer(np.ravel(data))
+        else:
+            if ndim is None:
+                raise ValueError("One of `data` or `ndim` must be specified.")
+
+            self.buffer = self._gpu.gpu.createShapeBuffer(ndim)
+            self.shape = np.asarray((ndim,), dtype=int)
+
+        self.array = np.asarray(self.buffer)
+        self.array.shape = self.shape
+        self.job = None
+
+    def __getitem__(self, key) -> Union[float, np.ndarray]:
+        return self.array[key]
+
+    def __setitem__(self, key, value):
+        self.array[key] = value
+
+    def flush(self):
+        """
+        Flush Buffer to GPU
+        """
+        self._gpu.flush([self])
+
+
 class Array:
     """
     GPU Array for float (32bit)
@@ -104,6 +151,14 @@ class Array:
     _idiv_scalar = getShader("idiv_scalar.spv")
     _rsub_scalar = getShader("rsub_scalar.spv")
     _rdiv_scalar = getShader("rdiv_scalar.spv")
+    _add_broadcast = getShader("add_broadcast.spv")
+    _sub_broadcast = getShader("sub_broadcast.spv")
+    _mul_broadcast = getShader("mul_broadcast.spv")
+    _div_broadcast = getShader("div_broadcast.spv")
+    _iadd_broadcast = getShader("iadd_broadcast.spv")
+    _isub_broadcast = getShader("isub_broadcast.spv")
+    _imul_broadcast = getShader("imul_broadcast.spv")
+    _idiv_broadcast = getShader("idiv_broadcast.spv")
     _matmul = getShader("matmul.spv")
     _max = getShader("max.spv")
     _min = getShader("min.spv")
@@ -113,6 +168,10 @@ class Array:
     _min_scalar = getShader("min_scalar.spv")
     _imax_scalar = getShader("imax_scalar.spv")
     _imin_scalar = getShader("imin_scalar.spv")
+    _max_broadcast = getShader("max_broadcast.spv")
+    _min_broadcast = getShader("min_broadcast.spv")
+    _imax_broadcast = getShader("imax_broadcast.spv")
+    _imin_broadcast = getShader("imin_broadcast.spv")
     _abs = getShader("abs.spv")
     _sign = getShader("sign.spv")
     _iabs = getShader("iabs.spv")
@@ -158,6 +217,8 @@ class Array:
     _pow_scalar = getShader("pow_scalar.spv")
     _ipow_scalar = getShader("ipow_scalar.spv")
     _rpow_scalar = getShader("rpow_scalar.spv")
+    _pow_broadcast = getShader("pow_broadcast.spv")
+    _ipow_broadcast = getShader("ipow_broadcast.spv")
     _clamp = getShader("clamp.spv")
     _iclamp = getShader("iclamp.spv")
     _clamp_sv = getShader("clamp_sv.spv")
@@ -169,15 +230,20 @@ class Array:
     _sum = getShader("sum.spv")
     _sum_v1_3 = getShader("sum_v1.3.spv")
     _sum_axis = getShader("sum_axis.spv")
+    _sum_axis_rebroadcast = getShader("sum_axis_rebroadcast.spv")
     _prod = getShader("prod.spv")
     _prod_v1_3 = getShader("prod_v1.3.spv")
     _prod_axis = getShader("prod_axis.spv")
+    _prod_axis_rebroadcast = getShader("prod_axis_rebroadcast.spv")
     _maximum = getShader("maximum.spv")
     _maximum_v1_3 = getShader("maximum_v1.3.spv")
     _maximum_axis = getShader("maximum_axis.spv")
+    _maximum_axis_rebroadcast = getShader("maximum_axis_rebroadcast.spv")
     _minimum = getShader("minimum.spv")
     _minimum_v1_3 = getShader("minimum_v1.3.spv")
     _minimum_axis = getShader("minimum_axis.spv")
+    _minimum_axis_rebroadcast = getShader("minimum_axis_rebroadcast.spv")
+    _broadcast = getShader("broadcast.spv")
 
     def __init__(self, gpu: GPU, *, data = None, shape = None):
         """
@@ -210,7 +276,13 @@ class Array:
 
         self.array = np.asarray(self.buffer)
         self.array.shape = self.shape
-        self.job = None
+
+        # Pipeline job to write this Array.
+        self.job: Optional[Job] = None
+
+        # Hold temporary resources until pipeline job finish
+        # to avoid freeing memories in use.
+        self._keep: List[Union[Shape, Array]] = []
 
     def __del__(self):
         self.wait()
@@ -266,57 +338,87 @@ class Array:
                                  DataShape(size, 1, 1),
                                  VectorScalar2Params(size, *scalars))
 
+    def _op(self, other, spv, spv_scalar, spv_broadcast):
+        if not isinstance(other, Array):
+            return self._opVecScalar2(spv_scalar, other)
+        if np.array_equal(self.shape, other.shape):
+            ret = self._opVec3(spv, other)
+            ret._keep.append(other)
+            return ret
+
+        shape = np.broadcast_shapes(self.shape, other.shape)
+        ndim = shape[0]
+
+        shapeABC = Shape(self._gpu, ndim=3*ndim)
+        shapeABC[:] = 1
+        shapeABC[  ndim- self.array.ndim:  ndim] = self.shape
+        shapeABC[2*ndim-other.array.ndim:2*ndim] = other.shape
+        shapeABC[2*ndim                 :      ] = ndim
+        shapeABC.flush()
+
+        ret = Array(self._gpu, shape=shape)
+        ret.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
+                                    [self, other, ret, shapeABC],
+                                    DataShape(ret.buffer.size(), 1, 1),
+                                    Multi3BroadcastParams(self.buffer.size(),
+                                                          other.buffer.size(),
+                                                          ret.buffer.size(),
+                                                          ndim))
+
+        ret._keep.extend([shapeABC, other])
+        return ret
+
     def __add__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            return self._opVec3(self._add, other)
-        else:
-            return self._opVecScalar2(self._add_scalar, other)
+        return self._op(other, self._add, self._add_scalar, self._add_broadcast)
 
     def __sub__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            return self._opVec3(self._sub, other)
-        else:
-            return self._opVecScalar2(self._sub_scalar, other)
+        return self._op(other, self._sub, self._sub_scalar, self._sub_broadcast)
 
     def __mul__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            return self._opVec3(self._mul, other)
-        else:
-            return self._opVecScalar2(self._mul_scalar, other)
+        return self._op(other, self._mul, self._mul_scalar, self._mul_broadcast)
 
     def __truediv__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            return self._opVec3(self._div, other)
+        return self._op(other, self._div, self._div_scalar, self._div_broadcast)
+
+    def _iop(self, other, spv, spv_scalar, spv_broadcast):
+        if not isinstance(other, Array):
+            self._opVecScalar1(spv_scalar, other)
+        elif np.array_equal(self.shape, other.shape):
+            self._opVec2(spv, other)
+            self._keep.append(other)
         else:
-            return self._opVecScalar2(self._div_scalar, other)
+            shape = np.broadcast_shapes(self.shape, other.shape)
+            if not np.array_equal(shape, self.shape):
+                raise ValueError("Incompatible shape")
+            ndim = shape[0]
+
+            shapeAB = Shape(self._gpu, ndim=2*ndim)
+            shapeAB[:] = 1
+            shapeAB[:ndim] = shape
+            shapeAB[-other.array.ndim:] = other.shape
+            shapeAB.flush()
+
+            self.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
+                                         [self, other, shapeAB],
+                                         DataShape(self.buffer.size(), 1, 1),
+                                         BroadcastParams(self.buffer.size(),
+                                                         other.buffer.size(),
+                                                         ndim))
+            self._keep.extend([shapeAB, other])
+
+        return self
 
     def __iadd__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            self._opVec2(self._iadd, other)
-        else:
-            self._opVecScalar1(self._iadd_scalar, other)
-        return self
+        return self._iop(other, self._iadd, self._iadd_scalar, self._iadd_broadcast)
 
     def __isub__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            self._opVec2(self._isub, other)
-        else:
-            self._opVecScalar1(self._isub_scalar, other)
-        return self
+        return self._iop(other, self._isub, self._isub_scalar, self._isub_broadcast)
 
     def __imul__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            self._opVec2(self._imul, other)
-        else:
-            self._opVecScalar1(self._imul_scalar, other)
-        return self
+        return self._iop(other, self._imul, self._imul_scalar, self._imul_broadcast)
 
     def __itruediv__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            self._opVec2(self._idiv, other)
-        else:
-            self._opVecScalar1(self._idiv_scalar, other)
-        return self
+        return self._iop(other, self._idiv, self._idiv_scalar, self._idiv_broadcast)
 
     def __radd__(self, other: float) -> Array:
         return self._opVecScalar2(self._add_scalar, other)
@@ -358,6 +460,8 @@ class Array:
         if self.job is not None:
             self.job.wait()
             self.job = None
+
+        self._keep = []
 
     def flush(self):
         """
@@ -424,16 +528,9 @@ class Array:
         ValueError
             If shape is not same.
         """
-        if isinstance(other, Array):
-            if inplace:
-                self._opVec2(self._imax, other)
-            else:
-                return self._opVec3(self._max, other)
-        else:
-            if inplace:
-                self._opVecScalar1(self._imax_scalar, other)
-            else:
-                return self._opVecScalar2(self._max_scalar, other)
+        if not inplace:
+            return self._op(other, self._max, self._max_scalar, self._max_broadcast)
+        self._iop(other, self._imax, self._imax_scalar, self._imax_broadcast)
 
     def min(self, other: Union[Array, float],
             inplace: bool = False) -> Optional[Array]:
@@ -459,16 +556,9 @@ class Array:
         ValueError
             If shape is not same.
         """
-        if isinstance(other, Array):
-            if inplace:
-                self._opVec2(self._imin, other)
-            else:
-                return self._opVec3(self._min, other)
-        else:
-            if inplace:
-                self._opVecScalar1(self._imin_scalar, other)
-            else:
-                return self._opVecScalar2(self._min_scalar, other)
+        if not inplace:
+            return self._op(other, self._min, self._min_scalar, self._min_broadcast)
+        self._iop(other, self._imin, self._imin_scalar, self._imin_broadcast)
 
     def abs(self, inplace: bool = False) -> Optional[Array]:
         """
@@ -911,16 +1001,10 @@ class Array:
             return self._opVec2(self._invsqrt)
 
     def __pow__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            return self._opVec3(self._pow, other)
-        else:
-            return self._opVecScalar2(self._pow_scalar, other)
+        return self._op(other, self._pow, self._pow_scalar, self._pow_broadcast)
 
     def __ipow__(self, other: Union[Array, float]) -> Array:
-        if isinstance(other, Array):
-            self._opVec2(self._ipow, other)
-        else:
-            self._opVecScalar1(self._ipow_scalar, other)
+        self._iop(other, self._ipow, self._ipow_scalar, self._ipow_broadcast)
         return self
 
     def __rpow__(self, other: float) -> Array:
@@ -946,24 +1030,40 @@ class Array:
         Array
             When ``replace=False``.
         """
+        shape_set = [self.shape]
         min_is_array = isinstance(min, Array)
         if min_is_array:
-            self._check_shape(min)
+            shape_set.append(min.shape)
 
         max_is_array = isinstance(max, Array)
         if max_is_array:
-            self._check_shape(max)
+            shape_set.append(max.shape)
+
+        _s = self
+        if len(shape_set) > 1:
+            shape = np.broadcast_shapes(*shape_set)
+
+            if not np.array_equal(shape, self.shape):
+                if inplace:
+                    raise ValueError(f"Incompatible shape")
+                _s = self.broadcast_to(shape)
+
+            if min_is_array and not np.array_equal(shape, min.shape):
+                min = min.broadcast_to(shape)
+
+            if max_is_array and not np.array_equal(shape, max.shape):
+                max = max.broadcast_to(shape)
 
         if not inplace:
-            ret = Array(self._gpu, shape=self.shape)
+            ret = Array(self._gpu, shape=_s.shape)
             if min_is_array and max_is_array:
-                ret.job = self._opVec(self._clamp, [self, min, max, ret])
+                ret.job = _s._opVec(self._clamp, [_s, min, max, ret])
             elif max_is_array:
-                ret.job = self._opVecScalar(self._clamp_sv, [self, max, ret], min)
+                ret.job = _s._opVecScalar(self._clamp_sv, [_s, max, ret], min)
             elif min_is_array:
-                ret.job = self._opVecScalar(self._clamp_vs, [self, min, ret], max)
+                ret.job = _s._opVecScalar(self._clamp_vs, [_s, min, ret], max)
             else:
-                ret.job = self._opVec2Scalar(self._clamp_ss, [self, ret], [min, max])
+                ret.job = _s._opVec2Scalar(self._clamp_ss, [_s, ret], [min, max])
             return ret
         else:
             # inplace
@@ -997,6 +1097,7 @@ class Array:
                                         AxisReductionParams(prev_prod,
                                                             axis_size,
                                                             post_prod))
+            ret._keep.append(tmp)
             tmp = ret
 
         if keepdims:
@@ -1006,7 +1107,28 @@ class Array:
             ret.reshape(shape)
         return ret
 
-    def _reduce(self, spv, spv_v1_3, spv_axis, axis, keepdims):
+    def _reduce(self,
+                spv, spv_v1_3, spv_axis, spv_rebroadcast,
+                axis, keepdims, rebroadcast):
+        if rebroadcast:
+            if not isinstance(axis, int):
+                raise ValueError("When `rebroadcast` is specified, " +
+                                 "`axis` must be `int`")
+
+            prev_prod = int(np.prod(self.shape[:axis]))
+            axis_size = int(self.shape[axis])
+            post_prod = int(np.prod(self.shape[axis+1:]))
+
+            ret = Array(self._gpu, shape=self.shape)
+            ret.job = self._gpu._submit(spv_rebroadcast, 1, 64, 1,
+                                        [self, ret],
+                                        DataShape(prev_prod, post_prod, 1),
+                                        AxisReductionParams(prev_prod,
+                                                            axis_size,
+                                                            post_prod))
+            ret._keep.append(self)
+            return ret
+
         if axis is None:
             _local_size = 64
             if self._gpu.canSubgroupArithmetic:
@@ -1025,6 +1147,7 @@ class Array:
                 m = (n // _local_size) + ((n % _local_size) != 0)
                 ret = Array(self._gpu, shape=(m,))
                 ret.job = f(tmp, ret)
+                ret._keep.append(tmp)
 
                 if m == 1:
                     if keepdims:
@@ -1039,7 +1162,8 @@ class Array:
             return self._axis_reduction(spv_axis, axis, keepdims)
 
     def sum(self, axis: Union[int, Iterable[int]]=None,
-            keepdims: bool = False) -> Array:
+            keepdims: bool = False,
+            rebroadcast: bool = False) -> Array:
         """
         Calculate Sum of Elements
 
@@ -1050,16 +1174,26 @@ class Array:
         keepdims : bool, optional
             When `True`, reduced dimensions are keeped with size one.
             Default is `False`.
+        rebroadcast : bool, optional
+            When `True`, keep shape by re-broadcasting after reduce.
+            Default is `False`.
 
         Returns
         -------
         vulkpy.Array
             Summarized array
         """
-        return self._reduce(self._sum, self._sum_v1_3, self._sum_axis, axis, keepdims)
+        return self._reduce(self._sum,
+                            self._sum_v1_3,
+                            self._sum_axis,
+                            self._sum_axis_rebroadcast,
+                            axis,
+                            keepdims,
+                            rebroadcast)
 
     def prod(self, axis: Union[int, Iterable[int]]=None,
-             keepdims: bool = False) -> Array:
+             keepdims: bool = False,
+             rebroadcast: bool = False) -> Array:
         """
         Calculate Product of Elements
 
@@ -1070,17 +1204,26 @@ class Array:
         keepdims : bool, optional
             When `True`, reduced dimensions are keeped with size one.
             Default is `False`.
+        rebroadcast : bool, optional
+            When `True`, keep shape by re-broadcasting after reduce.
+            Default is `False`.
 
         Returns
         -------
         vulkpy.Array
             Producted array
         """
-        return self._reduce(self._prod, self._prod_v1_3, self._prod_axis,
-                            axis, keepdims)
+        return self._reduce(self._prod,
+                            self._prod_v1_3,
+                            self._prod_axis,
+                            self._prod_axis_rebroadcast,
+                            axis,
+                            keepdims,
+                            rebroadcast)
 
     def maximum(self, axis: Union[int, Iterable[int]]=None,
-                keepdims: bool = False) -> Array:
+                keepdims: bool = False,
+                rebroadcast: bool = False) -> Array:
         """
         Get Maximum Value
 
@@ -1091,6 +1234,9 @@ class Array:
         keepdims : bool, optional
             When `True`, reduced dimensions are keeped with size one.
             Default is `False`.
+        rebroadcast : bool, optional
+            When `True`, keep shape by re-broadcasting after reduce.
+            Default is `False`.
 
         Returns
         -------
@@ -1100,11 +1246,14 @@ class Array:
         return self._reduce(self._maximum,
                             self._maximum_v1_3,
                             self._maximum_axis,
+                            self._maximum_axis_rebroadcast,
                             axis,
-                            keepdims)
+                            keepdims,
+                            rebroadcast)
 
     def minimum(self, axis: Union[int, Iterable[int]]=None,
-                keepdims: bool = False) -> Array:
+                keepdims: bool = False,
+                rebroadcast: bool = False) -> Array:
         """
         Get Minimum Value
 
@@ -1115,6 +1264,9 @@ class Array:
         keepdims : bool, optional
             When `True`, reduced dimensions are keeped with size one.
             Default is `False`.
+        rebroadcast : bool, optional
+            When `True`, keep shape by re-broadcasting after reduce.
+            Default is `False`.
 
         Returns
         -------
@@ -1124,11 +1276,14 @@ class Array:
         return self._reduce(self._minimum,
                             self._minimum_v1_3,
                             self._minimum_axis,
+                            self._minimum_axis_rebroadcast,
                             axis,
-                            keepdims)
+                            keepdims,
+                            rebroadcast)
 
     def mean(self, axis: Union[int, Iterable[int]]=None,
-             keepdims: bool = False) -> Array:
+             keepdims: bool = False,
+             rebroadcast: bool = False) -> Array:
         """
         Calculate Mean Value
 
@@ -1139,6 +1294,9 @@ class Array:
         keepdims : bool, optional
             When `True`, reduced dimensions are keeped with size one.
             Default is `False`.
+        rebroadcast : bool, optional
+            When `True`, keep shape by re-broadcasting after reduce.
+            Default is `False`.
 
         Returns
         -------
@@ -1147,8 +1305,56 @@ class Array:
         """
         n_before = self.buffer.size()
 
-        ret = self.sum(axis, keepdims)
-        n_after = ret.buffer.size()
+        ret = self.sum(axis, keepdims, rebroadcast)
 
-        ret *= (n_after/n_before)
+        if rebroadcast:
+            ret /= self.shape[axis]
+        else:
+            n_after = ret.buffer.size()
+            ret *= (n_after/n_before)
+
+        return ret
+
+    def broadcast_to(self, shape: Iterable[int]) -> Array:
+        """
+        Broadcast to new shape
+
+        Parameters
+        ----------
+        shape : iterable of ints
+            Shape of broadcast target
+
+        Returns
+        -------
+        vulkpy.Array
+            Broadcasted array
+
+        Raises
+        ------
+        ValueError
+            If ``shape`` is not compatible.
+        """
+        shape = np.asarray(shape, dtype=int)
+        if np.all(np.broadcast_shapes(self.shape, shape) != shape):
+            raise ValueError(f"Cannot broadcast to {shape}")
+
+        ret = Array(self._gpu, shape=shape)
+
+        self_shape = self.shape
+        dim_diff = len(shape) - len(self_shape)
+        if dim_diff > 0:
+            self_shape = np.concatenate((np.ones(shape=(dim_diff,)), self_shape),
+                                        axis=0)
+
+        shapeA = Shape(self._gpu, data=self_shape)
+        shapeB = Shape(self._gpu, data=shape)
+
+        ret.job = self._gpu._submit(self._broadcast, 64, 1, 1,
+                                    [self, ret, shapeA, shapeB],
+                                    DataShape(ret.buffer.size(), 1, 1),
+                                    BroadcastParams(self.buffer.size(),
+                                                    ret.buffer.size(),
+                                                    shapeA.buffer.size()))
+        self._keep.extend([shapeA, shapeB])
+
         return ret
