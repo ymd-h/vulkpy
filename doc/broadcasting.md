@@ -81,7 +81,7 @@ c = a + b
 ```
 
 ```{note}
-For inplace operations, only ~other~ (non-inplaced) array
+For inplace operations, only `other` (non-inplaced) array
 can be broadcasted because we cannot grow already allocated memory.
 
 Since we can skip index computation for inplaced array,
