@@ -9,6 +9,7 @@ vulkpy is a Python package providing GPGPU computation based on Vulkan.
 :maxdepth: 1
 
 ./broadcasting.md
+./synchronization.md
 ./example.md
 ./api.md
 ```

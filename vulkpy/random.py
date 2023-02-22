@@ -100,6 +100,7 @@ class _ConvertMixin:
                                            _local_size, 1, 1,
                                            [rng, buffer], dshape, p)
 
+        buffer._keep.append(self)
         return buffer
 
 class Xoshiro128pp(_ConvertMixin):
@@ -173,4 +174,5 @@ class Xoshiro128pp(_ConvertMixin):
 
         n = int(np.prod(buffer.shape))
         buffer.job = self.rng.random(n, buffer.buffer.info())
+        buffer._keep.append(self)
         return buffer

@@ -302,15 +302,18 @@ class Array:
         self._check_shape(other)
         ret = Array(self._gpu, shape=self.shape)
         ret.job = self._opVec(spv, [self, other, ret])
+        ret._keep.extend([self, other])
         return ret
 
     def _opVec2(self, spv, other=None):
         if other is not None:
             self._check_shape(other)
             self.job = self._opVec(spv, [self, other])
+            self._keep.append(other)
         else:
             ret = Array(self._gpu, shape=self.shape)
             ret.job = self._opVec(spv, [self, ret])
+            ret._keep.append(self)
             return ret
 
     def _opVec1(self, spv):
@@ -326,6 +329,7 @@ class Array:
     def _opVecScalar2(self, spv, other):
         ret = Array(self._gpu, shape=self.shape)
         ret.job = self._opVecScalar(spv, [self, ret], other)
+        ret._keep.append(self)
         return ret
 
     def _opVecScalar1(self, spv, other):
@@ -343,7 +347,6 @@ class Array:
             return self._opVecScalar2(spv_scalar, other)
         if np.array_equal(self.shape, other.shape):
             ret = self._opVec3(spv, other)
-            ret._keep.append(other)
             return ret
 
         shape = np.broadcast_shapes(self.shape, other.shape)
@@ -365,7 +368,7 @@ class Array:
                                                           ret.buffer.size(),
                                                           ndim))
 
-        ret._keep.extend([shapeABC, other])
+        ret._keep.extend([self, other, shapeABC])
         return ret
 
     def __add__(self, other: Union[Array, float]) -> Array:
@@ -385,7 +388,6 @@ class Array:
             self._opVecScalar1(spv_scalar, other)
         elif np.array_equal(self.shape, other.shape):
             self._opVec2(spv, other)
-            self._keep.append(other)
         else:
             shape = np.broadcast_shapes(self.shape, other.shape)
             if not np.array_equal(shape, self.shape):
@@ -404,7 +406,7 @@ class Array:
                                          BroadcastParams(self.buffer.size(),
                                                          other.buffer.size(),
                                                          ndim))
-            self._keep.extend([shapeAB, other])
+            self._keep.extend([other, shapeAB])
 
         return self
 
@@ -451,6 +453,7 @@ class Array:
                                     [self, other, ret],
                                     DataShape(rowA, columnB, 1),
                                     MatMulParams(rowA,contractSize,columnB))
+        ret._keep.extend([self, other])
         return ret
 
     def wait(self):
@@ -1058,21 +1061,28 @@ class Array:
             ret = Array(self._gpu, shape=_s.shape)
             if min_is_array and max_is_array:
                 ret.job = _s._opVec(self._clamp, [_s, min, max, ret])
+                ret._keep.extend([_s, min, max])
             elif max_is_array:
                 ret.job = _s._opVecScalar(self._clamp_sv, [_s, max, ret], min)
+                ret._keep.extend([_s, max])
             elif min_is_array:
                 ret.job = _s._opVecScalar(self._clamp_vs, [_s, min, ret], max)
+                ret._keep.extend([_s, min])
             else:
                 ret.job = _s._opVec2Scalar(self._clamp_ss, [_s, ret], [min, max])
+                ret._keep.append(_s)
             return ret
         else:
             # inplace
             if min_is_array and max_is_array:
                 self.job = self._opVec(self._iclamp, [self, min, max])
+                self._keep.extend([min, max])
             elif max_is_array:
                 self.job = self._opVecScalar(self._iclamp_sv, [self, max], min)
+                self._keep.append(max)
             elif min_is_array:
                 self.job = self._opVecScalar(self._iclamp_vs, [self, min], max)
+                self._keep.append(min)
             else:
                 self.job = self._opVec2Scalar(self._iclamp_ss, [self], [min, max])
 
@@ -1355,6 +1365,5 @@ class Array:
                                     BroadcastParams(self.buffer.size(),
                                                     ret.buffer.size(),
                                                     shapeA.buffer.size()))
-        self._keep.extend([shapeA, shapeB])
-
+        ret._keep.extend([self, shapeA, shapeB])
         return ret
