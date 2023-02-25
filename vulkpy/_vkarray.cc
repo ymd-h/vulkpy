@@ -152,6 +152,12 @@ namespace OpParams {
     std::uint32_t columnB;
   };
 
+  struct BatchAffine{
+    std::uint32_t batch_size;
+    std::uint32_t input_size;
+    std::uint32_t output_size;
+  };
+
   struct AxisReduction{
     std::uint32_t prev_prod;
     std::uint32_t axis_size;
@@ -350,7 +356,8 @@ using OpVariant_t = std::variant<
   Op_t<2, OpParams::ShiftVector>,
   Op_t<3, OpParams::Broadcast>,
   Op_t<4, OpParams::Broadcast>,
-  Op_t<4, OpParams::MultiBroadcast<3>>
+  Op_t<4, OpParams::MultiBroadcast<3>>,
+  Op_t<4, OpParams::BatchAffine>
   >;
 
 
@@ -770,6 +777,9 @@ PYBIND11_MODULE(_vkarray, m){
 
   pybind11::class_<OpParams::MultiBroadcast<3>>(m, "Multi3BroadcastParams")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t>());
+
+  pybind11::class_<OpParams::BatchAffine>(m, "BatchAffineParams")
+    .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
   pybind11::class_<DataShape>(m, "DataShape")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());

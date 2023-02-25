@@ -27,6 +27,7 @@ from ._vkarray import (
     AxisReductionParams,
     BroadcastParams,
     Multi3BroadcastParams,
+    BatchAffineParams,
 )
 
 __all__ = ["GPU", "Array"]
@@ -40,6 +41,7 @@ Params = Union[
     AxisReductionParams,
     BroadcastParams,
     Multi3BroadcastParams,
+    BatchAffineParams,
 ]
 
 logger = wblog.getLogger()
