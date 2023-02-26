@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, Optional
 
-from .vkarray import GPU, Array, DataShape, BatchParams
+from .vkarray import GPU, Array, DataShape, BatchAffineParams
 from .util import getShader
 
 
@@ -129,9 +129,9 @@ class Dense(Module):
         y.job = self.w._gpu._submit(self._batch_affine, 1, 64, 1,
                                     [self.w.value, self.b.value, x, y],
                                     DataShape(x.shape[0], self.output_dim, 1),
-                                    BatchParams(x.shape[0],
-                                                x.shape[1],
-                                                self.output_dim))
+                                    BatchAffineParams(x.shape[0],
+                                                      x.shape[1],
+                                                      self.output_dim))
         y._keep.extend([self.w.value, self.b.value, x])
         return y
 
