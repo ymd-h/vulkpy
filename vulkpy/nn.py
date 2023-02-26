@@ -216,6 +216,8 @@ class ReLU(Module):
         Notes
         -----
         .. math:: dx = dy * \max(sign(y), 0)
+
+        if x == 0, dy/dx => 0
         """
         dx = self._y.sign() # Allocate
         dx.max(0.0, inplace=True)
