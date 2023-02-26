@@ -348,7 +348,7 @@ class Softmax(Module):
         -----
         .. math:: y = \exp (x) / \sum _i \exp(x_i)
         """
-        X = x - x.max(axis=1, rebroadcast=True)
+        X = x - x.maximum(axis=1, rebroadcast=True)
         X.exp(inplace=True)
         X /= X.sum(axis=1, rebroadcast=True)
         return X
