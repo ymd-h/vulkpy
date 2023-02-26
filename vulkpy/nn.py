@@ -6,8 +6,27 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, Optional
 
+import numpy as np
+
 from .vkarray import GPU, Array, DataShape, BatchAffineParams
+from .random import Xoshiro128pp
 from .util import getShader
+
+
+class HeNormal:
+    """
+    He normal initializer
+
+    Note
+    ----
+    .. math:: \sigma = \sqrt(2/input_dim)
+    """
+    def __init__(self, gpu: GPU, input_dim: int):
+        self.rng = Xoshiro128pp(gpu)
+        self.stddev = np.sqrt(2 / input_dim)
+
+    def __call__(self, gpu: GPU, shape: Iterable[int]):
+        return self.rng.normal(shape=shape, stddev=self.stddev)
 
 
 class Parameter:
