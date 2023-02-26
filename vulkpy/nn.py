@@ -354,7 +354,27 @@ class Softmax(Module):
         return X
 
     def backward(self, dy: Array) -> Array:
-        pass
+        """
+        Backward
+
+        Parameters
+        ----------
+        dy : vulkpy.Array
+            Batch grad
+
+        Returns
+        -------
+        vulkpy.Array
+            Batch grad
+
+        Notes
+        -----
+        .. math:: dx = dy \times y(1 - y)
+        """
+        dx = 1.0 - self._y
+        dx *= self._y
+        dx *= dy
+        return dx
 
 
 class Loss:
