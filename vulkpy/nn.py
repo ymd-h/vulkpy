@@ -118,13 +118,31 @@ class Dense(Module):
     """
     _batch_affine = getShader("batch_affine.spv")
 
-    def __init__(self, gpu: GPU, input_dim: int, output_dim: int):
-        super().__init__(gpu)
+    def __init__(self, gpu: GPU, input_dim: int, output_dim: int,
+                 w_init: Optional[Callable[[GPU, Iterable[int]], Array]] = None,
+                 b_init: Optional[Callable[[GPU, Iterable[int]], Array]] = None):
+        """
+        Initialize Dense
 
+        Parameters
+        ----------
+        gpu : vulkpy.GPU
+            GPU
+        input_dim, output_dim : int
+            Input / output dimension
+        w_init, b_init : Callable, optional
+            Weight / bias initializer.
+        """
         self.input_dim = int(input_dim)
         self.output_dim = int(output_dim)
-        self.w = Parameter(gpu, shape=(self.output_dim, self.input_dim))
-        self.b = Parameter(gpu, shape=(self.output_dim,))
+
+        if w_init is None:
+            w_init = HeNormal(gpu, self.input_dim)
+
+        self.w = Parameter(gpu, shape=(self.output_dim, self.input_dim),
+                           initializer=w_init)
+        self.b = Parameter(gpu, shape=(self.output_dim,),
+                           initializer=b_init)
 
     def forward(self, x: Array) -> Array:
         """
