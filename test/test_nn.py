@@ -53,6 +53,18 @@ class TestNN(unittest.TestCase):
         dx = sigmoid.backward(dy)
         np.testing.assert_allclose(dx, dy * y * (1 - y))
 
+    def test_softmax_forward(self):
+        softmax = nn.Softmax()
+
+        _x = np.asarray([[-100, -0.1, 0, 10, 100]])
+        x = vk.Array(self.gpu, data=_x)
+
+        y = softmax(x)
+
+        exp_x = np.exp(_x - _x.max(axis=1))
+        np.testing.assert_allclose(y, exp_x / exp_x.sum(axis=1, keepdims=True),
+                                   rtol=1e-7, atol=1e-7)
+
     def test_he(self):
         seed = 645
         shape = (10,)
