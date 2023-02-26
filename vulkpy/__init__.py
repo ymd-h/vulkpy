@@ -25,3 +25,4 @@ Examples
 """
 from .vkarray import GPU, Array
 from . import random
+from . import nn
