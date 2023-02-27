@@ -109,5 +109,15 @@ class TestLayers(unittest.TestCase):
 
         np.testing.assert_allclose(y, [[0, 0], [0, 0]])
 
+    def test_dense_bias(self):
+        dense = nn.Dense(self.gpu, 2, 2,
+                         w_init=nn.Constant(0.0),
+                         b_init=nn.Constant(1.0))
+
+        x = vk.Array(self.gpu, data=[[1,2], [3,4]])
+        y = dense(x)
+
+        np.testing.assert_allclose(y, [[1, 1], [1, 1]])
+
 if __name__ == "__main__":
     unittest.main()
