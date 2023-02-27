@@ -6,6 +6,27 @@ import vulkpy as vk
 from vulkpy import nn, random
 
 
+class TestInitializers(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.gpu = vk.GPU()
+
+    def test_constant(self):
+        const = nn.Constant(0.0)
+        np.testing.assert_allclose(const(self.gpu, (3,1)), [[0.0], [0.0], [0.0]])
+
+    def test_he(self):
+        seed = 645
+        shape = (10,)
+
+        he = nn.HeNormal(self.gpu, input_dim=2, seed=seed)
+        self.assertEqual(he.stddev, 1.0)
+
+        rng = random.Xoshiro128pp(self.gpu, seed=seed)
+
+        np.testing.assert_allclose(he(self.gpu, shape), rng.normal(shape=shape))
+
+
 class TestLayers(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -80,26 +101,6 @@ class TestLayers(unittest.TestCase):
 
         np.testing.assert_allclose(dx, dy * y * (1 - y))
 
-
-class TestInitializers(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.gpu = vk.GPU()
-
-    def test_constant(self):
-        const = nn.Constant(0.0)
-        np.testing.assert_allclose(const(self.gpu, (3,1)), [[0.0], [0.0], [0.0]])
-
-    def test_he(self):
-        seed = 645
-        shape = (10,)
-
-        he = nn.HeNormal(self.gpu, input_dim=2, seed=seed)
-        self.assertEqual(he.stddev, 1.0)
-
-        rng = random.Xoshiro128pp(self.gpu, seed=seed)
-
-        np.testing.assert_allclose(he(self.gpu, shape), rng.normal(shape=shape))
 
 if __name__ == "__main__":
     unittest.main()
