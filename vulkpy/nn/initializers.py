@@ -29,7 +29,7 @@ class Constant:
             Parameter shape
         """
         p = Array(gpu, shape=shape)
-        p[:] = value
+        p[:] = self.value
         return p
 
 
