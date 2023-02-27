@@ -18,19 +18,19 @@ class Constant:
         self.value = value
 
     def __call__(self, gpu: GPU, shape: Iterable[int]) -> Array:
-    """
-    Initialize new parameters
+        """
+        Initialize new parameters
 
-    Parameters
-    ----------
-    gpu : vulkpy.GPU
-        GPU
-    shape : iterable of ints
-        Parameter shape
-    """
-    p = Array(gpu, shape=shape)
-    p[:] = value
-    return p
+        Parameters
+        ----------
+        gpu : vulkpy.GPU
+            GPU
+        shape : iterable of ints
+            Parameter shape
+        """
+        p = Array(gpu, shape=shape)
+        p[:] = value
+        return p
 
 
 class HeNormal:
