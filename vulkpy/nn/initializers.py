@@ -58,4 +58,14 @@ class HeNormal:
         self.stddev = np.sqrt(2 / input_dim)
 
     def __call__(self, gpu: GPU, shape: Iterable[int]):
+        """
+        Initialize new parameters
+
+        Parameters
+        ----------
+        gpu : vulkpy.GPU
+            GPU
+        shape : iterable of ints
+            Parameter shape
+        """
         return self.rng.normal(shape=shape, stddev=self.stddev)
