@@ -4,6 +4,9 @@ from typing import Callable, Iterable, Optional
 from vulkpy.vkarray import GPU, Array
 
 
+__all__ = ["Parameter", "Module"]
+
+
 class Parameter:
     """
     Neural Network Parameter
