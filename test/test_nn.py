@@ -6,7 +6,7 @@ import vulkpy as vk
 from vulkpy import nn, random
 
 
-class TestNN(unittest.TestCase):
+class TestLayers(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.gpu = vk.GPU()
@@ -79,6 +79,13 @@ class TestNN(unittest.TestCase):
         dx = softmax.backward(dy)
 
         np.testing.assert_allclose(dx, dy * y * (1 - y))
+
+
+class TestNN(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.gpu = vk.GPU()
+
 
     def test_he(self):
         seed = 645
