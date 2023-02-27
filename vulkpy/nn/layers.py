@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Callable, Iterable, Optional
 
 from vulkpy.util import getShader
-from vulkpy.vkarray import GPU, Array, BatchAffineParams
+from vulkpy.vkarray import GPU, Array, DataShape, BatchAffineParams
 from .core import Parameter, Module
 from .initializers import HeNormal
 
@@ -61,12 +61,12 @@ class Dense(Module):
         .. math:: y = Wx + b
         """
         y = Array(x._gpu, shape=(x.shape[0], self.output_dim))
-        y.job = self.w._gpu._submit(self._batch_affine, 1, 64, 1,
-                                    [self.w.value, self.b.value, x, y],
-                                    DataShape(x.shape[0], self.output_dim, 1),
-                                    BatchAffineParams(x.shape[0],
-                                                      x.shape[1],
-                                                      self.output_dim))
+        y.job = x._gpu._submit(self._batch_affine, 1, 64, 1,
+                               [self.w.value, self.b.value, x, y],
+                               DataShape(x.shape[0], self.output_dim, 1),
+                               BatchAffineParams(x.shape[0],
+                                                 x.shape[1],
+                                                 self.output_dim))
         y._keep.extend([self.w.value, self.b.value, x])
         return y
 
