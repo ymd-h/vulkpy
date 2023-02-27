@@ -3,8 +3,31 @@ from typing import Optional
 
 import numpy as np
 
-from vulkpy.vkarray import GPU
+from vulkpy.vkarray import GPU, Array
 from vulkpy.random import Xoshiro128pp
+
+
+class Constant:
+    """
+    Constant Initializer
+    """
+    def __init__(self, value: float):
+        self.value = value
+
+    def __call__(self, gpu: GPU, shape: Iterable[int]) -> Array:
+    """
+    Initialize new parameters
+
+    Parameters
+    ----------
+    gpu : vulkpy.GPU
+        GPU
+    shape : iterable of ints
+        Parameter shape
+    """
+    p = Array(gpu, shape=shape)
+    p[:] = value
+    return p
 
 
 class HeNormal:
