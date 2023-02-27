@@ -130,7 +130,7 @@ class Dense(Module):
     """
     _batch_affine = getShader("batch_affine.spv")
 
-    def __init__(self, gpu: GPU, input_dim: int, output_dim: int,
+    def __init__(self, gpu: GPU, input_dim: int, output_dim: int, *,
                  w_init: Optional[Callable[[GPU, Iterable[int]], Array]] = None,
                  b_init: Optional[Callable[[GPU, Iterable[int]], Array]] = None):
         """
