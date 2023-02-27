@@ -101,6 +101,13 @@ class TestLayers(unittest.TestCase):
 
         np.testing.assert_allclose(dx, dy * y * (1 - y))
 
+    def test_dense_zero(self):
+        dense = nn.Dense(self.gpu, 2, 2, w_init=nn.Constant(0.0))
+
+        x = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        y = dense(x)
+
+        np.testing.assert_allclose(y, [[0, 0], [0, 0]])
 
 if __name__ == "__main__":
     unittest.main()
