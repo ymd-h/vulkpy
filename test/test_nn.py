@@ -81,11 +81,10 @@ class TestLayers(unittest.TestCase):
         np.testing.assert_allclose(dx, dy * y * (1 - y))
 
 
-class TestNN(unittest.TestCase):
+class TestInitializers(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.gpu = vk.GPU()
-
 
     def test_he(self):
         seed = 645
