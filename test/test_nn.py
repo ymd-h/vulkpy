@@ -86,6 +86,10 @@ class TestInitializers(unittest.TestCase):
     def setUpClass(cls):
         cls.gpu = vk.GPU()
 
+    def test_constant(self):
+        const = nn.Constant(0.0)
+        np.testing.assert_allclose(const(self.gpu, (3,1)), [[0.0], [0.0], [0.0]])
+
     def test_he(self):
         seed = 645
         shape = (10,)
