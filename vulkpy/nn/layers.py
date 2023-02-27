@@ -97,7 +97,7 @@ class Dense(Module):
 
         x_shape = self._x.shape
         dy_shape = dy.shape
-        dy.reshape(dy.shape[0], dy.shape[1], 1)
+        dy.reshape((dy.shape[0], dy.shape[1], 1))
         self._x.reshape((self._x.shape[0], 1, self._x.shape[1]))
 
         dW = dy * self._x # Allocate
