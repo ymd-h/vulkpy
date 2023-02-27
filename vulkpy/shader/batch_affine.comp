@@ -31,7 +31,7 @@ void main(){
   const uint elem = o_idx * params.input_size;
 
   float sum = 0.0;
-  for(uint i = 0; s < params.input_size; i++){
+  for(uint i = 0; i < params.input_size; i++){
     sum += w[elem + i] * x[batch + i];
   }
 
