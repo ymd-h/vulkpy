@@ -719,6 +719,8 @@ PYBIND11_MODULE(_vkarray, m){
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::MultiBroadcast<3>, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit", &submit<OpParams::BatchAffine, 4>,
+         pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait)
     .def("flush",
          [](GPU& m, const std::vector<vk::MappedMemoryRange>& r){ m.flush(r); })
