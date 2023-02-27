@@ -7,6 +7,9 @@ from vulkpy.vkarray import GPU, Array
 from vulkpy.random import Xoshiro128pp
 
 
+__all__ = ["Constant", "HeNormal"]
+
+
 class Constant:
     """
     Constant Initializer
