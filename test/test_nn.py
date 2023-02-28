@@ -27,6 +27,21 @@ class TestInitializers(unittest.TestCase):
         np.testing.assert_allclose(he(self.gpu, shape), rng.normal(shape=shape))
 
 
+class TestOptimizers(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.gpu = vk.GPU()
+
+    def test_sgd(self):
+        sgd = nn.SGD(lr=0.01)
+
+        grad = vk.Array(self.gpu, data=[1, 2, 3])
+        state = sgd.init_state(grad.shape)
+
+        diff = sgd(grad, state)
+        np.testing.assert_allclose(diff, grad * (-0.01))
+
+
 class TestLayers(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
