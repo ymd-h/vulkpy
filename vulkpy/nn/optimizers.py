@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclass import dataclass
+from dataclasses import dataclass
 from typing import Iterable, Union
 
 from vulkpy.vkarray import GPU, Array
