@@ -358,7 +358,7 @@ class Array:
         shapeABC[:] = 1
         shapeABC[  ndim- self.array.ndim:  ndim] = self.shape
         shapeABC[2*ndim-other.array.ndim:2*ndim] = other.shape
-        shapeABC[2*ndim                 :      ] = ndim
+        shapeABC[2*ndim                 :      ] = shape
         shapeABC.flush()
 
         ret = Array(self._gpu, shape=shape)
