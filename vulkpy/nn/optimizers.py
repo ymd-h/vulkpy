@@ -157,7 +157,7 @@ class Adam:
         AdamState
             Optimizer state
         """
-       state = AdamState(m=Array(self.gpu, shape=shape),
+        state = AdamState(m=Array(self.gpu, shape=shape),
                           v=Array(self.gpu, shape=shape))
         state.m[:] = 0
         state.v[:] = 0
