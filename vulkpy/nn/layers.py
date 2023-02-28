@@ -107,7 +107,7 @@ class Dense(Module):
         self._x.reshape(x_shape)
         dy.reshape(dy_shape)
 
-        return dy @ self.w # Allocate
+        return dy @ self.w.value # Allocate
 
 
 class ReLU(Module):
