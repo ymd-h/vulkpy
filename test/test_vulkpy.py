@@ -1164,6 +1164,16 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(c, [[2, 2], [2, 2]])
 
+    def test_add_broadcast_both(self):
+        _a = np.arange(4).reshape((1, 2, 2))
+        _b = np.arange(4).reshape((2, 2, 1))
+
+        a = vk.Array(self.gpu, data=_a)
+        b = vk.Array(self.gpu, data=_b)
+
+        c = a + b
+        np.testing.assert_allclose(c, _a + _b)
+
     def test_sub_broadcast(self):
         a = vk.Array(self.gpu, data=np.ones(shape=(2, 1)))
         b = vk.Array(self.gpu, data=np.ones(shape=(2, 2)))
