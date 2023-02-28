@@ -41,6 +41,18 @@ class TestOptimizers(unittest.TestCase):
         diff = sgd(grad, state)
         np.testing.assert_allclose(diff, grad * (-0.01))
 
+    def test_adam(self):
+        adam = nn.Adam(self.gpu)
+
+        grad = vk.Array(self.gpu, data=[1, 2, 3])
+        state = adam.init_state(grad.shape)
+        self.assertEqual(state.beta1t, 1.0)
+        self.assertEqual(state.beta2t, 1.0)
+
+        diff = adam(grad, state)
+
+        self.assertEqual(state.beta1t, adam.beta1)
+        self.assertEqual(state.beta2t, adam.beta2)
 
 class TestLayers(unittest.TestCase):
     @classmethod
