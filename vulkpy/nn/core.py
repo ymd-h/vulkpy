@@ -101,3 +101,9 @@ class Module:
 
     def backward(self, dy: Array) -> Array:
         raise NotImplementedError
+
+    def zero_grad(self):
+        pass
+
+    def update(self):
+        pass
