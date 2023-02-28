@@ -109,6 +109,14 @@ class Dense(Module):
 
         return dy @ self.w.value # Allocate
 
+    def zero_grad(self):
+        self.w.zero_grad()
+        self.b.zero_grad()
+
+    def update(self):
+        self.w.update()
+        self.b.update()
+
 
 class ReLU(Module):
     """
