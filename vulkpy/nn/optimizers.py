@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclass import dataclass
 from typing import Iterable, Union
 
-from vulkpy.vkarray import Array
+from vulkpy.vkarray import GPU, Array
 
 __all__ = [
     "SGD", "SGDState",
