@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Callable, Iterable, Optional
 
 from vulkpy.vkarray import GPU, Array
+from .optimizers import Optimizer, Adam
 
 
 __all__ = ["Parameter", "Module"]
@@ -15,6 +16,7 @@ class Parameter:
                  gpu: GPU,
                  shape: Iterable[int],
                  trainable: bool = True,
+                 opt: Optional[Optimizer] = None,
                  initializer: Optional[Callable[[GPU, Iterable[int]], Array]]=None):
         """
         Initialize Parameter
@@ -39,6 +41,11 @@ class Parameter:
         if trainable:
             self.grad = Array(gpu, shape=shape)
             self.grad[:] = 0.0
+
+            if opt is None:
+                opt = Adam(self.gpu)
+            self.opt = opt
+            self.opt_state = self.opt.init_state()
         else:
             self.grad = None
 
@@ -70,6 +77,12 @@ class Parameter:
         """
         self.grad[:] = 0.0
 
+    def update(self):
+        """
+        Update value
+        """
+        if self.is_trainable():
+            self.value += self.opt(self.grad, self.opt_state)
 
 class Module:
     def __init__(self):
