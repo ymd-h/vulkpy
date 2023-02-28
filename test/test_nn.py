@@ -127,5 +127,26 @@ class TestLayers(unittest.TestCase):
 
         np.testing.assert_allclose(y[0,:], y[1,:])
 
+    def test_dense_backward(self):
+        dense = nn.Dense(self.gpu, 2, 2)
+        np.testing.assert_allclose(dense.w.grad, [[0, 0], [0, 0]])
+        np.testing.assert_allclose(dense.b.grad, [0, 0])
+
+        x = vk.Array(self.gpu, data=[[1, 2], [3, 4]])
+        y = dense(x)
+
+        dy = vk.Array(self.gpu, data=[[4, 2], [1, 3]])
+        dx = dense.backward(dy)
+
+        np.testing.assert_allclose(dense.w.grad, [[7, 12], [11, 16]])
+        np.testing.assert_allclose(dense.b.grad, [5, 5])
+
+        _w = dense.w.value
+        np.testing.assert_allclose(dx,
+                                   [[_w[0,0] * dy[0,0] + _w[1,0] * dy[0,1],
+                                     _w[0,1] * dy[0,0] + _w[1,1] * dy[0,1]],
+                                    [_w[0,0] * dy[1,0] + _w[1,0] * dy[1,1],
+                                     _w[0,1] * dy[1,0] + _w[1,1] * dy[1,1]]])
+
 if __name__ == "__main__":
     unittest.main()
