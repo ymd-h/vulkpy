@@ -1,8 +1,14 @@
 from __future__ import annotations
 from dataclass import dataclass
-from typing import Iterable
+from typing import Iterable, Union
 
 from vulkpy.vkarray import Array
+
+__all__ = [
+    "SGD", "SGDState",
+    "Adam", "AdamState",
+    "Optimizer", "OptimizerState",
+]
 
 
 @dataclass
@@ -67,3 +73,14 @@ class Adam:
         state.m[:] = 0
         state.v[:] = 0
         return state
+
+
+Optimizer = Union[
+    SGD,
+    Adam,
+]
+
+OptimizerState = Union[
+    SGDState,
+    AdamState,
+]
