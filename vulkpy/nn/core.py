@@ -43,9 +43,9 @@ class Parameter:
             self.grad[:] = 0.0
 
             if opt is None:
-                opt = Adam(self.gpu)
+                opt = Adam(gpu)
             self.opt = opt
-            self.opt_state = self.opt.init_state()
+            self.opt_state = self.opt.init_state(shape)
         else:
             self.grad = None
 
