@@ -352,7 +352,7 @@ class Array:
             return ret
 
         shape = np.broadcast_shapes(self.shape, other.shape)
-        ndim = shape[0]
+        ndim = len(shape)
 
         shapeABC = Shape(self._gpu, ndim=3*ndim)
         shapeABC[:] = 1
