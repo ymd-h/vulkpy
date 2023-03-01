@@ -4,6 +4,12 @@ from typing import Literal
 from vulkpy.vkarray import Array
 from .layers import Softmax
 
+__all__ = [
+    "SoftmaxCrossEntropyLoss",
+    "MSELoss",
+    "HuberLoss",
+]
+
 class Loss:
     def __init__(self, reduce: Literal["mean", "sum"] = "mean"):
         self.reduce = {
