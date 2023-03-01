@@ -175,5 +175,25 @@ class TestLayers(unittest.TestCase):
                                     [_w[0,0] * dy[1,0] + _w[1,0] * dy[1,1],
                                      _w[0,1] * dy[1,0] + _w[1,1] * dy[1,1]]])
 
+class TestLosses(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.gpu = vk.GPU()
+
+    def test_softmax_crossentropy_forward_default(self):
+        sce = nn.SoftmaxCrossEntropyLoss()
+
+        _x = np.asarray([[-1, 0], [10, 15]])
+        x = vk.Array(self.gpu, data=_x)
+
+        _y = np.asarray([[1, 0], [0, 1]])
+        y = vk.Array(self.gpu, data=_y)
+
+        L = sce(x, y)
+
+        exp_x = np.exp(_x - _x.max(axis=1, keepdims=True))
+        _L = (exp_x / exp_x.sum(axis=1, keepdims=True)).mean(axis=0)
+        np.testing.assert_allclose(L, _L)
+
 if __name__ == "__main__":
     unittest.main()
