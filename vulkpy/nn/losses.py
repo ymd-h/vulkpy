@@ -54,7 +54,7 @@ class MSELoss(Loss):
 
     def forward(self, x: Array, y: Array) -> Array:
         L = (y - x) # Allocate
-        L.square(inplace=True)
+        L **= 2.0
         return L
 
     def backward(self) -> Array:
