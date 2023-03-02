@@ -54,7 +54,7 @@ class SoftmaxCrossEntropyLoss(Loss):
         self._sm = Softmax()
 
     def forward(self, x: Array, y: Array) -> Array:
-        return self._sm(x) * y
+        return self._sm(x).log() * y
 
     def backward(self) -> Array:
         return self._sm._y - self._y
