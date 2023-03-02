@@ -192,7 +192,7 @@ class TestLosses(unittest.TestCase):
         L = sce(x, y)
 
         exp_x = np.exp(_x - _x.max(axis=1, keepdims=True))
-        _L = (exp_x / exp_x.sum(axis=1, keepdims=True)).mean(axis=0)
+        _L = (_y * exp_x / exp_x.sum(axis=1, keepdims=True)).mean(axis=0)
         np.testing.assert_allclose(L, _L)
 
 if __name__ == "__main__":
