@@ -276,7 +276,56 @@ class TestLosses(unittest.TestCase):
         _L = exp_x / exp_x.sum(axis=1, keepdims=True)
         np.testing.assert_allclose(dx, _L - _y, atol=1e-7, rtol=1e-7)
 
+    def test_mse_loss_default(self):
+        mse = nn.MSELoss()
 
+        _x = np.asarray([[4, 2], [1, 1.5]])
+        x = vk.Array(self.gpu, data=_x)
+
+        _y = np.asarray([[3, 2.2], [0.7, 1.5]])
+        y = vk.Array(self.gpu, data=_y)
+
+        L = mse(x, y)
+        dx = mse.grad()
+
+        np.testing.assert_allclose(L, np.square(_y - _x).mean(axis=0),
+                                   atol=1e-7, rtol=1e-7)
+        np.testing.assert_allclose(dx, (_x - _y),
+                                   atol=1e-7, rtol=1e-7)
+
+    def test_mse_loss_mean(self):
+        mse = nn.MSELoss(reduce="mean")
+
+        _x = np.asarray([[4, 2], [1, 1.5]])
+        x = vk.Array(self.gpu, data=_x)
+
+        _y = np.asarray([[3, 2.2], [0.7, 1.5]])
+        y = vk.Array(self.gpu, data=_y)
+
+        L = mse(x, y)
+        dx = mse.grad()
+
+        np.testing.assert_allclose(L, np.square(_y - _x).mean(axis=0),
+                                   atol=1e-7, rtol=1e-7)
+        np.testing.assert_allclose(dx, (_x - _y),
+                                   atol=1e-7, rtol=1e-7)
+
+    def test_mse_loss_sum(self):
+        mse = nn.MSELoss(reduce="sum")
+
+        _x = np.asarray([[4, 2], [1, 1.5]])
+        x = vk.Array(self.gpu, data=_x)
+
+        _y = np.asarray([[3, 2.2], [0.7, 1.5]])
+        y = vk.Array(self.gpu, data=_y)
+
+        L = mse(x, y)
+        dx = mse.grad()
+
+        np.testing.assert_allclose(L, np.square(_y - _x).sum(axis=0),
+                                   atol=1e-7, rtol=1e-7)
+        np.testing.assert_allclose(dx, 2 * (_x - _y),
+                                   atol=1e-7, rtol=1e-7)
 
 if __name__ == "__main__":
     unittest.main()
