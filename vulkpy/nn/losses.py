@@ -12,9 +12,9 @@ __all__ = [
 
 class Loss:
     def __init__(self, reduce: Literal["mean", "sum"] = "mean"):
-        self.reduce = {
-            "mean": lambda _L: _L.mean(axis=0),
-            "sum": lambda _L: _L.sum(axis=0),
+        self.reduce, self.scale_backward = {
+            "mean": (lambda _L: _L.mean(axis=0), lambda _dx: 1/_dx.shape[0]),
+            "sum": (lambda _L: _L.sum(axis=0), None),
         }[reduce]
 
     def __call__(self, x: Array, y: Array) -> Array:
@@ -22,6 +22,12 @@ class Loss:
         self._y = y
         self._L = self.forward(x, y)
         return self.reduce(self._L)
+
+    def grad(self):
+        dx = self.backward()
+        if self.scale_backward is not None:
+            dx *= self.scale_backward(dx)
+        return dx
 
     def forward(self, x: Array, y: Array) -> Array:
         raise NotImplementedError

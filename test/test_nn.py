@@ -236,11 +236,11 @@ class TestLosses(unittest.TestCase):
 
         L = sce(x, y)
 
-        dx = sce.backward()
+        dx = sce.grad()
 
         exp_x = np.exp(_x - _x.max(axis=1, keepdims=True))
         _L = exp_x / exp_x.sum(axis=1, keepdims=True)
-        np.testing.assert_allclose(dx, _L - _y, atol=1e-7, rtol=1e-7)
+        np.testing.assert_allclose(dx, (_L - _y) / L.shape[0], atol=1e-7, rtol=1e-7)
 
 
 if __name__ == "__main__":
