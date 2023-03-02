@@ -225,5 +225,23 @@ class TestLosses(unittest.TestCase):
         _L = (_y * exp_x / exp_x.sum(axis=1, keepdims=True)).sum(axis=0)
         np.testing.assert_allclose(L, _L)
 
+    def test_softmax_crossentropy_backward_default(self):
+        sce = nn.SoftmaxCrossEntropyLoss()
+
+        _x = np.asarray([[-1, 0], [10, 15]])
+        x = vk.Array(self.gpu, data=_x)
+
+        _y = np.asarray([[1, 0], [0, 1]])
+        y = vk.Array(self.gpu, data=_y)
+
+        L = sce(x, y)
+
+        dx = sce.backward()
+
+        exp_x = np.exp(_x - _x.max(axis=1, keepdims=True))
+        _L = exp_x / exp_x.sum(axis=1, keepdims=True)
+        np.testing.assert_allclose(dx, _L - _y, atol=1e-7, rtol=1e-7)
+
+
 if __name__ == "__main__":
     unittest.main()
