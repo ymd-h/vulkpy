@@ -37,6 +37,18 @@ class Loss:
 
 
 class SoftmaxCrossEntropyLoss(Loss):
+    """
+    Softmax Cross Entropy Loss
+
+    Notes
+    -----
+    This loss includes Softmax layer to compute gradient efficiently.
+
+    See Also
+    --------
+    Softmax : Softmax layer
+    CrossEntropyLoss : Cross Entropy loss without Softmax
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._sm = Softmax()
