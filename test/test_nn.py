@@ -342,6 +342,36 @@ class TestLosses(unittest.TestCase):
         np.testing.assert_allclose(L, [2.75, 0.17])
         np.testing.assert_allclose(dx, [[-0.5, -0.4], [0.5, 0.1]])
 
+    def test_huber_loss_mean(self):
+        huber = nn.HuberLoss(reduce="mean")
+
+        _x = np.asarray([[1.0, 2.2], [-3.0, 0.7]])
+        x = vk.Array(self.gpu, data=_x)
+
+        _y = np.asarray([[10, 3.0], [-5, 0.5]])
+        y = vk.Array(self.gpu, data=_y)
+
+        L = huber(x, y)
+        dx = huber.grad()
+
+        np.testing.assert_allclose(L, [2.75, 0.17])
+        np.testing.assert_allclose(dx, [[-0.5, -0.4], [0.5, 0.1]])
+
+    def test_huber_loss_sum(self):
+        huber = nn.HuberLoss(reduce="sum")
+
+        _x = np.asarray([[1.0, 2.2], [-3.0, 0.7]])
+        x = vk.Array(self.gpu, data=_x)
+
+        _y = np.asarray([[10, 3.0], [-5, 0.5]])
+        y = vk.Array(self.gpu, data=_y)
+
+        L = huber(x, y)
+        dx = huber.grad()
+
+        np.testing.assert_allclose(L, [5.5, 0.34])
+        np.testing.assert_allclose(dx, [[-1.0, -0.8], [1.0, 0.2]])
+
 
 if __name__ == "__main__":
     unittest.main()
