@@ -69,9 +69,9 @@ class HuberLoss(Loss):
 
     def forward(self, x: Array, y: Array) -> Array:
         delta = y - x # Allocate
-        delta.abs(inplace=True)                 # |y-x|
-        delta.min(delta.square(), inplace=True) # min(|y-x|^2, |y-x|)
-        delta *= 0.5                            # 0.5 * min(|y-x|^2, |y-x|)
+        delta.abs(inplace=True)               # |y-x|
+        delta.min(delta ** 2.0, inplace=True) # min(|y-x|^2, |y-x|)
+        delta *= 0.5                          # 0.5 * min(|y-x|^2, |y-x|)
         return delta
 
     def backward(self) -> Array:
