@@ -14,7 +14,7 @@ class Loss:
     def __init__(self, reduce: Literal["mean", "sum"] = "mean"):
         self.reduce = {
             "mean": lambda _L: _L.mean(axis=0),
-            "sum": lambda _L: L.sum(axis=0),
+            "sum": lambda _L: _L.sum(axis=0),
         }[reduce]
 
     def __call__(self, x: Array, y: Array) -> Array:
