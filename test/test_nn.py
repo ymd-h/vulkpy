@@ -195,5 +195,35 @@ class TestLosses(unittest.TestCase):
         _L = (_y * exp_x / exp_x.sum(axis=1, keepdims=True)).mean(axis=0)
         np.testing.assert_allclose(L, _L)
 
+    def test_softmax_crossentropy_forward_mean(self):
+        sce = nn.SoftmaxCrossEntropyLoss(reduce="mean")
+
+        _x = np.asarray([[-1, 0], [10, 15]])
+        x = vk.Array(self.gpu, data=_x)
+
+        _y = np.asarray([[1, 0], [0, 1]])
+        y = vk.Array(self.gpu, data=_y)
+
+        L = sce(x, y)
+
+        exp_x = np.exp(_x - _x.max(axis=1, keepdims=True))
+        _L = (_y * exp_x / exp_x.sum(axis=1, keepdims=True)).mean(axis=0)
+        np.testing.assert_allclose(L, _L)
+
+    def test_softmax_crossentropy_forward_sum(self):
+        sce = nn.SoftmaxCrossEntropyLoss(reduce="sum")
+
+        _x = np.asarray([[-1, 0], [10, 15]])
+        x = vk.Array(self.gpu, data=_x)
+
+        _y = np.asarray([[1, 0], [0, 1]])
+        y = vk.Array(self.gpu, data=_y)
+
+        L = sce(x, y)
+
+        exp_x = np.exp(_x - _x.max(axis=1, keepdims=True))
+        _L = (_y * exp_x / exp_x.sum(axis=1, keepdims=True)).sum(axis=0)
+        np.testing.assert_allclose(L, _L)
+
 if __name__ == "__main__":
     unittest.main()
