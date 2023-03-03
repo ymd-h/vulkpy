@@ -40,7 +40,8 @@ for shader in [
         "minimum", ("minimum_v1.3", "--target-env=vulkan1.1"), "minimum_axis",
         "maximum_axis_rebroadcast", "minimum_axis_rebroadcast",
         "broadcast",
-        "batch_affine"
+        "batch_affine",
+        "nn_cross_entropy", "nn_cross_entropy_backward",
 ]:
     if isinstance(shader, tuple):
         shader, flag = shader

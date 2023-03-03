@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Literal
 
-from vulkpy.vkarray import Array
+from vulkpy.util import getShader
+from vulkpy.vkarray import Array, DataShape, VectorParams
 from .layers import Softmax
 
 __all__ = [
@@ -45,20 +46,30 @@ class CrossEntropyLoss(Loss):
     -----
     .. math:: L = - \sum _i y_i \log x_i
     """
+    _forward = getShader("nn_cross_entropy.spv")
+    _backward = getShader("nn_cross_entropy_backward.spv")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def forward(self, x: Array, y: Array):
-        L = x + 1e-8          #          x+eps  # Allocate
-        L.log(inplace=True)   #      log(x+eps)
-        L *= y                #  y * log(x+eps)
-        L *= -1.0             # -y * log(x+eps)
+        size = x.buffer.size()
+        L = Array(x._gpu, shape=x.shape)
+        L.job = x._gpu._submit(self._forward, 64, 1, 1,
+                               [x, y, L],
+                               DataShape(size, 1, 1),
+                               VectorParams(size))
+        L._keep.extend([x, y])
         return L.sum(axis=1)
 
     def backward(self):
-        dx = self._x + 1e-8 #       x+eps  # Allocate
-        dx *= -1.0          # -    (x+eps)
-        dx = self._y / dx   # -y / (x+eps) # Allocate
+        size = self._x.buffer.size()
+        dx = Array(self._x._gpu, shape=self._x.shape)
+        dx.job = self._x._gpu._submit(self._backward, 64, 1, 1,
+                                      [self._x, self._y, dx],
+                                      DataShape(size, 1, 1),
+                                      VectorParams(size))
+        dx._keep.extend([self._x, self._y])
         return dx
 
 
