@@ -289,8 +289,8 @@ class TestLosses(unittest.TestCase):
         L = sce(x, y)
 
         exp_x = np.exp(_x - _x.max(axis=1, keepdims=True))
-        _L = (-_y * np.log(exp_x / exp_x.sum(axis=1, keepdims=True))).sum(axis=1).mean(axis=0)
-        np.testing.assert_allclose(L, _L, atol=1e-7, rtol=1e-7)
+        _L = (-_y * np.log(exp_x / exp_x.sum(axis=1, keepdims=True))).sum(axis=1)
+        np.testing.assert_allclose(L, _L.mean(axis=0), atol=1e-7, rtol=1e-7)
 
     def test_softmax_crossentropy_forward_mean(self):
         sce = nn.SoftmaxCrossEntropyLoss(reduce="mean")
@@ -304,8 +304,8 @@ class TestLosses(unittest.TestCase):
         L = sce(x, y)
 
         exp_x = np.exp(_x - _x.max(axis=1, keepdims=True))
-        _L = (-_y * np.log(exp_x / exp_x.sum(axis=1, keepdims=True))).sum(axis=1).mean(axis=0)
-        np.testing.assert_allclose(L, _L, atol=1e-7, rtol=1e-7)
+        _L = (-_y * np.log(exp_x / exp_x.sum(axis=1, keepdims=True))).sum(axis=1)
+        np.testing.assert_allclose(L, _L.mean(axis=0), atol=1e-7, rtol=1e-7)
 
     def test_softmax_crossentropy_forward_sum(self):
         sce = nn.SoftmaxCrossEntropyLoss(reduce="sum")
@@ -319,8 +319,8 @@ class TestLosses(unittest.TestCase):
         L = sce(x, y)
 
         exp_x = np.exp(_x - _x.max(axis=1, keepdims=True))
-        _L = (-_y * np.log(exp_x / exp_x.sum(axis=1, keepdims=True))).sum()
-        np.testing.assert_allclose(L, _L, atol=1e-7, rtol=1e-7)
+        _L = (-_y * np.log(exp_x / exp_x.sum(axis=1, keepdims=True))).sum(axis=1)
+        np.testing.assert_allclose(L, _L.sum(axis=0), atol=1e-7, rtol=1e-7)
 
     def test_softmax_crossentropy_backward_default(self):
         sce = nn.SoftmaxCrossEntropyLoss()
