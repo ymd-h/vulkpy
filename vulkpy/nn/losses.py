@@ -38,6 +38,13 @@ class Loss:
 
 
 class CrossEntropyLoss(Loss):
+    """
+    Cross Entropy Loss
+
+    Notes
+    -----
+    .. math:: L = - \sum _i y_i \log x_i
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
