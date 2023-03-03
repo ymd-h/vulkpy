@@ -21,8 +21,8 @@ class Loss:
     def __call__(self, x: Array, y: Array) -> Array:
         self._x = x
         self._y = y
-        self._L = self.forward(x, y)
-        return self.reduce(self._L)
+        L = self.forward(x, y)
+        return self.reduce(L)
 
     def grad(self):
         dx = self.backward()
