@@ -227,6 +227,10 @@ class TestLosses(unittest.TestCase):
         L = loss(x, y)
         np.testing.assert_allclose(L, _L.mean(), atol=1e-7, rtol=1e-7)
 
+        dx = loss.grad()
+        _dx = - _y / (_x + 1e-8)
+        np.testing.assert_allclose(dx, _dx / _dx.shape[0])
+
     def test_cross_entropy_mean(self):
         loss = nn.CrossEntropyLoss(reduce="mean")
 
@@ -240,6 +244,10 @@ class TestLosses(unittest.TestCase):
         L = loss(x, y)
         np.testing.assert_allclose(L, _L.mean(), atol=1e-7, rtol=1e-7)
 
+        dx = loss.grad()
+        _dx = - _y / (_x + 1e-8)
+        np.testing.assert_allclose(dx, _dx / _dx.shape[0])
+
     def test_cross_entropy_sum(self):
         loss = nn.CrossEntropyLoss(reduce="sum")
 
@@ -252,6 +260,10 @@ class TestLosses(unittest.TestCase):
         _L = np.sum(-_y * np.log(_x + 1e-8), axis=1)
         L = loss(x, y)
         np.testing.assert_allclose(L, _L.sum(), atol=1e-7, rtol=1e-7)
+
+        dx = loss.grad()
+        _dx = - _y / (_x + 1e-8)
+        np.testing.assert_allclose(dx, _dx)
 
     def test_softmax_crossentropy(self):
         sce = nn.SoftmaxCrossEntropyLoss()
