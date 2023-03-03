@@ -196,6 +196,63 @@ class TestLosses(unittest.TestCase):
     def setUpClass(cls):
         cls.gpu = vk.GPU()
 
+    def test_cross_entropy(self):
+        loss = nn.CrossEntropyLoss()
+
+        x = vk.Array(self.gpu, data=[[1.0, 0.0]])
+        y = vk.Array(self.gpu, data=[[1.0, 0.0]])
+
+        L = loss(x, y)
+        np.testing.assert_allclose(L, [0.0])
+
+    def test_cross_entropy_equal(self):
+        loss = nn.CrossEntropyLoss()
+
+        x = vk.Array(self.gpu, data=[[0.5, 0.5]])
+        y = vk.Array(self.gpu, data=[[0.5, 0.5]])
+
+        L = loss(x, y)
+        np.testing.assert_allclose(L, [0.6931472])
+
+    def test_cross_entropy_default(self):
+        loss = nn.CrossEntropyLoss()
+
+        _x = np.asarray([[0.7, 0.3], [0.2, 0.8], [1.0, 0.0]])
+        _y = np.asarray([[1.0, 0.0], [0.0, 1.0], [1.0, 0.0]])
+
+        x = vk.Array(self.gpu, data=_x)
+        y = vk.Array(self.gpu, data=_y)
+
+        _L = np.sum(-_y * np.log(_x + 1e-8), axis=1)
+        L = loss(x, y)
+        np.testing.assert_allclose(L, _L.mean(), atol=1e-7, rtol=1e-7)
+
+    def test_cross_entropy_mean(self):
+        loss = nn.CrossEntropyLoss(reduce="mean")
+
+        _x = np.asarray([[0.7, 0.3], [0.2, 0.8], [1.0, 0.0]])
+        _y = np.asarray([[1.0, 0.0], [0.0, 1.0], [1.0, 0.0]])
+
+        x = vk.Array(self.gpu, data=_x)
+        y = vk.Array(self.gpu, data=_y)
+
+        _L = np.sum(-_y * np.log(_x + 1e-8), axis=1)
+        L = loss(x, y)
+        np.testing.assert_allclose(L, _L.mean(), atol=1e-7, rtol=1e-7)
+
+    def test_cross_entropy_sum(self):
+        loss = nn.CrossEntropyLoss(reduce="sum")
+
+        _x = np.asarray([[0.7, 0.3], [0.2, 0.8], [1.0, 0.0]])
+        _y = np.asarray([[1.0, 0.0], [0.0, 1.0], [1.0, 0.0]])
+
+        x = vk.Array(self.gpu, data=_x)
+        y = vk.Array(self.gpu, data=_y)
+
+        _L = np.sum(-_y * np.log(_x + 1e-8), axis=1)
+        L = loss(x, y)
+        np.testing.assert_allclose(L, _L.sum(), atol=1e-7, rtol=1e-7)
+
     def test_softmax_crossentropy(self):
         sce = nn.SoftmaxCrossEntropyLoss()
 
