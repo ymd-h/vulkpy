@@ -5,6 +5,7 @@ from vulkpy.vkarray import Array
 from .layers import Softmax
 
 __all__ = [
+    "CrossEntropyLoss",
     "SoftmaxCrossEntropyLoss",
     "MSELoss",
     "HuberLoss",
@@ -34,6 +35,24 @@ class Loss:
 
     def backward(self) -> Array:
         raise NotImplementedError
+
+
+class CrossEntropyLoss(Loss):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def forward(self, x: Array, y: Array):
+        L = x + 1e-8          #          x+eps  # Allocate
+        L.log(inplace=True)   #      log(x+eps)
+        L *= y                #  y * log(x+eps)
+        L *= -1.0             # -y * log(x+eps)
+        return L.sum(axis=1)
+
+    def backward(self):
+        dx = self._x + 1e-8 #       x+eps  # Allocate
+        dx *= -1.0          # -    (x+eps)
+        dx = self._y / dx   # -y / (x+eps) # Allocate
+        return dx
 
 
 class SoftmaxCrossEntropyLoss(Loss):
