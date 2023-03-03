@@ -91,13 +91,22 @@ class SoftmaxCrossEntropyLoss(CrossEntropyLoss):
 
 
 class MSELoss(Loss):
+    """
+    Mean Squared Loss
+
+    Notes
+    -----
+    .. math::
+       L = \sum _i |y_i - x_i|^2\\
+       \frac{dL}{dx} = 2 (x_i - y_i)
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def forward(self, x: Array, y: Array) -> Array:
-        L = (y - x) # Allocate
+        L = (y - x)          # Allocate
         L **= 2.0
-        return L
+        return L.sum(axis=1) # Allocate
 
     def backward(self) -> Array:
         dx = self._x - self._y # Allocate
@@ -122,8 +131,8 @@ class HuberLoss(Loss):
         delta = y - x # Allocate
         delta.abs(inplace=True)               # |y-x|
         delta.min(delta ** 2.0, inplace=True) # min(|y-x|^2, |y-x|)
-        delta *= 0.5                          # 0.5 * min(|y-x|^2, |y-x|)
-        return delta
+        delta *= 0.5                          # min(|y-x|^2, |y-x|) * 0.5
+        return delta.sum(axis=1) # Allocate
 
     def backward(self) -> Array:
         delta = self._x - self._y

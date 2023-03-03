@@ -385,7 +385,7 @@ class TestLosses(unittest.TestCase):
         L = mse(x, y)
         dx = mse.grad()
 
-        np.testing.assert_allclose(L, np.square(_y - _x).mean(axis=0),
+        np.testing.assert_allclose(L, np.square(_y - _x).sum(axis=1).mean(axis=0),
                                    atol=1e-7, rtol=1e-7)
         np.testing.assert_allclose(dx, (_x - _y),
                                    atol=1e-7, rtol=1e-7)
@@ -402,7 +402,7 @@ class TestLosses(unittest.TestCase):
         L = mse(x, y)
         dx = mse.grad()
 
-        np.testing.assert_allclose(L, np.square(_y - _x).mean(axis=0),
+        np.testing.assert_allclose(L, np.square(_y - _x).sum(axis=1).mean(axis=0),
                                    atol=1e-7, rtol=1e-7)
         np.testing.assert_allclose(dx, (_x - _y),
                                    atol=1e-7, rtol=1e-7)
@@ -419,7 +419,7 @@ class TestLosses(unittest.TestCase):
         L = mse(x, y)
         dx = mse.grad()
 
-        np.testing.assert_allclose(L, np.square(_y - _x).sum(axis=0),
+        np.testing.assert_allclose(L, np.square(_y - _x).sum(axis=1).sum(axis=0),
                                    atol=1e-7, rtol=1e-7)
         np.testing.assert_allclose(dx, 2 * (_x - _y),
                                    atol=1e-7, rtol=1e-7)
@@ -436,7 +436,7 @@ class TestLosses(unittest.TestCase):
         L = huber(x, y)
         dx = huber.grad()
 
-        np.testing.assert_allclose(L, [2.75, 0.17])
+        np.testing.assert_allclose(L, [2.92])
         np.testing.assert_allclose(dx, [[-0.5, -0.4], [0.5, 0.1]])
 
     def test_huber_loss_mean(self):
@@ -451,7 +451,7 @@ class TestLosses(unittest.TestCase):
         L = huber(x, y)
         dx = huber.grad()
 
-        np.testing.assert_allclose(L, [2.75, 0.17])
+        np.testing.assert_allclose(L, [2.92])
         np.testing.assert_allclose(dx, [[-0.5, -0.4], [0.5, 0.1]])
 
     def test_huber_loss_sum(self):
@@ -466,7 +466,7 @@ class TestLosses(unittest.TestCase):
         L = huber(x, y)
         dx = huber.grad()
 
-        np.testing.assert_allclose(L, [5.5, 0.34])
+        np.testing.assert_allclose(L, [5.84])
         np.testing.assert_allclose(dx, [[-1.0, -0.8], [1.0, 0.2]])
 
 
