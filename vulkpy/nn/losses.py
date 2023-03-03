@@ -70,6 +70,10 @@ class SoftmaxCrossEntropyLoss(CrossEntropyLoss):
     -----
     This loss includes Softmax layer to compute gradient efficiently.
 
+    .. math::
+       L = - \sum _i y_i (x_i - \log (\sum _j \exp x_j))\\
+       \frac{dL}{dx} = \frac{\exp x}{\sum _j \exp x_j} - y
+
     See Also
     --------
     Softmax : Softmax layer
@@ -102,6 +106,15 @@ class MSELoss(Loss):
 
 
 class HuberLoss(Loss):
+    """
+    Huber Loss
+
+    Notes
+    -----
+    .. math::
+       L = 0.5 \sum _i \min (|y_i - x_i|^2, |y_i - x_i|)\\
+       \frac{dL}{dx} = \min (\max(x_i - y_i, -1.0), 1.0)
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
