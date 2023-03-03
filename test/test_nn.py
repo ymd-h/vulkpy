@@ -101,6 +101,22 @@ class TestLayers(unittest.TestCase):
         dx = sigmoid.backward(dy)
         np.testing.assert_allclose(dx, dy * y * (1 - y))
 
+    def test_softmax(self):
+        softmax = nn.Softmax()
+
+        x = vk.Array(self.gpu, data=[[1.0, 1.0]])
+        y = softmax(x)
+
+        np.testing.assert_allclose(y, [[0.5, 0.5]])
+
+    def test_softmax_skew(self):
+        softmax = nn.Softmax()
+
+        x = vk.Array(self.gpu, data=[[100.0, 0.0]])
+        y = softmax(x)
+
+        np.testing.assert_allclose(y, [[1.0, 0]])
+
     def test_softmax_forward(self):
         softmax = nn.Softmax()
 
