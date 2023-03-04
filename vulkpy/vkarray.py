@@ -31,7 +31,11 @@ from ._vkarray import (
     BatchAffineParams,
 )
 
-__all__ = ["GPU", "Array"]
+__all__ = [
+    "GPU",
+    "U32Array",
+    "Array"
+]
 
 Params = Union[
     VectorParams,

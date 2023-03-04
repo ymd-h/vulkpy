@@ -23,6 +23,6 @@ Examples
 >>> print(c)
 [4., 5., 6.]
 """
-from .vkarray import GPU, Array
+from .vkarray import GPU, U32Array, Array
 from . import random
 from . import nn
