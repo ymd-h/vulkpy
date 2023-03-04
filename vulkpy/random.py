@@ -118,7 +118,8 @@ class Xoshiro128pp(_ConvertMixin):
     .. [1] S. Vigna "xoshiro / xoroshiro generators and the PRNG shootout",
        https://prng.di.unimi.it/
     """
-    _spv = getShader("prng_xoshiro128pp.spv")
+    _spv_uint32 = getShader("prng_xoshiro128pp_uint32.spv")
+    _spv_float  = getShader("prng_xoshiro128pp_float.spv")
 
     def __init__(self, gpu: vk.GPU, size: int = 64, *, seed: Optional[int] = None):
         """
@@ -136,9 +137,13 @@ class Xoshiro128pp(_ConvertMixin):
         self._gpu = gpu
 
         if seed is None:
-            self.rng = _vkarray.Xoshiro128pp(self._gpu.gpu, self._spv, size)
+            self.rng = _vkarray.Xoshiro128pp(self._gpu.gpu,
+                                             self._spv_uint32, self._spv_float,
+                                             size)
         else:
-            self.rng = _vkarray.Xoshiro128pp(self._gpu.gpu, self._spv, size, seed)
+            self.rng = _vkarray.Xoshiro128pp(self._gpu.gpu,
+                                             self._spv_uint32, self._spv_float,
+                                             size, seed)
 
     def random(self, *,
                shape: Optional[Iterable[int]] = None,
@@ -173,6 +178,6 @@ class Xoshiro128pp(_ConvertMixin):
             buffer.wait()
 
         n = int(np.prod(buffer.shape))
-        buffer.job = self.rng.random(n, buffer.buffer.info())
+        buffer.job = self.rng.random_float(n, buffer.buffer.info())
         buffer._keep.append(self)
         return buffer

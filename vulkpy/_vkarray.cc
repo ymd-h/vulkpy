@@ -538,7 +538,8 @@ namespace PRNG {
     std::shared_ptr<GPU> gpu;
     std::shared_ptr<Job> job;
     Buffer<std::uint32_t> state;
-    std::string_view spv;
+    std::string_view spv_uint32;
+    std::string_view spv_float;
 
     std::uint64_t splitmix64(std::uint64_t x) const noexcept {
       // https://prng.di.unimi.it/splitmix64.c
@@ -595,13 +596,14 @@ namespace PRNG {
     }
   public:
     Xoshiro128pp(std::shared_ptr<GPU> gpu,
-                 std::string_view spv, std::uint32_t size,
-                 std::uint64_t seed)
+                 std::string_view spv_uint32, std::string_view spv_float,
+                 std::uint32_t size, std::uint64_t seed)
       : size(size),
         gpu(gpu),
         job(),
         state(gpu->createBuffer<std::uint32_t>(4 * size)),
-        spv(spv)
+        spv_uint32(spv_uint32),
+        spv_float(spv_float)
     {
       std::vector<std::uint32_t> state_vec{};
       state_vec.reserve(4 * this->size);
@@ -627,14 +629,25 @@ namespace PRNG {
       this->state.set(0, state_vec);
     }
     Xoshiro128pp(std::shared_ptr<GPU> gpu,
-                 std::string_view spv, std::uint32_t size)
-      : Xoshiro128pp(gpu, spv, size, std::random_device{}()) {}
+                 std::string_view spv_uint32, std::string_view spv_float,
+                 std::uint32_t size)
+      : Xoshiro128pp(gpu, spv_uint32, spv_float, size, std::random_device{}()) {}
 
-    std::shared_ptr<Job> random(std::uint32_t n,
+    std::shared_ptr<Job> random_uint32(std::uint32_t n,
+                                       const vk::DescriptorBufferInfo& info){
+      return this->random(n, this->spv_uint32, info);
+    }
+
+    std::shared_ptr<Job> random_float(std::uint32_t n,
+                                      const vk::DescriptorBufferInfo& info){
+      return this->random(n, this->spv_float, info);
+    }
+
+    std::shared_ptr<Job> random(std::uint32_t n, std::string_view spv,
                                 const vk::DescriptorBufferInfo& info){
       vk::DescriptorBufferInfo b[]{ this->state.info(), info };
-      auto f = [this, &b](std::uint32_t i, std::uint32_t n){
-        return this->gpu->submit<2>(this->spv, 64, 1, 1, b, {n, 1, 1},
+      auto f = [this, &b, spv](std::uint32_t i, std::uint32_t n){
+        return this->gpu->submit<2>(spv, 64, 1, 1, b, {n, 1, 1},
                                     OpParams::ShiftVector{i, n}, {});
       };
 
@@ -795,8 +808,17 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<vk::MappedMemoryRange>(m, "MemoryRange");
 
   pybind11::class_<PRNG::Xoshiro128pp>(m, "Xoshiro128pp")
-    .def(pybind11::init<std::shared_ptr<GPU>, std::string_view, std::uint32_t, std::uint64_t>())
-    .def(pybind11::init<std::shared_ptr<GPU>, std::string_view, std::uint32_t>())
-    .def("random", &PRNG::Xoshiro128pp::random, "Generate Pseudo Random Numbers",
+    .def(pybind11::init<
+         std::shared_ptr<GPU>,
+         std::string_view, std::string_view,
+         std::uint32_t, std::uint64_t
+         >())
+    .def(pybind11::init<
+         std::shared_ptr<GPU>,
+         std::string_view, std::string_view,
+         std::uint32_t>())
+    .def("random_uint32", &PRNG::Xoshiro128pp::random_uint32,
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("random_float", &PRNG::Xoshiro128pp::random_float,
          pybind11::call_guard<pybind11::gil_scoped_release>());
 }
