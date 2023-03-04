@@ -183,7 +183,19 @@ class Shape(U32Array):
     def __init__(self, gpu: GPU, *,
                  data: Optional[Iterable[int]] = None,
                  ndim: Optional[int] = None):
-        super().__init__(gpu, data=data, shape=(ndim,))
+        """
+        Initialize Shape
+
+        Parameters
+        ----------
+        gpu : vulkpy.GPU
+            GPU
+        data : iterable of ints, optional
+            Data
+        ndim : int, optional
+            ndim
+        """
+        super().__init__(gpu, data=data, shape=(ndim,) if ndim is not None else None)
 
 
 class Array(_GPUArray):
