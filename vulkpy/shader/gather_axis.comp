@@ -4,8 +4,9 @@ layout(local_size_x = 1, local_size_y = 64, local_size_z = 1) in;
 
 layout(push_constant) uniform constants {
   uint prev_prod; // Global x
-  uint axis_size; // Global z
   uint post_prod; // Global y
+  uint axis_size;
+  uint index_size;// Global z
 } params;
 
 
@@ -24,7 +25,7 @@ void main(){
   const uint i = gl_GlobalInvocationID.x;
   const uint j = gl_GlobalInvocationID.y;
   const uint k = gl_GlobalInvocationID.z;
-  if((i >= params.prev_prod) || (j >= params.post_prod) || (k >= params.axis_size)){
+  if((i >= params.prev_prod) || (j >= params.post_prod) || (k >= params.index_size)){
     return;
   }
 

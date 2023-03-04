@@ -180,6 +180,13 @@ namespace OpParams {
     std::uint32_t size[N];
     std::uint32_t ndim;
   };
+
+  struct AxisGather{
+    std::uint32_t prev_prod;
+    std::uint32_t post_prod;
+    std::uint32_t axis_size;
+    std::uint32_t index_size;
+  };
 }
 
 struct DataShape {
@@ -364,7 +371,8 @@ using OpVariant_t = std::variant<
   Op_t<4, OpParams::Broadcast>,
   Op_t<4, OpParams::MultiBroadcast<3>>,
   Op_t<4, OpParams::BatchAffine>,
-  Op_t<2, OpParams::VectorRange>
+  Op_t<2, OpParams::VectorRange>,
+  Op_t<3, OpParams::AxisGather>
   >;
 
 
@@ -743,6 +751,8 @@ PYBIND11_MODULE(_vkarray, m){
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::VectorRange, 2>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit", &submit<OpParams::AxisGather, 3>,
+         pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait)
     .def("flush",
          [](GPU& m, const std::vector<vk::MappedMemoryRange>& r){ m.flush(r); })
@@ -784,14 +794,6 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<OpParams::MultiVector<2>>(m, "MultiVector2Params")
     .def(pybind11::init<std::uint32_t, std::uint32_t>());
 
-  pybind11::class_<OpParams::MultiVector<4>>(m, "MultiVector4Params")
-    .def(pybind11::init<
-         std::uint32_t,
-         std::uint32_t,
-         std::uint32_t,
-         std::uint32_t
-         >());
-
   pybind11::class_<OpParams::VectorScalar<float>>(m, "VectorScalarParams")
     .def(pybind11::init<std::uint32_t, float>());
 
@@ -815,6 +817,14 @@ PYBIND11_MODULE(_vkarray, m){
 
   pybind11::class_<OpParams::VectorRange>(m, "VectorRangeParams")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
+
+  pybind11::class_<OpParams::AxisGather>(m, "AxisGatherParams")
+    .def(pybind11::init<
+         std::uint32_t,
+         std::uint32_t,
+         std::uint32_t,
+         std::uint32_t
+         >());
 
   pybind11::class_<DataShape>(m, "DataShape")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());

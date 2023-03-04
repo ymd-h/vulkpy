@@ -28,6 +28,7 @@ from ._vkarray import (
     BroadcastParams,
     Multi3BroadcastParams,
     BatchAffineParams,
+    AxisGatherParams,
 )
 
 __all__ = [
@@ -1408,16 +1409,18 @@ class Array(_GPUArray):
             local_size = (1, 64, 1)
 
             shape = np.array(self.shape)
-            shape = np.concatenate((indices.shape, shape[:axis], shape[axis+1:]),
+            prev_shape = shape[:axis]
+            post_shape = shape[axis+1:]
+            shape = np.concatenate((indices.shape, prev_shape, post_shape),
                                    axis=0)
 
             ret = Array(self._gpu, shape=shape)
 
-            prev_prod = int(np.prod(shape[:axis]))
+            prev_prod = int(np.prod(prev_shape))
             axis_size = int(self.shape[axis])
-            post_prod = int(np.prod(shape[axis+1:]))
-            d = DataShape(prev_prod, post_prod, axis_size)
-            p = AxisReductionParams(prev_prod, axis_size, post_prod)
+            post_prod = int(np.prod(post_shape))
+            d = DataShape(prev_prod, post_prod, size)
+            p = AxisGatherParams(prev_prod, post_prod, axis_size, size)
 
         ret.job = self._gpu._submit(spv, *local_size, [self, indices, ret], d, p)
         ret._keep.extend([self, indices])
