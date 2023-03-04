@@ -29,9 +29,10 @@ void main(){
     return;
   }
 
+  const uint bk = clamp(b[k], 0, params.axis_size);
   const uint a_idx =
-    i    * params.axis_size * params.post_prod +
-    b[k] * params.post_prod +
+    i  * params.axis_size * params.post_prod +
+    bk * params.post_prod +
     j;
   const uint c_idx =
     k * params.prev_prod * params.post_prod +
