@@ -94,9 +94,9 @@ class GPU:
         self.gpu.wait()
 
 
-class Shape:
+class U32Array:
     """
-    GPU Array of uint (32bit) for shape
+    GPU Array of uint (32bit) for shape or indices
     """
     def __init__(self, gpu: GPU, *,
                  data: Optional[Iterable[int]] = None,
@@ -284,7 +284,7 @@ class Array:
 
         # Hold temporary resources until pipeline job finish
         # to avoid freeing memories in use.
-        self._keep: List[Union[Shape, Array]] = []
+        self._keep: List[Union[U32Array, Array]] = []
 
     def __del__(self):
         self.wait()
@@ -354,7 +354,7 @@ class Array:
         shape = np.broadcast_shapes(self.shape, other.shape)
         ndim = len(shape)
 
-        shapeABC = Shape(self._gpu, ndim=3*ndim)
+        shapeABC = U32Array(self._gpu, ndim=3*ndim)
         shapeABC[:] = 1
         shapeABC[  ndim- self.array.ndim:  ndim] = self.shape
         shapeABC[2*ndim-other.array.ndim:2*ndim] = other.shape
@@ -396,7 +396,7 @@ class Array:
                 raise ValueError("Incompatible shape")
             ndim = shape[0]
 
-            shapeAB = Shape(self._gpu, ndim=2*ndim)
+            shapeAB = U32Array(self._gpu, ndim=2*ndim)
             shapeAB[:] = 1
             shapeAB[:ndim] = shape
             shapeAB[-other.array.ndim:] = other.shape
@@ -1358,8 +1358,8 @@ class Array:
             self_shape = np.concatenate((np.ones(shape=(dim_diff,)), self_shape),
                                         axis=0)
 
-        shapeA = Shape(self._gpu, data=self_shape)
-        shapeB = Shape(self._gpu, data=shape)
+        shapeA = U32Array(self._gpu, data=self_shape)
+        shapeB = U32Array(self._gpu, data=shape)
 
         ret.job = self._gpu._submit(self._broadcast, 64, 1, 1,
                                     [self, ret, shapeA, shapeB],
