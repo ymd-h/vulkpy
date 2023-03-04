@@ -1,0 +1,42 @@
+#version 460
+layout(local_size_x = 1, local_size_y = 64, local_size_z = 1) in;
+
+
+layout(push_constant) uniform constants {
+  uint prev_prod; // Global x
+  uint post_prod; // Global y
+  uint axis_size; // Global z
+  uint index_size;
+} params;
+
+
+layout(std430, binding = 0) readonly buffer A {
+  float a[]; // [prev..., axis_size, post...]
+};
+layout(std430, binding = 0) readonly buffer B {
+  uint b[]; // axis_size
+};
+layout(std430, binding = 1) writeonly buffer C {
+  float c[]; // [prev..., index_size, post...]
+};
+
+
+void main(){
+  const uint i = gl_GlobalInvocationID.x;
+  const uint j = gl_GlobalInvocationID.y;
+  const uint k = gl_GlobalInvocationID.z;
+  if((i >= params.prev_prod) || (j >= params.post_prod) || (k >= params.axis_size)){
+    return;
+  }
+
+  const uint a_idx =
+    i    * params.axis_size * params.post_prod +
+    b[k] * params.post_prod +
+    j;
+  const uint c_idx =
+    i * params.index_size * params.post_prod +
+    k * params.post_prod +
+    j;
+
+  c[c_idx] = a[a_idx];
+}

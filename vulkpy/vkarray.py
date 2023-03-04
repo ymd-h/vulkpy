@@ -21,6 +21,7 @@ from ._vkarray import createGPU, DataShape, Job
 from ._vkarray import (
     VectorParams,
     MultiVector2Params,
+    MultiVector4Params,
     VectorScalarParams,
     VectorScalar2Params,
     MatMulParams,
@@ -296,6 +297,8 @@ class Array(_GPUArray):
     _minimum_axis = getShader("minimum_axis.spv")
     _minimum_axis_rebroadcast = getShader("minimum_axis_rebroadcast.spv")
     _broadcast = getShader("broadcast.spv")
+    _gather = getShader("gather.spv")
+    _gather_axis = getShader("gather_axis.spv")
 
     def __init__(self, gpu: GPU, *, data = None, shape = None):
         """
@@ -1374,4 +1377,44 @@ class Array(_GPUArray):
                                                     ret.buffer.size(),
                                                     shapeA.buffer.size()))
         ret._keep.extend([self, shapeA, shapeB])
+        return ret
+
+    def gather(self, indices: U32Array, axis: Optional[int] = None):
+        """
+        Gather values of indices
+
+        Parameters
+        ----------
+        indices : vulkpy.U32Array
+            Indices
+        axis : int, optional
+            Axis of gather.
+            If ``None`` (default), array is flattened beforehand.
+        """
+        size = indices.buffer.size()
+        if axis is None:
+            spv = self._gather
+            local_size = (64, 1, 1)
+
+            ret = Array(self._gpu, shape=indices.shape)
+
+            d = DataShape(size, 1, 1)
+            p = VectorParams(size)
+        else:
+            spv = self._gather_axis
+            local_size = (1, 64, 1)
+
+            shape = np.array(self.shape)
+            shape = np.concatenate((shape[:axis], shape[axis+1:]), axis=0)
+
+            ret = Array(self._gpu, shape=shape)
+
+            prev_prod = int(np.prod(shape[:axis]))
+            axis_size = int(self.shape[axis])
+            post_prod = int(np.prod(shape[axis+1:]))
+            d = DataShape(prev_prod, post_prod, axis_size)
+            p = MultiVector4Params(prev_prod, post_prod, axis_size, size)
+
+        ret.job = self._gpu._submit(spv, *local_size, [self, indices, ret], d, p)
+        ret._keep.extend([self, indices])
         return ret

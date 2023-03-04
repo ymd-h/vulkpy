@@ -352,6 +352,7 @@ using OpVariant_t = std::variant<
   Op_t<3, OpParams::Vector>,
   Op_t<4, OpParams::Vector>,
   Op_t<2, OpParams::MultiVector<2>>,
+  Op_t<3, OpParams::MultiVector<4>>,
   Op_t<1, OpParams::VectorScalar<float>>,
   Op_t<2, OpParams::VectorScalar<float>>,
   Op_t<3, OpParams::VectorScalar<float>>,
@@ -727,6 +728,8 @@ PYBIND11_MODULE(_vkarray, m){
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::MultiVector<2>, 2>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit", &submit<OpParams::MultiVector<4>, 3>,
+         pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::VectorScalar<float>, 1, 2, 3>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::VectorMultiScalar<float, 2>, 1, 2>,
@@ -783,6 +786,14 @@ PYBIND11_MODULE(_vkarray, m){
 
   pybind11::class_<OpParams::MultiVector<2>>(m, "MultiVector2Params")
     .def(pybind11::init<std::uint32_t, std::uint32_t>());
+
+  pybind11::class_<OpParams::MultiVector<4>>(m, "MultiVector4Params")
+    .def(pybind11::init<
+         std::uint32_t,
+         std::uint32_t,
+         std::uint32_t,
+         std::uint32_t
+         >());
 
   pybind11::class_<OpParams::VectorScalar<float>>(m, "VectorScalarParams")
     .def(pybind11::init<std::uint32_t, float>());

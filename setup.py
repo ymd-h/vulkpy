@@ -43,6 +43,7 @@ for shader in [
         "maximum_axis_rebroadcast", "minimum_axis_rebroadcast",
         "broadcast",
         "batch_affine",
+        "gather", "gather_axis",
         "nn_cross_entropy", "nn_cross_entropy_backward",
 ]:
     if isinstance(shader, tuple):
