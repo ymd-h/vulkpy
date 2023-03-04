@@ -110,7 +110,33 @@ class _ConvertMixin:
                   shape: Optional[Iterablte[int]] = None,
                   buffer: Optional[vk.U32Array] = None,
                   low: int = 0,
-                  high: int = int(2 ** 32)):
+                  high: int = int(2 ** 32)) -> vk.U32Array:
+        """
+        Generate [low, high) random numbers
+
+        Parameters
+        ----------
+        shape : iterable of ints, optional
+            If specified, new ``vulkpy.U32Array`` with ``shape`` will be returned.
+        buffer : vulkpy.Array
+            If specified, generated numbers will be stored.
+        low : int, optional
+            Inclusive lowest value. The default is ``0``.
+        high : int, optional
+            Exclusive highest value. The default is ``2^32``.
+
+        Returns
+        -------
+        vulkpy.U32Array
+            Array which will get random numbers.
+
+        Raises
+        ------
+        ValueError
+            If neither ``shape`` or ``buffer`` are specified.
+        ValueError
+            If not 0 <= low < high <= 2^32.
+        """
         if low < 0:
             raise ValueError(f"`low` must be non negative integer, but {low}")
         if high > self._2p32:
