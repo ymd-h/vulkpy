@@ -40,6 +40,9 @@ __all__ = ["Xoshiro128pp"]
 class _ConvertMixin:
     _box_muller = getShader("prng_box_muller.spv")
     _ibox_muller = getShader("prng_ibox_muller.spv")
+    _randrange = getShader("prng_randrange.spv")
+
+    _2p32 = int(2 ** 32)
 
     def normal(self, *,
                shape: Optional[Iterable[int]] = None,
@@ -102,6 +105,40 @@ class _ConvertMixin:
 
         buffer._keep.append(self)
         return buffer
+
+    def randrange(self, *,
+                  shape: Optional[Iterablte[int]] = None,
+                  buffer: Optional[vk.U32Array] = None,
+                  low: int = 0,
+                  high: int = int(2 ** 32)):
+        if low < 0:
+            raise ValueError(f"`low` must be non negative integer, but {low}")
+        if high > self._2p32:
+            raise ValueError(f"`high` must not be greater than 2^32, but {high}")
+        if low >= high:
+            raise ValueError(f"`low` must be smaller than `high`, but {low}, {high}")
+
+        if (low == 0) and (high == self._2p32):
+            return self.randint(shape=shape, buffer=buffer)
+
+        if buffer is None:
+            if shape is None:
+                raise ValueError("One of `shape` and `buffer` must be specified.")
+
+            buffer = vk.U32Array(self._gpu, shape=shape)
+        else:
+            # For safety, we wait output buffer job.
+            buffer.wait()
+
+        size = buffer.buffer.size()
+        rng = self.random(shape=buffer.shape)
+        buffer.job = self._gpu._submit(self._randrange, 64, 1, 1,
+                                       [rng, buffer],
+                                       _vkarray.DataShape(size, 1, 1),
+                                       _vkarray.VectorRangeParams(size, low, high-1))
+        buffer._keep.append(rng)
+        return buffer
+
 
 class Xoshiro128pp(_ConvertMixin):
     """
@@ -179,5 +216,42 @@ class Xoshiro128pp(_ConvertMixin):
 
         n = int(np.prod(buffer.shape))
         buffer.job = self.rng.random_float(n, buffer.buffer.info())
+        buffer._keep.append(self)
+        return buffer
+
+    def randint(self, *,
+                shape: Optional[Iterable[int]] = None,
+                buffer: Optional[vk.U32Array] = None) -> vk.U32Array:
+        """
+        Generate [0, 2^32) unsigned integer numbers
+
+        Parameters
+        ----------
+        shape : iterable of ints, optional
+            If specified, new ``vulkpy.U32Array`` with ``shape`` will be returned.
+        buffer : vulkpy.U32Array
+            If specified, generated numbers will be stored.
+
+        Returns
+        -------
+        vulkpy.U32Array
+            Array which will get random numbers.
+
+        Raises
+        ------
+        ValueError
+            If neither ``shape`` or ``buffer`` are specified.
+        """
+        if buffer is None:
+            if shape is None:
+                raise ValueError("One of `shape` and `buffer` must be specified.")
+
+            buffer = vk.U32Array(self._gpu, shape=shape)
+        else:
+            # For safety, we wait output buffer job
+            buffer.wait()
+
+        n = int(np.prod(buffer.shape))
+        buffer.job = self.rng.random_uint32(n, buffer.buffer.info())
         buffer._keep.append(self)
         return buffer

@@ -34,6 +34,7 @@ for shader in [
         "iclamp", "iclamp_sv", "iclamp_vs", "iclamp_ss",
         "prng_xoshiro128pp_uint32", "prng_xoshiro128pp_float",
         "prng_box_muller", "prng_ibox_muller",
+        "prng_randrange",
         "sum", ("sum_v1.3", "--target-env=vulkan1.1"), "sum_axis",
         "prod", ("prod_v1.3", "--target-env=vulkan1.1"), "prod_axis",
         "sum_axis_rebroadcast", "prod_axis_rebroadcast",

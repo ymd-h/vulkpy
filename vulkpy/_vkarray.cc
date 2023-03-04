@@ -133,6 +133,12 @@ namespace OpParams {
     std::uint32_t size;
   };
 
+  struct VectorRange{
+    std::uint32_t size;
+    std::uint32_t low;
+    std::uint32_t high;
+  };
+
   template<typename T>
   struct VectorScalar{
     std::uint32_t size;
@@ -357,7 +363,8 @@ using OpVariant_t = std::variant<
   Op_t<3, OpParams::Broadcast>,
   Op_t<4, OpParams::Broadcast>,
   Op_t<4, OpParams::MultiBroadcast<3>>,
-  Op_t<4, OpParams::BatchAffine>
+  Op_t<4, OpParams::BatchAffine>,
+  Op_t<2, OpParams::VectorRange>
   >;
 
 
@@ -734,6 +741,8 @@ PYBIND11_MODULE(_vkarray, m){
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::BatchAffine, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submin", &submit<OpParams::VectorRange, 2>,
+         pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait)
     .def("flush",
          [](GPU& m, const std::vector<vk::MappedMemoryRange>& r){ m.flush(r); })
@@ -794,6 +803,9 @@ PYBIND11_MODULE(_vkarray, m){
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t>());
 
   pybind11::class_<OpParams::BatchAffine>(m, "BatchAffineParams")
+    .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
+
+  pybind11::class_<OpParams::VectorRange>(m, "VectorRangeParams")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
   pybind11::class_<DataShape>(m, "DataShape")
