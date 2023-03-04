@@ -741,7 +741,7 @@ PYBIND11_MODULE(_vkarray, m){
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::BatchAffine, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submin", &submit<OpParams::VectorRange, 2>,
+    .def("submit", &submit<OpParams::VectorRange, 2>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait)
     .def("flush",
