@@ -94,35 +94,30 @@ class GPU:
         self.gpu.wait()
 
 
-class U32Array:
-    """
-    GPU Array of uint (32bit) for shape or indices
-    """
-    def __init__(self, gpu: GPU, *,
-                 data: Optional[Iterable[int]] = None,
-                 ndim: Optional[int] = None):
-        self._gpu = gpu
+KeyType = Union[int, np.ndarray]
+ValueType = Union[int, float, np.ndarray]
 
-        if data is not None:
-            data = np.asarray(data, dtype=np.uint32)
-            self.shape = data.shape
-            self.buffer = self._gpu.gpu.toU32Buffer(np.ravel(data))
-        else:
-            if ndim is None:
-                raise ValueError("One of `data` or `ndim` must be specified.")
 
-            self.buffer = self._gpu.gpu.createU32Buffer(ndim)
-            self.shape = np.asarray((ndim,), dtype=int)
+class _GPUArray:
+    def __init__(self, gpu: GPU):
+        self._gpu: GPU = gpu
 
-        self.array = np.asarray(self.buffer)
-        self.array.shape = self.shape
-        self.job = None
+        # Pipeline job to write this Array.
+        self.job: Optional[Job] = None
 
-    def __getitem__(self, key) -> Union[float, np.ndarray]:
-        return self.array[key]
+        # Hold temporary resources until pipeline job finish
+        # to avoid freeing memories in use.
+        self._keep: List[Union[Shape, Array]] = []
 
-    def __setitem__(self, key, value):
-        self.array[key] = value
+    def wait(self):
+        """
+        Wait Last Job
+        """
+        if self.job is not None:
+            self.job.wait()
+            self.job = None
+
+        self._keep = []
 
     def flush(self):
         """
@@ -130,8 +125,60 @@ class U32Array:
         """
         self._gpu.flush([self])
 
+    def __getitem__(self, key: KeyType) -> ValueType:
+        self.wait()
+        return self.array[key]
 
-class Array:
+    def __setitem__(self, key: KeyType, value: ValueType):
+        self.array[key] = value
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}(shape={tuple(self.shape)})>"
+
+    def __str__(self) -> str:
+        self.wait()
+        return str(self.array)
+
+    def __array__(self) -> np.ndarray:
+        self.wait()
+        return self.array
+
+
+class U32Array(_GPUArray):
+    """
+    GPU Array of uint (32bit) for shape or indices
+    """
+    def __init__(self, gpu: GPU, *,
+                 data: Optional[Iterable[int]] = None,
+                 shape: Optional[Iterable[int]] = None):
+        super().__init__(gpu)
+
+        if data is not None:
+            data = np.asarray(data, dtype=np.uint32)
+            self.shape = data.shape
+            self.buffer = self._gpu.gpu.toU32Buffer(np.ravel(data))
+        else:
+            if shape is None:
+                raise ValueError("One of `data` or `shape` must be specified.")
+
+            self.shape = np.asarray(shape, dtype=int)
+            self.buffer = self._gpu.gpu.createU32Buffer(np.prod(self.shape))
+
+        self.array = np.asarray(self.buffer)
+        self.array.shape = self.shape
+
+
+class Shape(U32Array):
+    """
+    GPU Array of uint (32bit) for shape
+    """
+    def __init__(self, gpu: GPU, *,
+                 data: Optional[Iterable[int]] = None,
+                 ndim: Optional[int] = None):
+        super().__init__(gpu, data=data, shape=(ndim,))
+
+
+class Array(_GPUArray):
     """
     GPU Array for float (32bit)
     """
@@ -265,7 +312,7 @@ class Array:
         ValueError
             If both ``data`` and ``shape`` are ``None``.
         """
-        self._gpu = gpu
+        super().__init__(gpu)
 
         if data is not None:
             self.shape = np.asarray(data).shape
@@ -278,13 +325,6 @@ class Array:
 
         self.array = np.asarray(self.buffer)
         self.array.shape = self.shape
-
-        # Pipeline job to write this Array.
-        self.job: Optional[Job] = None
-
-        # Hold temporary resources until pipeline job finish
-        # to avoid freeing memories in use.
-        self._keep: List[Union[U32Array, Array]] = []
 
     def __del__(self):
         self.wait()
@@ -354,7 +394,7 @@ class Array:
         shape = np.broadcast_shapes(self.shape, other.shape)
         ndim = len(shape)
 
-        shapeABC = U32Array(self._gpu, ndim=3*ndim)
+        shapeABC = Shape(self._gpu, ndim=3*ndim)
         shapeABC[:] = 1
         shapeABC[  ndim- self.array.ndim:  ndim] = self.shape
         shapeABC[2*ndim-other.array.ndim:2*ndim] = other.shape
@@ -396,7 +436,7 @@ class Array:
                 raise ValueError("Incompatible shape")
             ndim = shape[0]
 
-            shapeAB = U32Array(self._gpu, ndim=2*ndim)
+            shapeAB = Shape(self._gpu, ndim=2*ndim)
             shapeAB[:] = 1
             shapeAB[:ndim] = shape
             shapeAB[-other.array.ndim:] = other.shape
@@ -457,40 +497,6 @@ class Array:
                                     MatMulParams(rowA,contractSize,columnB))
         ret._keep.extend([self, other])
         return ret
-
-    def wait(self):
-        """
-        Wait Last Job
-        """
-        if self.job is not None:
-            self.job.wait()
-            self.job = None
-
-        self._keep = []
-
-    def flush(self):
-        """
-        Flush Buffer to GPU
-        """
-        self._gpu.flush([self])
-
-    def __getitem__(self, key) -> Union[float, np.ndarray]:
-        self.wait()
-        return self.array[key]
-
-    def __setitem__(self, key, value):
-        self.array[key] = value
-
-    def __repr__(self) -> str:
-        return f"<vulkpy.Buffer(shape={tuple(self.shape)})>"
-
-    def __str__(self) -> str:
-        self.wait()
-        return str(self.array)
-
-    def __array__(self) -> np.ndarray:
-        self.wait()
-        return self.array
 
     def reshape(self, shape: tuple[int]):
         """
@@ -1358,8 +1364,8 @@ class Array:
             self_shape = np.concatenate((np.ones(shape=(dim_diff,)), self_shape),
                                         axis=0)
 
-        shapeA = U32Array(self._gpu, data=self_shape)
-        shapeB = U32Array(self._gpu, data=shape)
+        shapeA = Shape(self._gpu, data=self_shape)
+        shapeB = Shape(self._gpu, data=shape)
 
         ret.job = self._gpu._submit(self._broadcast, 64, 1, 1,
                                     [self, ret, shapeA, shapeB],
