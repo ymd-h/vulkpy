@@ -701,8 +701,8 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<GPU, std::shared_ptr<GPU>>(m, "GPU")
     .def("toBuffer", &GPU::toBuffer<float>)
     .def("createBuffer", &GPU::createBuffer<float>)
-    .def("toShapeBuffer", &GPU::toBuffer<std::uint32_t>)
-    .def("createShapeBuffer", &GPU::createBuffer<std::uint32_t>)
+    .def("toU32Buffer", &GPU::toBuffer<std::uint32_t>)
+    .def("createU32Buffer", &GPU::createBuffer<std::uint32_t>)
     .def("submit", &submit<OpParams::Vector, 1, 2, 3, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::MultiVector<2>, 2>,

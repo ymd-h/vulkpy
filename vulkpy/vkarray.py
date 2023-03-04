@@ -106,12 +106,12 @@ class Shape:
         if data is not None:
             data = np.asarray(data, dtype=np.uint32)
             self.shape = data.shape
-            self.buffer = self._gpu.gpu.toShapeBuffer(np.ravel(data))
+            self.buffer = self._gpu.gpu.toU32Buffer(np.ravel(data))
         else:
             if ndim is None:
                 raise ValueError("One of `data` or `ndim` must be specified.")
 
-            self.buffer = self._gpu.gpu.createShapeBuffer(ndim)
+            self.buffer = self._gpu.gpu.createU32Buffer(ndim)
             self.shape = np.asarray((ndim,), dtype=int)
 
         self.array = np.asarray(self.buffer)
