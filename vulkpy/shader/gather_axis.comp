@@ -13,10 +13,10 @@ layout(push_constant) uniform constants {
 layout(std430, binding = 0) readonly buffer A {
   float a[]; // [prev..., axis_size, post...]
 };
-layout(std430, binding = 0) readonly buffer B {
+layout(std430, binding = 1) readonly buffer B {
   uint b[]; // axis_size
 };
-layout(std430, binding = 1) writeonly buffer C {
+layout(std430, binding = 2) writeonly buffer C {
   float c[]; // [index_size, prev..., post...]
 };
 
