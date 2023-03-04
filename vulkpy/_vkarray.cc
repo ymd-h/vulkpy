@@ -352,7 +352,6 @@ using OpVariant_t = std::variant<
   Op_t<3, OpParams::Vector>,
   Op_t<4, OpParams::Vector>,
   Op_t<2, OpParams::MultiVector<2>>,
-  Op_t<3, OpParams::MultiVector<4>>,
   Op_t<1, OpParams::VectorScalar<float>>,
   Op_t<2, OpParams::VectorScalar<float>>,
   Op_t<3, OpParams::VectorScalar<float>>,
@@ -727,8 +726,6 @@ PYBIND11_MODULE(_vkarray, m){
     .def("submit", &submit<OpParams::Vector, 1, 2, 3, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::MultiVector<2>, 2>,
-         pybind11::call_guard<pybind11::gil_scoped_release>())
-    .def("submit", &submit<OpParams::MultiVector<4>, 3>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::VectorScalar<float>, 1, 2, 3>,
          pybind11::call_guard<pybind11::gil_scoped_release>())

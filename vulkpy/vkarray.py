@@ -21,7 +21,6 @@ from ._vkarray import createGPU, DataShape, Job
 from ._vkarray import (
     VectorParams,
     MultiVector2Params,
-    MultiVector4Params,
     VectorScalarParams,
     VectorScalar2Params,
     MatMulParams,
@@ -1409,7 +1408,8 @@ class Array(_GPUArray):
             local_size = (1, 64, 1)
 
             shape = np.array(self.shape)
-            shape = np.concatenate((shape[:axis], shape[axis+1:]), axis=0)
+            shape = np.concatenate((indices.shape, shape[:axis], shape[axis+1:]),
+                                   axis=0)
 
             ret = Array(self._gpu, shape=shape)
 
@@ -1417,7 +1417,7 @@ class Array(_GPUArray):
             axis_size = int(self.shape[axis])
             post_prod = int(np.prod(shape[axis+1:]))
             d = DataShape(prev_prod, post_prod, axis_size)
-            p = MultiVector4Params(prev_prod, post_prod, axis_size, size)
+            p = AxisReductionParams(prev_prod, axis_size, post_prod)
 
         ret.job = self._gpu._submit(spv, *local_size, [self, indices, ret], d, p)
         ret._keep.extend([self, indices])
