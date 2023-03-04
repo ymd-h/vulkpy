@@ -109,6 +109,9 @@ class _GPUArray:
         # to avoid freeing memories in use.
         self._keep: List[Union[Shape, Array]] = []
 
+    def __del__(self):
+        self.wait()
+
     def wait(self):
         """
         Wait Last Job
@@ -325,9 +328,6 @@ class Array(_GPUArray):
 
         self.array = np.asarray(self.buffer)
         self.array.shape = self.shape
-
-    def __del__(self):
-        self.wait()
 
     def _check_shape(self, other):
         if not np.array_equal(self.shape, other.shape):
