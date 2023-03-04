@@ -1395,7 +1395,7 @@ class Array(_GPUArray):
         ret._keep.extend([self, shapeA, shapeB])
         return ret
 
-    def gather(self, indices: U32Array, axis: Optional[int] = None):
+    def gather(self, indices: U32Array, axis: Optional[int] = None) -> Array:
         """
         Gather values of indices
 
@@ -1406,6 +1406,11 @@ class Array(_GPUArray):
         axis : int, optional
             Axis of gather.
             If ``None`` (default), array is flattened beforehand.
+
+        Returns
+        -------
+        vulkpy.Array
+            Gathered array
         """
         size = indices.buffer.size()
         if axis is None:
