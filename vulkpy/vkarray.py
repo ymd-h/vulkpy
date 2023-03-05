@@ -452,7 +452,7 @@ class Array(_GPUArray):
         else:
             shape = np.broadcast_shapes(self.shape, other.shape)
             if not np.array_equal(shape, self.shape):
-                raise ValueError("Incompatible shape")
+                raise ValueError(f"Incompatible shape. {shape} vs {self.shape}")
             ndim = shape[0]
 
             shapeAB = Shape(self._gpu, ndim=2*ndim)
