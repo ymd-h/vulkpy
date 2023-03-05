@@ -29,10 +29,22 @@ class Dense(Module):
         ----------
         gpu : vulkpy.GPU
             GPU
-        input_dim, output_dim : int
-            Input / output dimension
-        w_init, b_init : Callable, optional
-            Weight / bias initializer.
+        input_dim : int
+            Input dimension
+        output_dim : int
+            Output dimension
+        w_init Callable, optional
+            Weight initializer. If ``None`` (default),
+            ``vulkpy.nn.HeNormal`` is used.
+        b_init Callable, optional
+            Bias initializer. If ``None`` (default),
+            bias is initialized with ``0``.
+        w_opt : vulkpy.nn.Optimizer, optional
+            Weight Optimizer. If ``None`` (default),
+            ``vulkpy.nn.Adam`` is used.
+        b_opt : vulkpy.nn.Optimizer, optional
+            Bias Optimizer. If ``None`` (default),
+            ``vulkpy.nn.Adam`` is used.
         """
         self.input_dim = int(input_dim)
         self.output_dim = int(output_dim)
