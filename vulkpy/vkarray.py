@@ -458,7 +458,8 @@ class Array(_GPUArray):
             shapeAB = Shape(self._gpu, ndim=2*ndim)
             shapeAB[:] = 1
             shapeAB[:ndim] = shape
-            shapeAB[-other.array.ndim:] = other.shape
+            if other.array.ndim > 0:
+                shapeAB[-other.array.ndim:] = other.shape
             shapeAB.flush()
 
             self.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
