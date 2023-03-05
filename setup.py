@@ -92,7 +92,7 @@ if os.path.exists(README):
         desc["long_description_content_type"] = "text/markdown"
 
 setup(name="vulkpy",
-      version="0.0.2",
+      version="0.0.3",
       author="H. Yamada",
       description="GPGPU array on Vulkan",
       **desc,
