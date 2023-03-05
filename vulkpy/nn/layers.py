@@ -130,10 +130,16 @@ class Dense(Module):
         return dy @ self.w.value # Allocate
 
     def zero_grad(self):
+        """
+        Clear accumulated gradients
+        """
         self.w.zero_grad()
         self.b.zero_grad()
 
     def update(self):
+        """
+        Update values with accumulated gradients
+        """
         self.w.update()
         self.b.update()
 
