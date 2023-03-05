@@ -1,3 +1,8 @@
+"""
+Example 02: Neural Network for Classifying of Iris
+
+This example requires scikit-learn (`pip install scikit-learn`)
+"""
 import argparse
 import time
 
