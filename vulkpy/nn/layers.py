@@ -74,6 +74,11 @@ class Dense(Module):
         Notes
         -----
         .. math:: y = Wx + b
+
+        .. warning::
+
+             Generally, users should not call this method directly.
+             Use ``__call__`` instead, where input / output are stored for training.
         """
         y = Array(x._gpu, shape=(x.shape[0], self.output_dim))
         y.job = x._gpu._submit(self._batch_affine, 1, 64, 1,
