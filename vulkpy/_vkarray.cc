@@ -43,6 +43,7 @@ private:
   vk::UniqueBuffer b;
   vk::UniqueDeviceMemory m;
   T* ptr;
+  std::function<void(void)> dealloc;
 
 public:
   Buffer(std::shared_ptr<GPU> gpu, vk::UniqueDevice& device,
@@ -69,6 +70,10 @@ public:
 
     device->bindBufferMemory(this->b.get(), this->m.get(), 0);
     this->ptr = static_cast<T*>(device->mapMemory(this->m.get(), 0, this->mSize));
+
+    this->dealloc = [&device, this](){
+      device->unmapMemory(this->m.get());
+    };
   }
 
   Buffer(std::shared_ptr<GPU> gpu, vk::UniqueDevice& device,
@@ -76,6 +81,10 @@ public:
     : Buffer<T>(gpu, device, ps, data.size())
   {
     memcpy((void*)this->ptr, (void*)data.data(), this->mSize);
+  }
+
+  ~Buffer(){
+    this->dealloc();
   }
 
   T get(std::size_t i) const {
