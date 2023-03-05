@@ -672,6 +672,12 @@ namespace PRNG {
       return this->random(n, this->spv_uint32, info);
     }
 
+    ~Xoshiro128pp(){
+      if(this->job){
+        this->job->wait();
+      }
+    }
+
     std::shared_ptr<Job> random_float(std::uint32_t n,
                                       const vk::DescriptorBufferInfo& info){
       return this->random(n, this->spv_float, info);
