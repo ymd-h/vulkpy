@@ -51,6 +51,8 @@ class HeNormal(Initializer):
 
     Note
     ----
+    Standard deviation :math:`\sigma` is following;
+
     .. math:: \sigma = \sqrt{2/d_{\text{in}}}
     """
     def __init__(self, gpu: GPU, input_dim: int, *, seed: Optional[int] = None):
