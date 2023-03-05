@@ -96,6 +96,7 @@ class _ConvertMixin:
             buffer.job = self._gpu._submit(self._ibox_muller,
                                            _local_size, 1, 1,
                                            [buffer], dshape, p)
+            buffer._keep = []
         else:
             # Odd: Require additional space for intermediate [0, 1)
             rng = self.random(shape=2*(floor_n + 1))
@@ -103,7 +104,7 @@ class _ConvertMixin:
                                            _local_size, 1, 1,
                                            [rng, buffer], dshape, p)
 
-        buffer._keep = [self]
+            buffer._keep = [rng]
         return buffer
 
     def randrange(self, *,
