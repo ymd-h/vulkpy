@@ -89,6 +89,28 @@ class Module:
         pass
 
     def __call__(self, x: Array) -> Array:
+        """
+        Call Module
+
+        Parameters
+        ----------
+        x : vulkpy.Array
+            Input
+
+        Returns
+        -------
+        y : vulkpy.Array
+            Output
+
+        Raises
+        ------
+        ValueError
+            If input (``x``) shape doesn't have at least 2-dimensions.
+
+        Notes
+        -----
+        This function stores input (``x``) and output (``y``) for training.
+        """
         if len(x.shape) < 2:
             raise ValueError("Input must have at least 2-dimensions.")
 
