@@ -103,7 +103,7 @@ class _ConvertMixin:
                                            _local_size, 1, 1,
                                            [rng, buffer], dshape, p)
 
-        buffer._keep.append(self)
+        buffer._keep = [self]
         return buffer
 
     def randrange(self, *,
@@ -162,7 +162,7 @@ class _ConvertMixin:
                                        [rng, buffer],
                                        _vkarray.DataShape(size, 1, 1),
                                        _vkarray.VectorRangeParams(size, low, high-1))
-        buffer._keep.append(rng)
+        buffer._keep = [rng]
         return buffer
 
     def wait(self):
@@ -245,7 +245,7 @@ class Xoshiro128pp(_ConvertMixin):
 
         n = int(np.prod(buffer.shape))
         buffer.job = self.rng.random_float(n, buffer.buffer.info())
-        buffer._keep.append(self)
+        buffer._keep = [self]
         return buffer
 
     def randint(self, *,
@@ -282,5 +282,5 @@ class Xoshiro128pp(_ConvertMixin):
 
         n = int(np.prod(buffer.shape))
         buffer.job = self.rng.random_uint32(n, buffer.buffer.info())
-        buffer._keep.append(self)
+        buffer._keep = [self]
         return buffer
