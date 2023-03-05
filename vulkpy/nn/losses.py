@@ -41,10 +41,6 @@ class Loss:
 class CrossEntropyLoss(Loss):
     """
     Cross Entropy Loss
-
-    Notes
-    -----
-    .. math:: L = - \sum _i y_i \log x_i
     """
     _forward = getShader("nn_cross_entropy.spv")
     _backward = getShader("nn_cross_entropy_backward.spv")
@@ -77,14 +73,6 @@ class SoftmaxCrossEntropyLoss(CrossEntropyLoss):
     """
     Softmax Cross Entropy Loss
 
-    Notes
-    -----
-    This loss includes Softmax layer to compute gradient efficiently.
-
-    .. math::
-       L = - \sum _i y_i (x_i - \log (\sum _j \exp x_j))\\
-       \frac{dL}{dx} = \frac{\exp x}{\sum _j \exp x_j} - y
-
     See Also
     --------
     Softmax : Softmax layer
@@ -104,12 +92,6 @@ class SoftmaxCrossEntropyLoss(CrossEntropyLoss):
 class MSELoss(Loss):
     """
     Mean Squared Loss
-
-    Notes
-    -----
-    .. math::
-       L = \sum _i |y_i - x_i|^2\\
-       \frac{dL}{dx} = 2 (x_i - y_i)
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -128,12 +110,6 @@ class MSELoss(Loss):
 class HuberLoss(Loss):
     """
     Huber Loss
-
-    Notes
-    -----
-    .. math::
-       L = 0.5 \sum _i \min (|y_i - x_i|^2, |y_i - x_i|)\\
-       \frac{dL}{dx} = \min (\max(x_i - y_i, -1.0), 1.0)
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
