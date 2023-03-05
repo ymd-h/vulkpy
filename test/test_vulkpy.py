@@ -1505,6 +1505,22 @@ class TestBuffer(unittest.TestCase):
         np.testing.assert_allclose(b, np.moveaxis(np.take(_a, _idx, axis=1),
                                                   (1, 2), (0, 1)))
 
+    def test_one_hot(self):
+        idx = vk.U32Array(self.gpu, data=[0, 1, 2, 1, 0])
+
+        a = idx.to_onehot(3)
+        np.testing.assert_allclose(a, [[1, 0, 0],
+                                       [0, 1, 0],
+                                       [0, 0, 1],
+                                       [0, 1, 0],
+                                       [1, 0, 0]])
+
+    def test_one_hot_shape(self):
+        idx = vk.U32Array(self.gpu, data=[[0, 1], [2, 1]])
+
+        a = idx.to_onehot(3)
+        np.testing.assert_allclose(a, [[[1, 0, 0], [0, 1, 0]],
+                                       [[0, 0, 1], [0, 1, 0]]])
 
 if __name__ == "__main__":
     enable_debug(api_dump=False)
