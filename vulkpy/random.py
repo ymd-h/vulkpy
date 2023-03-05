@@ -165,6 +165,9 @@ class _ConvertMixin:
         buffer._keep.append(rng)
         return buffer
 
+    def wait(self):
+        pass
+
 
 class Xoshiro128pp(_ConvertMixin):
     """
