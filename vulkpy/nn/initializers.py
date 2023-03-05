@@ -9,8 +9,12 @@ from vulkpy.random import Xoshiro128pp
 
 __all__ = ["Constant", "HeNormal"]
 
+class Initializer:
+    def __call__(self, gpu: GPU, shape: Iterable[int]) -> Array:
+        raise NotImplementedError
 
-class Constant:
+
+class Constant(Initializer):
     """
     Constant Initializer
     """
@@ -33,7 +37,7 @@ class Constant:
         return p
 
 
-class HeNormal:
+class HeNormal(Initializer):
     r"""
     He Normal Initializer
 
