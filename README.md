@@ -71,6 +71,9 @@ print(c)
   * [x] `maximum(axis=None)`, `minimum(axis=None)`
   * [x] `mean(axis=None)`
   * [ ] ...
+* Other `Array` method
+  * [x] `gather(idx: U32Array) -> Array`
+  * [ ] ...
 * General Tensor Product
   * [ ] tensordot
 * Bloadcast
@@ -95,4 +98,12 @@ print(c)
   * Losses
     * [x] `CrossEntropyLoss`, `SoftmaxCrossEntropyLoss`, `MSELoss`, `HuberLoss`
     * [ ] ...
+  * Initializers
+    * [x] `Constant`, `HeNormal`
+    * [ ] ...
+  * Models
+    * [x] `Sequance`
+    * [ ] ...
   * [ ] ONNX support
+  * [ ] Custom user layer with automatic `backward()` definition.
+  * [ ] Define by Run API
