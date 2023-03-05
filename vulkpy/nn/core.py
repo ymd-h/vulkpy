@@ -29,6 +29,8 @@ class Parameter:
             Shape of parameter
         trainable : bool, optional
             If ``True`` (default), track gradient
+        opt : vulkpy.nn.Optimizer, optional
+            Optimizer. If ``None`` (default), ``vulkpy.nn.Adam`` is used.
         initializer : callable, optional
             Initializer function. If ``None`` (default), initialized with ``0.0``.
         """
