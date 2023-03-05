@@ -19,6 +19,14 @@ class Constant(Initializer):
     Constant Initializer
     """
     def __init__(self, value: float):
+        """
+        Initialize Constant Initializer
+
+        Parameters
+        ----------
+        value : float
+            Constant value
+        """
         self.value = value
 
     def __call__(self, gpu: GPU, shape: Iterable[int]) -> Array:
