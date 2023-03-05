@@ -220,6 +220,11 @@ class Sigmoid(Module):
         Notes
         -----
         .. math:: y = 1/(1 + \exp (-x))
+
+        .. warning::
+
+             Generally, users should not call this method directly.
+             Use ``__call__`` instead, where input / output are stored for training.
         """
         y = 0.0 - x # Allocate
         y.exp(inplace=True)
@@ -272,6 +277,11 @@ class Softmax(Module):
         Notes
         -----
         .. math:: y = \exp (x) / \sum _i \exp(x_i)
+
+        .. warning::
+
+             Generally, users should not call this method directly.
+             Use ``__call__`` instead, where input / output are stored for training.
         """
         X = x - x.maximum(axis=1, rebroadcast=True)
         X.exp(inplace=True)
