@@ -15,55 +15,6 @@ from vulkpy.util import enable_debug
 from vulkpy import nn
 
 
-class Network:
-    def __init__(self, gpu, opt):
-        self.L = [
-            nn.Dense(gpu, 4, 128, w_opt=opt, b_opt=opt),
-            nn.ReLU(),
-            nn.Dense(gpu, 128, 128, w_opt=opt, b_opt=opt),
-            nn.ReLU(),
-            nn.Dense(gpu, 128, 3, w_opt=opt, b_opt=opt),
-            nn.Softmax()
-        ]
-        self.loss = nn.CrossEntropyLoss(reduce="sum")
-
-    def forward(self, x):
-        for _L in self.L:
-            x = _L(x)
-        return x
-
-    def backward(self):
-        dx = self.loss.grad()
-        for _L in self.L[::-1]:
-            dx = _L.backward(dx)
-
-    def zero_grad(self):
-        for _L in self.L:
-            _L.zero_grad()
-
-    def update(self):
-        for _L in self.L:
-            _L.update()
-
-    def train(self, x, y):
-        _y = self.forward(x)
-        _loss = self.loss(_y, y)
-
-        self.zero_grad()
-        self.backward()
-        self.update()
-
-        return _y, _loss
-
-    def predict(self, x, y = None):
-        _y = self.forward(x)
-        if y is None:
-            return _y
-
-        _loss = self.loss(_y, y)
-        return _y, _loss
-
-
 def example02(nepoch, batch_size, opt, lr, *, debug = False):
     if debug:
         enable_debug(api_dump=False)
@@ -91,7 +42,17 @@ def example02(nepoch, batch_size, opt, lr, *, debug = False):
         "sgd": lambda lr: nn.SGD(lr)
     }[opt](lr)
 
-    net = Network(gpu, opt)
+    net = nn.Sequence(
+        [
+            nn.Dense(gpu, 4, 128, w_opt=opt, b_opt=opt),
+            nn.ReLU(),
+            nn.Dense(gpu, 128, 128, w_opt=opt, b_opt=opt),
+            nn.ReLU(),
+            nn.Dense(gpu, 128, 3, w_opt=opt, b_opt=opt),
+            nn.Softmax(),
+         ],
+        nn.CrossEntropyLoss(reduce="sum")
+    )
     idx = np.arange(train_x.shape[0])
 
     X = vk.Array(gpu, data=test_x)
