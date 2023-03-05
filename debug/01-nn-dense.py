@@ -24,7 +24,7 @@ def debug01(epoch):
         dx = dense.backward(mse.grad())
         dense.update()
 
-        print(f"Epoch: {e}, Loss: {L}")
+        print(f"Epoch: {e:4d}, Loss: {L:.6f}")
 
 
 if __name__ == "__main__":
