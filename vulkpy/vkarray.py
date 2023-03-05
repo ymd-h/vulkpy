@@ -175,6 +175,22 @@ class U32Array(_GPUArray):
         self.array = np.asarray(self.buffer)
         self.array.shape = self.shape
 
+    def to_onehot(self, num_classes: int) -> Array:
+        """
+        Convert to one hot vector
+
+        Parameters
+        ----------
+        num_classes : int
+            Number of classes
+
+        Returns
+        -------
+        vulkpy.Array
+            One hot vector
+        """
+        return Array(self._gpu, data=np.identity(num_classes)).gather(self, axis=0)
+
 
 class Shape(U32Array):
     """
