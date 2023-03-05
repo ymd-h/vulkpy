@@ -13,3 +13,4 @@ from .losses import (
     MSELoss,
     HuberLoss,
 )
+from .models import Sequence
