@@ -46,7 +46,7 @@ class Dense(Module):
                            initializer=b_init, opt=b_opt)
 
     def forward(self, x: Array) -> Array:
-        """
+        r"""
         Forward
 
         Parameters
@@ -74,7 +74,7 @@ class Dense(Module):
         return y
 
     def backward(self, dy: Array) -> Array:
-        """
+        r"""
         Backward
 
         Parameters
@@ -126,7 +126,7 @@ class ReLU(Module):
     Rectified Linear Unit (ReLU)
     """
     def forward(self, x: Array) -> Array:
-        """
+        r"""
         Forward
 
         Parameters
@@ -146,7 +146,7 @@ class ReLU(Module):
         return x.max(0.0) # Allocate
 
     def backward(self, dy: Array) -> Array:
-        """
+        r"""
         Backward
 
         Parameters
@@ -176,7 +176,7 @@ class Sigmoid(Module):
     Sigmoid
     """
     def forward(self, x: Array) -> Array:
-        """
+        r"""
         Forward
 
         Parameters
@@ -200,7 +200,7 @@ class Sigmoid(Module):
         return y
 
     def backward(self, dy: Array) -> Array:
-        """
+        r"""
         Backward
 
         Parameters
@@ -228,7 +228,7 @@ class Softmax(Module):
     SoftMax
     """
     def forward(self, x: Array) -> Array:
-        """
+        r"""
         Forward
 
         Parameters
@@ -251,7 +251,7 @@ class Softmax(Module):
         return X
 
     def backward(self, dy: Array) -> Array:
-        """
+        r"""
         Backward
 
         Parameters

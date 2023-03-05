@@ -34,12 +34,12 @@ class Constant:
 
 
 class HeNormal:
-    """
+    r"""
     He Normal Initializer
 
     Note
     ----
-    .. math:: \sigma = \sqrt(2/input_dim)
+    .. math:: \sigma = \sqrt{2/d_{\text{in}}}
     """
     def __init__(self, gpu: GPU, input_dim: int, *, seed: Optional[int] = None):
         """
