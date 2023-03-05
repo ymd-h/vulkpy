@@ -82,6 +82,8 @@ class Parameter:
     def update(self):
         """
         Update value
+
+        Update value with accumulated gradients only if this value is trainable.
         """
         if self.is_trainable():
             self.value += self.opt(self.grad, self.opt_state)
