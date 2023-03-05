@@ -27,9 +27,15 @@ from ._vkarray import (
     AxisReductionParams,
     BroadcastParams,
     Multi3BroadcastParams,
+    BatchAffineParams,
+    AxisGatherParams,
 )
 
-__all__ = ["GPU", "Array"]
+__all__ = [
+    "GPU",
+    "U32Array",
+    "Array"
+]
 
 Params = Union[
     VectorParams,
@@ -40,6 +46,7 @@ Params = Union[
     AxisReductionParams,
     BroadcastParams,
     Multi3BroadcastParams,
+    BatchAffineParams,
 ]
 
 logger = wblog.getLogger()
@@ -92,35 +99,33 @@ class GPU:
         self.gpu.wait()
 
 
-class Shape:
-    """
-    GPU Array of uint (32bit) for shape
-    """
-    def __init__(self, gpu: GPU, *,
-                 data: Optional[Iterable[int]] = None,
-                 ndim: Optional[int] = None):
-        self._gpu = gpu
+KeyType = Union[int, np.ndarray]
+ValueType = Union[int, float, np.ndarray]
 
-        if data is not None:
-            data = np.asarray(data, dtype=np.uint32)
-            self.shape = data.shape
-            self.buffer = self._gpu.gpu.toShapeBuffer(np.ravel(data))
-        else:
-            if ndim is None:
-                raise ValueError("One of `data` or `ndim` must be specified.")
 
-            self.buffer = self._gpu.gpu.createShapeBuffer(ndim)
-            self.shape = np.asarray((ndim,), dtype=int)
+class _GPUArray:
+    def __init__(self, gpu: GPU):
+        self._gpu: GPU = gpu
 
-        self.array = np.asarray(self.buffer)
-        self.array.shape = self.shape
-        self.job = None
+        # Pipeline job to write this Array.
+        self.job: Optional[Job] = None
 
-    def __getitem__(self, key) -> Union[float, np.ndarray]:
-        return self.array[key]
+        # Hold temporary resources until pipeline job finish
+        # to avoid freeing memories in use.
+        self._keep: List[Union[Shape, Array]] = []
 
-    def __setitem__(self, key, value):
-        self.array[key] = value
+    def __del__(self):
+        self.wait()
+
+    def wait(self):
+        """
+        Wait Last Job
+        """
+        if self.job is not None:
+            self.job.wait()
+            self.job = None
+
+        self._keep = []
 
     def flush(self):
         """
@@ -128,8 +133,88 @@ class Shape:
         """
         self._gpu.flush([self])
 
+    def __getitem__(self, key: KeyType) -> ValueType:
+        self.wait()
+        return self.array[key]
 
-class Array:
+    def __setitem__(self, key: KeyType, value: ValueType):
+        self.array[key] = value
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}(shape={tuple(self.shape)})>"
+
+    def __str__(self) -> str:
+        self.wait()
+        return str(self.array)
+
+    def __array__(self) -> np.ndarray:
+        self.wait()
+        return self.array
+
+
+class U32Array(_GPUArray):
+    """
+    GPU Array of uint (32bit) for shape or indices
+    """
+    def __init__(self, gpu: GPU, *,
+                 data: Optional[Iterable[int]] = None,
+                 shape: Optional[Iterable[int]] = None):
+        super().__init__(gpu)
+
+        if data is not None:
+            data = np.asarray(data, dtype=np.uint32)
+            self.shape = data.shape
+            self.buffer = self._gpu.gpu.toU32Buffer(np.ravel(data))
+        else:
+            if shape is None:
+                raise ValueError("One of `data` or `shape` must be specified.")
+
+            self.shape = np.asarray(shape, dtype=int)
+            self.buffer = self._gpu.gpu.createU32Buffer(np.prod(self.shape))
+
+        self.array = np.asarray(self.buffer)
+        self.array.shape = self.shape
+
+    def to_onehot(self, num_classes: int) -> Array:
+        """
+        Convert to one hot vector
+
+        Parameters
+        ----------
+        num_classes : int
+            Number of classes
+
+        Returns
+        -------
+        vulkpy.Array
+            One hot vector
+        """
+        return Array(self._gpu, data=np.identity(num_classes)).gather(self, axis=0)
+
+
+class Shape(U32Array):
+    """
+    GPU Array of uint (32bit) for shape
+    """
+    def __init__(self, gpu: GPU, *,
+                 data: Optional[Iterable[int]] = None,
+                 ndim: Optional[int] = None):
+        """
+        Initialize Shape
+
+        Parameters
+        ----------
+        gpu : vulkpy.GPU
+            GPU
+        data : iterable of ints, optional
+            Data
+        ndim : int, optional
+            ndim
+        """
+        super().__init__(gpu, data=data, shape=(ndim,) if ndim is not None else None)
+
+
+class Array(_GPUArray):
     """
     GPU Array for float (32bit)
     """
@@ -244,6 +329,8 @@ class Array:
     _minimum_axis = getShader("minimum_axis.spv")
     _minimum_axis_rebroadcast = getShader("minimum_axis_rebroadcast.spv")
     _broadcast = getShader("broadcast.spv")
+    _gather = getShader("gather.spv")
+    _gather_axis = getShader("gather_axis.spv")
 
     def __init__(self, gpu: GPU, *, data = None, shape = None):
         """
@@ -263,7 +350,7 @@ class Array:
         ValueError
             If both ``data`` and ``shape`` are ``None``.
         """
-        self._gpu = gpu
+        super().__init__(gpu)
 
         if data is not None:
             self.shape = np.asarray(data).shape
@@ -276,16 +363,6 @@ class Array:
 
         self.array = np.asarray(self.buffer)
         self.array.shape = self.shape
-
-        # Pipeline job to write this Array.
-        self.job: Optional[Job] = None
-
-        # Hold temporary resources until pipeline job finish
-        # to avoid freeing memories in use.
-        self._keep: List[Union[Shape, Array]] = []
-
-    def __del__(self):
-        self.wait()
 
     def _check_shape(self, other):
         if not np.array_equal(self.shape, other.shape):
@@ -302,18 +379,18 @@ class Array:
         self._check_shape(other)
         ret = Array(self._gpu, shape=self.shape)
         ret.job = self._opVec(spv, [self, other, ret])
-        ret._keep.extend([self, other])
+        ret._keep = [self, other]
         return ret
 
     def _opVec2(self, spv, other=None):
         if other is not None:
             self._check_shape(other)
             self.job = self._opVec(spv, [self, other])
-            self._keep.append(other)
+            self._keep = [other]
         else:
             ret = Array(self._gpu, shape=self.shape)
             ret.job = self._opVec(spv, [self, ret])
-            ret._keep.append(self)
+            ret._keep = [self]
             return ret
 
     def _opVec1(self, spv):
@@ -329,7 +406,7 @@ class Array:
     def _opVecScalar2(self, spv, other):
         ret = Array(self._gpu, shape=self.shape)
         ret.job = self._opVecScalar(spv, [self, ret], other)
-        ret._keep.append(self)
+        ret._keep = [self]
         return ret
 
     def _opVecScalar1(self, spv, other):
@@ -350,13 +427,13 @@ class Array:
             return ret
 
         shape = np.broadcast_shapes(self.shape, other.shape)
-        ndim = shape[0]
+        ndim = len(shape)
 
         shapeABC = Shape(self._gpu, ndim=3*ndim)
         shapeABC[:] = 1
         shapeABC[  ndim- self.array.ndim:  ndim] = self.shape
         shapeABC[2*ndim-other.array.ndim:2*ndim] = other.shape
-        shapeABC[2*ndim                 :      ] = ndim
+        shapeABC[2*ndim                 :      ] = shape
         shapeABC.flush()
 
         ret = Array(self._gpu, shape=shape)
@@ -368,7 +445,7 @@ class Array:
                                                           ret.buffer.size(),
                                                           ndim))
 
-        ret._keep.extend([self, other, shapeABC])
+        ret._keep = [self, other, shapeABC]
         return ret
 
     def __add__(self, other: Union[Array, float]) -> Array:
@@ -391,13 +468,14 @@ class Array:
         else:
             shape = np.broadcast_shapes(self.shape, other.shape)
             if not np.array_equal(shape, self.shape):
-                raise ValueError("Incompatible shape")
+                raise ValueError(f"Incompatible shape. {shape} vs {self.shape}")
             ndim = shape[0]
 
             shapeAB = Shape(self._gpu, ndim=2*ndim)
             shapeAB[:] = 1
             shapeAB[:ndim] = shape
-            shapeAB[-other.array.ndim:] = other.shape
+            if other.array.ndim > 0:
+                shapeAB[-other.array.ndim:] = other.shape
             shapeAB.flush()
 
             self.job = self._gpu._submit(spv_broadcast, 64, 1, 1,
@@ -406,7 +484,7 @@ class Array:
                                          BroadcastParams(self.buffer.size(),
                                                          other.buffer.size(),
                                                          ndim))
-            self._keep.extend([other, shapeAB])
+            self._keep = [other, shapeAB]
 
         return self
 
@@ -453,42 +531,8 @@ class Array:
                                     [self, other, ret],
                                     DataShape(rowA, columnB, 1),
                                     MatMulParams(rowA,contractSize,columnB))
-        ret._keep.extend([self, other])
+        ret._keep = [self, other]
         return ret
-
-    def wait(self):
-        """
-        Wait Last Job
-        """
-        if self.job is not None:
-            self.job.wait()
-            self.job = None
-
-        self._keep = []
-
-    def flush(self):
-        """
-        Flush Buffer to GPU
-        """
-        self._gpu.flush([self])
-
-    def __getitem__(self, key) -> Union[float, np.ndarray]:
-        self.wait()
-        return self.array[key]
-
-    def __setitem__(self, key, value):
-        self.array[key] = value
-
-    def __repr__(self) -> str:
-        return f"<vulkpy.Buffer(shape={tuple(self.shape)})>"
-
-    def __str__(self) -> str:
-        self.wait()
-        return str(self.array)
-
-    def __array__(self) -> np.ndarray:
-        self.wait()
-        return self.array
 
     def reshape(self, shape: tuple[int]):
         """
@@ -1061,30 +1105,31 @@ class Array:
             ret = Array(self._gpu, shape=_s.shape)
             if min_is_array and max_is_array:
                 ret.job = _s._opVec(self._clamp, [_s, min, max, ret])
-                ret._keep.extend([_s, min, max])
+                ret._keep = [_s, min, max]
             elif max_is_array:
                 ret.job = _s._opVecScalar(self._clamp_sv, [_s, max, ret], min)
-                ret._keep.extend([_s, max])
+                ret._keep = [_s, max]
             elif min_is_array:
                 ret.job = _s._opVecScalar(self._clamp_vs, [_s, min, ret], max)
-                ret._keep.extend([_s, min])
+                ret._keep = [_s, min]
             else:
                 ret.job = _s._opVec2Scalar(self._clamp_ss, [_s, ret], [min, max])
-                ret._keep.append(_s)
+                ret._keep = [_s]
             return ret
         else:
             # inplace
             if min_is_array and max_is_array:
                 self.job = self._opVec(self._iclamp, [self, min, max])
-                self._keep.extend([min, max])
+                self._keep = [min, max]
             elif max_is_array:
                 self.job = self._opVecScalar(self._iclamp_sv, [self, max], min)
-                self._keep.append(max)
+                self._keep = [max]
             elif min_is_array:
                 self.job = self._opVecScalar(self._iclamp_vs, [self, min], max)
-                self._keep.append(min)
+                self._keep = [min]
             else:
                 self.job = self._opVec2Scalar(self._iclamp_ss, [self], [min, max])
+                self._keep = []
 
 
     def _axis_reduction(self, spv, axis, keepdims):
@@ -1107,7 +1152,7 @@ class Array:
                                         AxisReductionParams(prev_prod,
                                                             axis_size,
                                                             post_prod))
-            ret._keep.append(tmp)
+            ret._keep = [tmp]
             tmp = ret
 
         if keepdims:
@@ -1136,7 +1181,7 @@ class Array:
                                         AxisReductionParams(prev_prod,
                                                             axis_size,
                                                             post_prod))
-            ret._keep.append(self)
+            ret._keep = [self]
             return ret
 
         if axis is None:
@@ -1157,7 +1202,7 @@ class Array:
                 m = (n // _local_size) + ((n % _local_size) != 0)
                 ret = Array(self._gpu, shape=(m,))
                 ret.job = f(tmp, ret)
-                ret._keep.append(tmp)
+                ret._keep = [tmp]
 
                 if m == 1:
                     if keepdims:
@@ -1365,5 +1410,53 @@ class Array:
                                     BroadcastParams(self.buffer.size(),
                                                     ret.buffer.size(),
                                                     shapeA.buffer.size()))
-        ret._keep.extend([self, shapeA, shapeB])
+        ret._keep = [self, shapeA, shapeB]
+        return ret
+
+    def gather(self, indices: U32Array, axis: Optional[int] = None) -> Array:
+        """
+        Gather values of indices
+
+        Parameters
+        ----------
+        indices : vulkpy.U32Array
+            Indices
+        axis : int, optional
+            Axis of gather.
+            If ``None`` (default), array is flattened beforehand.
+
+        Returns
+        -------
+        vulkpy.Array
+            Gathered array
+        """
+        size = indices.buffer.size()
+        if axis is None:
+            spv = self._gather
+            local_size = (64, 1, 1)
+
+            ret = Array(self._gpu, shape=indices.shape)
+
+            d = DataShape(size, 1, 1)
+            p = VectorParams(size)
+        else:
+            spv = self._gather_axis
+            local_size = (1, 64, 1)
+
+            shape = np.array(self.shape)
+            prev_shape = shape[:axis]
+            post_shape = shape[axis+1:]
+            shape = np.concatenate((indices.shape, prev_shape, post_shape),
+                                   axis=0)
+
+            ret = Array(self._gpu, shape=shape)
+
+            prev_prod = int(np.prod(prev_shape))
+            axis_size = int(self.shape[axis])
+            post_prod = int(np.prod(post_shape))
+            d = DataShape(prev_prod, post_prod, size)
+            p = AxisGatherParams(prev_prod, post_prod, axis_size, size)
+
+        ret.job = self._gpu._submit(spv, *local_size, [self, indices, ret], d, p)
+        ret._keep = [self, indices]
         return ret

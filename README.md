@@ -71,6 +71,9 @@ print(c)
   * [x] `maximum(axis=None)`, `minimum(axis=None)`
   * [x] `mean(axis=None)`
   * [ ] ...
+* Other `Array` method
+  * [x] `gather(idx: U32Array) -> Array`
+  * [ ] ...
 * General Tensor Product
   * [ ] tensordot
 * Bloadcast
@@ -86,6 +89,21 @@ print(c)
     * Gaussian with Box-Muller (`.normal(shape=None, buffer=None, mean=0.0, stddev=1.0)`)
   * [ ] pcg32
 * Neural Network
-  * [ ] dense, conv, ...
-  * [ ] sgd, adam, ...
+  * Layers
+    * [x] `Dense`, `ReLU`, `Sigmoid`, `Softmax`
+    * [ ] conv, ...
+  * Optimizers
+    * [x] `SGD`, `Adam`
+    * [ ] rmsprop, adagrad, ...
+  * Losses
+    * [x] `CrossEntropyLoss`, `SoftmaxCrossEntropyLoss`, `MSELoss`, `HuberLoss`
+    * [ ] ...
+  * Initializers
+    * [x] `Constant`, `HeNormal`
+    * [ ] ...
+  * Models
+    * [x] `Sequance`
+    * [ ] ...
   * [ ] ONNX support
+  * [ ] Custom user layer with automatic `backward()` definition.
+  * [ ] Define by Run API

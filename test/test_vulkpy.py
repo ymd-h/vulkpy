@@ -1164,6 +1164,16 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(c, [[2, 2], [2, 2]])
 
+    def test_add_broadcast_both(self):
+        _a = np.arange(4).reshape((1, 2, 2))
+        _b = np.arange(4).reshape((2, 2, 1))
+
+        a = vk.Array(self.gpu, data=_a)
+        b = vk.Array(self.gpu, data=_b)
+
+        c = a + b
+        np.testing.assert_allclose(c, _a + _b)
+
     def test_sub_broadcast(self):
         a = vk.Array(self.gpu, data=np.ones(shape=(2, 1)))
         b = vk.Array(self.gpu, data=np.ones(shape=(2, 2)))
@@ -1461,6 +1471,56 @@ class TestBuffer(unittest.TestCase):
 
         np.testing.assert_allclose(b, np.asarray([[2, 3], [2, 3]]))
 
+    def test_gather(self):
+        _a = np.arange(8).reshape((2, 2, 2))
+        a = vk.Array(self.gpu, data=_a)
+
+        _idx = np.asarray([0, 1, 6, 7], dtype=int)
+        idx = vk.U32Array(self.gpu, data=_idx)
+
+        b = a.gather(idx)
+        np.testing.assert_allclose(b.shape, idx.shape)
+        np.testing.assert_allclose(b, np.ravel(_a)[_idx])
+
+    def test_gather_shape(self):
+        _a = np.arange(8).reshape((2, 2, 2))
+        a = vk.Array(self.gpu, data=_a)
+
+        _idx = np.asarray([[0, 1], [6, 7]], dtype=int)
+        idx = vk.U32Array(self.gpu, data=_idx)
+
+        b = a.gather(idx)
+        np.testing.assert_allclose(b.shape, idx.shape)
+        np.testing.assert_allclose(b, np.ravel(_a)[_idx])
+
+    def test_gather_axis(self):
+        _a = np.arange(30).reshape((3, 2, 5))
+        a = vk.Array(self.gpu, data=_a)
+
+        _idx = np.asarray([[0, 1], [1, 1]], dtype=int)
+        idx = vk.U32Array(self.gpu, data=_idx)
+
+        b = a.gather(idx, axis=1)
+        np.testing.assert_allclose(b.shape, (2, 2, 3, 5))
+        np.testing.assert_allclose(b, np.moveaxis(np.take(_a, _idx, axis=1),
+                                                  (1, 2), (0, 1)))
+
+    def test_one_hot(self):
+        idx = vk.U32Array(self.gpu, data=[0, 1, 2, 1, 0])
+
+        a = idx.to_onehot(3)
+        np.testing.assert_allclose(a, [[1, 0, 0],
+                                       [0, 1, 0],
+                                       [0, 0, 1],
+                                       [0, 1, 0],
+                                       [1, 0, 0]])
+
+    def test_one_hot_shape(self):
+        idx = vk.U32Array(self.gpu, data=[[0, 1], [2, 1]])
+
+        a = idx.to_onehot(3)
+        np.testing.assert_allclose(a, [[[1, 0, 0], [0, 1, 0]],
+                                       [[0, 0, 1], [0, 1, 0]]])
 
 if __name__ == "__main__":
     enable_debug(api_dump=False)

@@ -32,14 +32,19 @@ for shader in [
         "pow_broadcast", "ipow_broadcast",
         "clamp", "clamp_sv", "clamp_vs", "clamp_ss",
         "iclamp", "iclamp_sv", "iclamp_vs", "iclamp_ss",
-        "prng_xoshiro128pp", "prng_box_muller", "prng_ibox_muller",
+        "prng_xoshiro128pp_uint32", "prng_xoshiro128pp_float",
+        "prng_box_muller", "prng_ibox_muller",
+        "prng_randrange",
         "sum", ("sum_v1.3", "--target-env=vulkan1.1"), "sum_axis",
         "prod", ("prod_v1.3", "--target-env=vulkan1.1"), "prod_axis",
         "sum_axis_rebroadcast", "prod_axis_rebroadcast",
         "maximum", ("maximum_v1.3", "--target-env=vulkan1.1"), "maximum_axis",
         "minimum", ("minimum_v1.3", "--target-env=vulkan1.1"), "minimum_axis",
         "maximum_axis_rebroadcast", "minimum_axis_rebroadcast",
-        "broadcast"
+        "broadcast",
+        "batch_affine",
+        "gather", "gather_axis",
+        "nn_cross_entropy", "nn_cross_entropy_backward",
 ]:
     if isinstance(shader, tuple):
         shader, flag = shader

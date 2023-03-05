@@ -1,0 +1,39 @@
+#version 460
+layout(local_size_x = 1, local_size_y = 64, local_size_z = 1) in;
+
+
+layout(push_constant) uniform constants {
+  uint batch_size;
+  uint input_size;
+  uint output_size;
+} params;
+
+
+layout(std430, binding = 0) readonly buffer W {
+  float w[]; // [output_size, input_size]
+};
+layout(std430, binding = 1) readonly buffer B {
+  float b[]; // [output_size]
+};
+layout(std430, binding = 2) readonly buffer X {
+  float x[]; // [batch_size, input_size]
+};
+layout(std430, binding = 3) writeonly buffer Y {
+  float y[]; // [batch_size, output_size]
+};
+
+void main(){
+  const uint b_idx = gl_GlobalInvocationID.x;
+  const uint o_idx = gl_GlobalInvocationID.y;
+  if((b_idx >= params.batch_size) || (o_idx >= params.output_size)){ return; }
+
+  const uint batch = b_idx * params.input_size;
+  const uint elem = o_idx * params.input_size;
+
+  float sum = 0.0;
+  for(uint i = 0; i < params.input_size; i++){
+    sum += w[elem + i] * x[batch + i];
+  }
+
+  y[b_idx * params.output_size + o_idx] = sum + b[o_idx];
+}

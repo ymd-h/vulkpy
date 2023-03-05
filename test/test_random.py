@@ -88,6 +88,20 @@ class TestRandom(unittest.TestCase):
 
         np.testing.assert_allclose((a2 - 5) / a1, np.full((11,), 3), rtol=1e-5)
 
+    def test_randint(self):
+        rng = vk.random.Xoshiro128pp(self.gpu)
+        a = rng.randint(shape=(5,))
+
+        np.testing.assert_allclose(a.shape, (5,))
+
+        self.assertTrue(np.all((0 <= np.asarray(a)) & (np.asarray(a) < (2 ** 32))))
+
+    def test_randrange(self):
+        rng = vk.random.Xoshiro128pp(self.gpu)
+        a = rng.randrange(shape=(5,), low=3, high=4)
+
+        np.testing.assert_allclose(a, [3, 3, 3, 3, 3])
+
 if __name__ == "__main__":
     enable_debug(api_dump=False)
     unittest.main()

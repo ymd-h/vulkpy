@@ -43,6 +43,7 @@ private:
   vk::UniqueBuffer b;
   vk::UniqueDeviceMemory m;
   T* ptr;
+  std::function<void(void)> d;
 
 public:
   Buffer(std::shared_ptr<GPU> gpu, vk::UniqueDevice& device,
@@ -69,6 +70,12 @@ public:
 
     device->bindBufferMemory(this->b.get(), this->m.get(), 0);
     this->ptr = static_cast<T*>(device->mapMemory(this->m.get(), 0, this->mSize));
+
+    this->d = [&device, this](){
+      if(this->m.get()){
+        device->unmapMemory(this->m.get());
+      }
+    };
   }
 
   Buffer(std::shared_ptr<GPU> gpu, vk::UniqueDevice& device,
@@ -76,6 +83,12 @@ public:
     : Buffer<T>(gpu, device, ps, data.size())
   {
     memcpy((void*)this->ptr, (void*)data.data(), this->mSize);
+  }
+
+  ~Buffer(){
+    if(this->d){
+      this->d();
+    }
   }
 
   T get(std::size_t i) const {
@@ -133,6 +146,12 @@ namespace OpParams {
     std::uint32_t size;
   };
 
+  struct VectorRange{
+    std::uint32_t size;
+    std::uint32_t low;
+    std::uint32_t high;
+  };
+
   template<typename T>
   struct VectorScalar{
     std::uint32_t size;
@@ -152,6 +171,12 @@ namespace OpParams {
     std::uint32_t columnB;
   };
 
+  struct BatchAffine{
+    std::uint32_t batch_size;
+    std::uint32_t input_size;
+    std::uint32_t output_size;
+  };
+
   struct AxisReduction{
     std::uint32_t prev_prod;
     std::uint32_t axis_size;
@@ -167,6 +192,13 @@ namespace OpParams {
   struct MultiBroadcast {
     std::uint32_t size[N];
     std::uint32_t ndim;
+  };
+
+  struct AxisGather{
+    std::uint32_t prev_prod;
+    std::uint32_t post_prod;
+    std::uint32_t axis_size;
+    std::uint32_t index_size;
   };
 }
 
@@ -350,7 +382,10 @@ using OpVariant_t = std::variant<
   Op_t<2, OpParams::ShiftVector>,
   Op_t<3, OpParams::Broadcast>,
   Op_t<4, OpParams::Broadcast>,
-  Op_t<4, OpParams::MultiBroadcast<3>>
+  Op_t<4, OpParams::MultiBroadcast<3>>,
+  Op_t<4, OpParams::BatchAffine>,
+  Op_t<2, OpParams::VectorRange>,
+  Op_t<3, OpParams::AxisGather>
   >;
 
 
@@ -462,14 +497,20 @@ public:
     throw std::runtime_error("Failed to find Queue");
   }
 
-  template<typename T> Buffer<T> toBuffer(const std::vector<T>& data){
-    return Buffer<T>(this->shared_from_this(),
-                     this->device, this->physical.getMemoryProperties(), data);
+  template<typename T>
+  std::shared_ptr<Buffer<T>> toBuffer(const std::vector<T>& data){
+    return std::make_shared<Buffer<T>>(this->shared_from_this(),
+                                       this->device,
+                                       this->physical.getMemoryProperties(),
+                                       data);
   }
 
-  template<typename T> Buffer<T> createBuffer(std::size_t n){
-    return Buffer<T>(this->shared_from_this(),
-                     this->device, this->physical.getMemoryProperties(), n);
+  template<typename T>
+  std::shared_ptr<Buffer<T>> createBuffer(std::size_t n){
+    return std::make_shared<Buffer<T>>(this->shared_from_this(),
+                                       this->device,
+                                       this->physical.getMemoryProperties(),
+                                       n);
   }
 
   template<std::uint32_t N, typename Parameter>
@@ -530,8 +571,9 @@ namespace PRNG {
     const std::uint32_t size;
     std::shared_ptr<GPU> gpu;
     std::shared_ptr<Job> job;
-    Buffer<std::uint32_t> state;
-    std::string_view spv;
+    std::shared_ptr<Buffer<std::uint32_t>> state;
+    std::string_view spv_uint32;
+    std::string_view spv_float;
 
     std::uint64_t splitmix64(std::uint64_t x) const noexcept {
       // https://prng.di.unimi.it/splitmix64.c
@@ -588,13 +630,14 @@ namespace PRNG {
     }
   public:
     Xoshiro128pp(std::shared_ptr<GPU> gpu,
-                 std::string_view spv, std::uint32_t size,
-                 std::uint64_t seed)
+                 std::string_view spv_uint32, std::string_view spv_float,
+                 std::uint32_t size, std::uint64_t seed)
       : size(size),
         gpu(gpu),
         job(),
         state(gpu->createBuffer<std::uint32_t>(4 * size)),
-        spv(spv)
+        spv_uint32(spv_uint32),
+        spv_float(spv_float)
     {
       std::vector<std::uint32_t> state_vec{};
       state_vec.reserve(4 * this->size);
@@ -617,17 +660,34 @@ namespace PRNG {
         state_vec.push_back(s[3]);
       }
 
-      this->state.set(0, state_vec);
+      this->state->set(0, state_vec);
     }
     Xoshiro128pp(std::shared_ptr<GPU> gpu,
-                 std::string_view spv, std::uint32_t size)
-      : Xoshiro128pp(gpu, spv, size, std::random_device{}()) {}
+                 std::string_view spv_uint32, std::string_view spv_float,
+                 std::uint32_t size)
+      : Xoshiro128pp(gpu, spv_uint32, spv_float, size, std::random_device{}()) {}
 
-    std::shared_ptr<Job> random(std::uint32_t n,
+    std::shared_ptr<Job> random_uint32(std::uint32_t n,
+                                       const vk::DescriptorBufferInfo& info){
+      return this->random(n, this->spv_uint32, info);
+    }
+
+    ~Xoshiro128pp(){
+      if(this->job){
+        this->job->wait();
+      }
+    }
+
+    std::shared_ptr<Job> random_float(std::uint32_t n,
+                                      const vk::DescriptorBufferInfo& info){
+      return this->random(n, this->spv_float, info);
+    }
+
+    std::shared_ptr<Job> random(std::uint32_t n, std::string_view spv,
                                 const vk::DescriptorBufferInfo& info){
-      vk::DescriptorBufferInfo b[]{ this->state.info(), info };
-      auto f = [this, &b](std::uint32_t i, std::uint32_t n){
-        return this->gpu->submit<2>(this->spv, 64, 1, 1, b, {n, 1, 1},
+      vk::DescriptorBufferInfo b[]{ this->state->info(), info };
+      auto f = [this, &b, spv](std::uint32_t i, std::uint32_t n){
+        return this->gpu->submit<2>(spv, 64, 1, 1, b, {n, 1, 1},
                                     OpParams::ShiftVector{i, n}, {});
       };
 
@@ -694,8 +754,8 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<GPU, std::shared_ptr<GPU>>(m, "GPU")
     .def("toBuffer", &GPU::toBuffer<float>)
     .def("createBuffer", &GPU::createBuffer<float>)
-    .def("toShapeBuffer", &GPU::toBuffer<std::uint32_t>)
-    .def("createShapeBuffer", &GPU::createBuffer<std::uint32_t>)
+    .def("toU32Buffer", &GPU::toBuffer<std::uint32_t>)
+    .def("createU32Buffer", &GPU::createBuffer<std::uint32_t>)
     .def("submit", &submit<OpParams::Vector, 1, 2, 3, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::MultiVector<2>, 2>,
@@ -712,12 +772,22 @@ PYBIND11_MODULE(_vkarray, m){
          pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("submit", &submit<OpParams::MultiBroadcast<3>, 4>,
          pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit", &submit<OpParams::BatchAffine, 4>,
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit", &submit<OpParams::VectorRange, 2>,
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("submit", &submit<OpParams::AxisGather, 3>,
+         pybind11::call_guard<pybind11::gil_scoped_release>())
     .def("wait", &GPU::wait)
     .def("flush",
          [](GPU& m, const std::vector<vk::MappedMemoryRange>& r){ m.flush(r); })
     .def("canSubgroupArithmetic", &GPU::canSubgroupArithmetic);
 
-  pybind11::class_<Buffer<float>>(m, "Buffer", pybind11::buffer_protocol())
+  using FBuffer_t = Buffer<float>;
+  pybind11::class_<FBuffer_t,
+                   std::shared_ptr<FBuffer_t>>(m,
+                                               "Buffer",
+                                               pybind11::buffer_protocol())
     .def("info", &Buffer<float>::info)
     .def("range", &Buffer<float>::range)
     .def("size", &Buffer<float>::size)
@@ -732,7 +802,11 @@ PYBIND11_MODULE(_vkarray, m){
       };
     });
 
-  pybind11::class_<Buffer<std::uint32_t>>(m, "Shape", pybind11::buffer_protocol())
+  using U32Buffer_t = Buffer<std::uint32_t>;
+  pybind11::class_<U32Buffer_t,
+                   std::shared_ptr<U32Buffer_t>>(m,
+                                                 "Shape",
+                                                 pybind11::buffer_protocol())
     .def("info", &Buffer<std::uint32_t>::info)
     .def("range", &Buffer<std::uint32_t>::range)
     .def("size", &Buffer<std::uint32_t>::size)
@@ -771,6 +845,20 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<OpParams::MultiBroadcast<3>>(m, "Multi3BroadcastParams")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t>());
 
+  pybind11::class_<OpParams::BatchAffine>(m, "BatchAffineParams")
+    .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
+
+  pybind11::class_<OpParams::VectorRange>(m, "VectorRangeParams")
+    .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
+
+  pybind11::class_<OpParams::AxisGather>(m, "AxisGatherParams")
+    .def(pybind11::init<
+         std::uint32_t,
+         std::uint32_t,
+         std::uint32_t,
+         std::uint32_t
+         >());
+
   pybind11::class_<DataShape>(m, "DataShape")
     .def(pybind11::init<std::uint32_t, std::uint32_t, std::uint32_t>());
 
@@ -783,8 +871,17 @@ PYBIND11_MODULE(_vkarray, m){
   pybind11::class_<vk::MappedMemoryRange>(m, "MemoryRange");
 
   pybind11::class_<PRNG::Xoshiro128pp>(m, "Xoshiro128pp")
-    .def(pybind11::init<std::shared_ptr<GPU>, std::string_view, std::uint32_t, std::uint64_t>())
-    .def(pybind11::init<std::shared_ptr<GPU>, std::string_view, std::uint32_t>())
-    .def("random", &PRNG::Xoshiro128pp::random, "Generate Pseudo Random Numbers",
+    .def(pybind11::init<
+         std::shared_ptr<GPU>,
+         std::string_view, std::string_view,
+         std::uint32_t, std::uint64_t
+         >())
+    .def(pybind11::init<
+         std::shared_ptr<GPU>,
+         std::string_view, std::string_view,
+         std::uint32_t>())
+    .def("random_uint32", &PRNG::Xoshiro128pp::random_uint32,
+         pybind11::call_guard<pybind11::gil_scoped_release>())
+    .def("random_float", &PRNG::Xoshiro128pp::random_float,
          pybind11::call_guard<pybind11::gil_scoped_release>());
 }
