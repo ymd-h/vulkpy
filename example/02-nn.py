@@ -129,7 +129,7 @@ if __name__ == "__main__":
     p.add_argument("--batch-size", type=int, default=32, help="size of batch")
     p.add_argument("--debug", action="store_true")
     p.add_argument("--optimizer", choices=["adam", "sgd"], default="adam")
-    p.add_argument("--learning-rate", type=float, default=0.001)
+    p.add_argument("--learning-rate", type=float, default=0.0001)
     p = p.parse_args()
 
     example02(nepoch=p.nepoch,
