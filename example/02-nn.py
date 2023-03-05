@@ -42,6 +42,7 @@ def example02(nepoch, batch_size, opt, lr, *, debug = False):
         "sgd": lambda lr: nn.SGD(lr)
     }[opt](lr)
 
+    # Sequential Model: 4 -> 128 -> 128 -> 3
     net = nn.Sequence(
         [
             nn.Dense(gpu, 4, 128, w_opt=opt, b_opt=opt),
