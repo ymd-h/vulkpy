@@ -2,6 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Union
 
+from wblog import getLogger
+
 from vulkpy.vkarray import GPU, Array
 
 __all__ = [
@@ -10,6 +12,7 @@ __all__ = [
     "Optimizer", "OptimizerState",
 ]
 
+logger = getLogger()
 
 @dataclass
 class SGDState:
@@ -31,6 +34,7 @@ class SGD:
             Learning rate
         """
         self.lr = lr
+        logger.debug(f"SGD(lr={lr})")
 
     def __call__(self, grad: Array, state: SGDState) -> Array:
         """
@@ -106,6 +110,7 @@ class Adam:
         self.beta1 = beta1
         self.beta2 = beta2
         self.eps = eps
+        logger.debug(f"Adam(lr={lr}, beta1={beta1}, beta2={beta2}, eps={eps})")
 
     def __call__(self, grad: Array, state: AdamState) -> Array:
         """
