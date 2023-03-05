@@ -493,14 +493,20 @@ public:
     throw std::runtime_error("Failed to find Queue");
   }
 
-  template<typename T> Buffer<T> toBuffer(const std::vector<T>& data){
-    return Buffer<T>(this->shared_from_this(),
-                     this->device, this->physical.getMemoryProperties(), data);
+  template<typename T>
+  std::shared_ptr<Buffer<T>> toBuffer(const std::vector<T>& data){
+    return std::make_shared<Buffer<T>>(this->shared_from_this(),
+                                       this->device,
+                                       this->physical.getMemoryProperties(),
+                                       data);
   }
 
-  template<typename T> Buffer<T> createBuffer(std::size_t n){
-    return Buffer<T>(this->shared_from_this(),
-                     this->device, this->physical.getMemoryProperties(), n);
+  template<typename T>
+  std::shared_ptr<Buffer<T>> createBuffer(std::size_t n){
+    return std::make_shared<Buffer<T>>(this->shared_from_this(),
+                                       this->device,
+                                       this->physical.getMemoryProperties(),
+                                       n);
   }
 
   template<std::uint32_t N, typename Parameter>
@@ -561,7 +567,7 @@ namespace PRNG {
     const std::uint32_t size;
     std::shared_ptr<GPU> gpu;
     std::shared_ptr<Job> job;
-    Buffer<std::uint32_t> state;
+    std::shared_ptr<Buffer<std::uint32_t>> state;
     std::string_view spv_uint32;
     std::string_view spv_float;
 
@@ -650,7 +656,7 @@ namespace PRNG {
         state_vec.push_back(s[3]);
       }
 
-      this->state.set(0, state_vec);
+      this->state->set(0, state_vec);
     }
     Xoshiro128pp(std::shared_ptr<GPU> gpu,
                  std::string_view spv_uint32, std::string_view spv_float,
@@ -669,7 +675,7 @@ namespace PRNG {
 
     std::shared_ptr<Job> random(std::uint32_t n, std::string_view spv,
                                 const vk::DescriptorBufferInfo& info){
-      vk::DescriptorBufferInfo b[]{ this->state.info(), info };
+      vk::DescriptorBufferInfo b[]{ this->state->info(), info };
       auto f = [this, &b, spv](std::uint32_t i, std::uint32_t n){
         return this->gpu->submit<2>(spv, 64, 1, 1, b, {n, 1, 1},
                                     OpParams::ShiftVector{i, n}, {});
@@ -767,7 +773,11 @@ PYBIND11_MODULE(_vkarray, m){
          [](GPU& m, const std::vector<vk::MappedMemoryRange>& r){ m.flush(r); })
     .def("canSubgroupArithmetic", &GPU::canSubgroupArithmetic);
 
-  pybind11::class_<Buffer<float>>(m, "Buffer", pybind11::buffer_protocol())
+  using FBuffer_t = Buffer<float>;
+  pybind11::class_<FBuffer_t,
+                   std::shared_ptr<FBuffer_t>>(m,
+                                               "Buffer",
+                                               pybind11::buffer_protocol())
     .def("info", &Buffer<float>::info)
     .def("range", &Buffer<float>::range)
     .def("size", &Buffer<float>::size)
@@ -782,7 +792,11 @@ PYBIND11_MODULE(_vkarray, m){
       };
     });
 
-  pybind11::class_<Buffer<std::uint32_t>>(m, "Shape", pybind11::buffer_protocol())
+  using U32Buffer_t = Buffer<std::uint32_t>;
+  pybind11::class_<U32Buffer_t,
+                   std::shared_ptr<U32Buffer_t>>(m,
+                                                 "Shape",
+                                                 pybind11::buffer_protocol())
     .def("info", &Buffer<std::uint32_t>::info)
     .def("range", &Buffer<std::uint32_t>::range)
     .def("size", &Buffer<std::uint32_t>::size)
