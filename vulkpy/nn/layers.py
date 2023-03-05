@@ -165,6 +165,11 @@ class ReLU(Module):
         Notes
         -----
         .. math:: y = \max(x, 0)
+
+        .. warning::
+
+             Generally, users should not call this method directly.
+             Use ``__call__`` instead, where input / output are stored for training.
         """
         return x.max(0.0) # Allocate
 
