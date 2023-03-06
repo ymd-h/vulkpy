@@ -6,10 +6,11 @@ from __future__ import annotations
 from typing import Iterable, Optional, Tuple
 
 from vulkpy import Array
-from .core import Module
-from .losses import Loss
+from .core import Module, Loss
+
 
 __all__ = ["Sequence"]
+
 
 class Sequence:
     """
