@@ -83,7 +83,7 @@ class CrossEntropyLoss(Loss):
         Parameters
         ----------
         reduce : {"mean", "sum"}, optional
-            Reduction method over batch. The default is ``"mean"`.
+            Reduction method over batch. The default is ``"mean"``.
         """
         super().__init__(*args, **kwargs)
 
