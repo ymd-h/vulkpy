@@ -1,3 +1,7 @@
+"""
+Neural Network Loss Module (:mod:`vulkpy.nn.losses`)
+====================================================
+"""
 from __future__ import annotations
 from typing import Literal
 

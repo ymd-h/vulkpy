@@ -1,3 +1,7 @@
+"""
+Neural Network Initializer Module (:mod:`vulkpy.nn.initializers`)
+=================================================================
+"""
 from __future__ import annotations
 from typing import Optional
 

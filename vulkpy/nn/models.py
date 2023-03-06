@@ -1,3 +1,7 @@
+"""
+Neural Network Model Module (:mod:`vulkpy.nn.models`)
+=====================================================
+"""
 from __future__ import annotations
 from typing import Iterable, Optional, Tuple
 
