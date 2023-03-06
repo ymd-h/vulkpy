@@ -67,9 +67,13 @@ class GPU:
         priority : float, optional
             GPU priority. Default is ``0.0``.
         """
+        self._idx = idx
         self.gpu = createGPU(idx, priority)
         self.canSubgroupArithmetic = self.gpu.canSubgroupArithmetic()
         logger.info(f"GPU {idx}: Subgroup Arithmetic: {self.canSubgroupArithmetic}")
+
+    def __eq__(self, other: GPU):
+        return isinstance(other, GPU) and (self._idx == other._idx)
 
     def _submit(self,
                 spv: str,
