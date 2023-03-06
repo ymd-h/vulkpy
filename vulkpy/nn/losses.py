@@ -1,6 +1,23 @@
 """
 Neural Network Loss Module (:mod:`vulkpy.nn.losses`)
 ====================================================
+
+Examples
+--------
+>>> import vulkpy as vk
+>>> from vulkpy import nn
+>>> gpu = vk.GPU()
+>>> x = vk.Array(gpu, data=[[ ... ]]) # Predicted
+>>> y = vk.Array(gpu, data=[[ ... ]]) # True
+
+Loss class takes predicted values and true labels/targets, then returns scalar loss.
+
+>>> L = nn.CrossEntropy()
+>>> loss = L(x, y)
+
+Gradients can be computed with `grad()` method
+
+>>> dx = L.grad()
 """
 from __future__ import annotations
 from typing import Literal
