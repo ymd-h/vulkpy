@@ -6,6 +6,10 @@ Examples
 --------
 >>> import vulkpy as vk
 >>> gpu = vk.GPU()
+>>> x = vk.Array(gpu, data=[ ... ]) # Features
+>>> y = vk.Array(gpu, data=[ ... ]) # Labels
+
+Create Optimizer and Model
 
 >>> opt = nn.Adam(gpu, lr=1e-4)
 >>> net = nn.Sequence(
@@ -17,6 +21,14 @@ Examples
 ...   ],
 ...   nn.CrossEntropy()
 ... )
+
+Training Model
+
+>>> pred_y, loss = net.train(x, y)
+
+Predict with Model
+
+>>> pred_y = net.predict(x)
 """
 
 from .initializers import Constant, HeNormal
