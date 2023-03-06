@@ -5,6 +5,7 @@ Neural Network Module (:mod:`vulkpy.nn`)
 Examples
 --------
 >>> import vulkpy as vk
+>>> from vulkpy import nn
 >>> gpu = vk.GPU()
 >>> x = vk.Array(gpu, data=[ ... ]) # Features
 >>> y = vk.Array(gpu, data=[ ... ]) # Labels
