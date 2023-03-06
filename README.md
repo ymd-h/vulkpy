@@ -70,12 +70,12 @@ print(c)
   * [x] `sum(axis=None)`, `prod(axis=None)`
   * [x] `maximum(axis=None)`, `minimum(axis=None)`
   * [x] `mean(axis=None)`
+  * [ ] argmax, argmin
   * [ ] ...
 * Other `Array` method
   * [x] `gather(idx: U32Array) -> Array`
+  * [ ] tensordot, shuffle
   * [ ] ...
-* General Tensor Product
-  * [ ] tensordot
 * Bloadcast
   * [x] Explicit broadcast copy (memory inefficient, fallback option)
     * `broadcast_to(shape)` (used at `clamp`)
@@ -91,7 +91,7 @@ print(c)
 * Neural Network
   * Layers
     * [x] `Dense`, `ReLU`, `Sigmoid`, `Softmax`
-    * [ ] conv, ...
+    * [ ] conv, batch norm, layer norm, ...
   * Optimizers
     * [x] `SGD`, `Adam`
     * [ ] rmsprop, adagrad, ...
@@ -104,6 +104,7 @@ print(c)
   * Models
     * [x] `Sequance`
     * [ ] ...
+  * [ ] L1/L2 regularization
   * [ ] ONNX support
   * [ ] Custom user layer with automatic `backward()` definition.
   * [ ] Define by Run API
