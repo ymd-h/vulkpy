@@ -34,6 +34,7 @@ from ._vkarray import (
 __all__ = [
     "GPU",
     "U32Array",
+    "Shape",
     "Array"
 ]
 

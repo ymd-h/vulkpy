@@ -55,7 +55,7 @@ def enable_debug(*, validation: bool = True, api_dump: bool = True):
         os.environ["VK_INSTANCE_LAYERS"] = ":".join(layers)
 
 
-def getShader(name: str):
+def getShader(name: str) -> str:
     """
     Get Shader Path
 
@@ -63,5 +63,10 @@ def getShader(name: str):
     ----------
     name : str
         SPIR-V (.spv) name
+
+    Returns
+    -------
+    str
+        Shader file path
     """
     return os.path.join(os.path.dirname(__file__), "shader", name)

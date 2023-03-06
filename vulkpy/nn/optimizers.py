@@ -1,3 +1,7 @@
+"""
+Neural Network Optimizer Module (:mod:`vulkpy.nn.optimizers`)
+=============================================================
+"""
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Union

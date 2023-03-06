@@ -1,3 +1,7 @@
+"""
+Neural Network Initializer Module (:mod:`vulkpy.nn.initializers`)
+=================================================================
+"""
 from __future__ import annotations
 from typing import Optional
 
@@ -9,12 +13,24 @@ from vulkpy.random import Xoshiro128pp
 
 __all__ = ["Constant", "HeNormal"]
 
+class Initializer:
+    def __call__(self, gpu: GPU, shape: Iterable[int]) -> Array:
+        raise NotImplementedError
 
-class Constant:
+
+class Constant(Initializer):
     """
     Constant Initializer
     """
     def __init__(self, value: float):
+        """
+        Initialize Constant Initializer
+
+        Parameters
+        ----------
+        value : float
+            Constant value
+        """
         self.value = value
 
     def __call__(self, gpu: GPU, shape: Iterable[int]) -> Array:
@@ -33,13 +49,15 @@ class Constant:
         return p
 
 
-class HeNormal:
-    """
+class HeNormal(Initializer):
+    r"""
     He Normal Initializer
 
     Note
     ----
-    .. math:: \sigma = \sqrt(2/input_dim)
+    Standard deviation :math:`\sigma` is following;
+
+    .. math:: \sigma = \sqrt{2/d_{\text{in}}}
     """
     def __init__(self, gpu: GPU, input_dim: int, *, seed: Optional[int] = None):
         """

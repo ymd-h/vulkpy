@@ -29,6 +29,8 @@ class Parameter:
             Shape of parameter
         trainable : bool, optional
             If ``True`` (default), track gradient
+        opt : vulkpy.nn.Optimizer, optional
+            Optimizer. If ``None`` (default), ``vulkpy.nn.Adam`` is used.
         initializer : callable, optional
             Initializer function. If ``None`` (default), initialized with ``0.0``.
         """
@@ -80,6 +82,8 @@ class Parameter:
     def update(self):
         """
         Update value
+
+        Update value with accumulated gradients only if this value is trainable.
         """
         if self.is_trainable():
             self.value += self.opt(self.grad, self.opt_state)
@@ -89,6 +93,28 @@ class Module:
         pass
 
     def __call__(self, x: Array) -> Array:
+        """
+        Call Module
+
+        Parameters
+        ----------
+        x : vulkpy.Array
+            Input
+
+        Returns
+        -------
+        y : vulkpy.Array
+            Output
+
+        Raises
+        ------
+        ValueError
+            If input (``x``) shape doesn't have at least 2-dimensions.
+
+        Notes
+        -----
+        This function stores input (``x``) and output (``y``) for training.
+        """
         if len(x.shape) < 2:
             raise ValueError("Input must have at least 2-dimensions.")
 
