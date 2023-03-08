@@ -133,9 +133,15 @@ class Module:
         raise NotImplementedError
 
     def zero_grad(self):
+        """
+        Reset accumulated gradients to 0.
+        """
         pass
 
     def update(self):
+        """
+        Update parameters based on accumulated gradients
+        """
         pass
 
 class Loss:
