@@ -62,6 +62,7 @@ class Parameter:
         else:
             self.value = initializer(gpu, shape=shape)
 
+        self.grad: Optional[Array] = None
         if trainable:
             self.grad = Array(gpu, shape=shape)
             self.grad[:] = 0.0
@@ -70,8 +71,6 @@ class Parameter:
                 opt = Adam(gpu)
             self.opt = opt
             self.opt_state = self.opt.init_state(shape)
-        else:
-            self.grad = None
 
     def is_trainable(self) -> bool:
         """
