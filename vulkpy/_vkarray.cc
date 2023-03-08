@@ -793,12 +793,12 @@ PYBIND11_MODULE(_vkarray, m){
     .def("size", &Buffer<float>::size)
     .def_buffer([](Buffer<float>& m) {
       return pybind11::buffer_info {
-        .ptr=m.data(),
-        .itemsize=sizeof(float),
-        .format=pybind11::format_descriptor<float>::format(),
-        .ndim=1,
-        .shape={ m.size() },
-        .strides={ sizeof(float) }
+        /* .ptr=      */ m.data(),
+        /* .itemsize= */ sizeof(float),
+        /* .format=   */ pybind11::format_descriptor<float>::format(),
+        /* .ndim=     */ 1,
+        /* .shape=    */ { m.size() },
+        /* .strides=  */ { sizeof(float) }
       };
     });
 
@@ -812,12 +812,12 @@ PYBIND11_MODULE(_vkarray, m){
     .def("size", &Buffer<std::uint32_t>::size)
     .def_buffer([](Buffer<std::uint32_t>& m) {
       return pybind11::buffer_info {
-        .ptr=m.data(),
-        .itemsize=sizeof(std::uint32_t),
-        .format=pybind11::format_descriptor<std::uint32_t>::format(),
-        .ndim=1,
-        .shape={ m.size() },
-        .strides={ sizeof(std::uint32_t) }
+        /* .ptr=      */ m.data(),
+        /* .itemsize= */ sizeof(std::uint32_t),
+        /* .format=   */ pybind11::format_descriptor<std::uint32_t>::format(),
+        /* .ndim=     */ 1,
+        /* .shape=    */ { m.size() },
+        /* .strides=  */ { sizeof(std::uint32_t) }
       };
     });
 
