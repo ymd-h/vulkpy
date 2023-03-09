@@ -88,13 +88,15 @@ class Parameter:
         grad : vulkpy.Array
             Gradient to be accumulated
         """
-        self.grad += grad
+        if self.is_trainable():
+            self.grad += grad
 
     def zero_grad(self):
         """
         Clear gradient to 0.0
         """
-        self.grad[:] = 0.0
+        if self.is_trainable():
+            self.grad[:] = 0.0
 
     def update(self):
         """
