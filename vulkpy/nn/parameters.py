@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Callable, Iterable, Optional
 
-from vulkpy.vkarray import GPU, Array
+from vulkpy.vkarray import GPU, Array, zeros
 from .core import Optimizer, OptimizerState
 from .optimizers import Adam
 
@@ -56,16 +56,13 @@ class Parameter:
             Initializer function. If ``None`` (default), initialized with ``0.0``.
         """
         if initializer is None:
-            self.value = Array(gpu, shape=shape)
-            self.value[:] = 0.0
-        else:
-            self.value = initializer(gpu, shape=shape)
+            initializer = zeros
+        self.value: Array = initializer(gpu, shape=shape)
 
         self.grad: Optional[Array] = None
         self.opt_state: Optional[OptimizerState] = None
         if trainable:
-            self.grad = Array(gpu, shape=shape)
-            self.grad[:] = 0.0
+            self.grad = zeros(gpu, shape=shape)
 
             if opt is None:
                 opt = Adam(gpu)
