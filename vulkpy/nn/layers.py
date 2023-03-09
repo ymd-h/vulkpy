@@ -7,8 +7,8 @@ from typing import Callable, Iterable, Optional
 
 from vulkpy.util import getShader
 from vulkpy.vkarray import GPU, Array, DataShape, BatchAffineParams
-from .optimizers import Optimizer
-from .core import Parameter, Module
+from .core import Module, Optimizer
+from .parameters import Parameter
 from .initializers import HeNormal
 
 
