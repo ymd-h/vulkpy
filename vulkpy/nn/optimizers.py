@@ -101,9 +101,9 @@ class AdamState(OptimizerState):
     v : Array
         Adam Parameter
     beta1t : float
-        beta1 ** t
+        ``beta1 ** t``
     beta2t : float
-        beta2 ** t
+        ``beta2 ** t``
     """
     opt: Adam
     m: Array
