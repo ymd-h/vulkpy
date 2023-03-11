@@ -1394,8 +1394,7 @@ class Array(_GPUArray):
         self_shape = self.shape
         dim_diff = len(shape) - len(self_shape)
         if dim_diff > 0:
-            self_shape = np.concatenate((np.ones(shape=(dim_diff,)), self_shape),
-                                        axis=0)
+            self_shape = tuple(np.ones(shape=(dim_diff,), dtype=int)) + self_shape
 
         shapeA = Shape(self._gpu, data=self_shape)
         shapeB = Shape(self._gpu, data=shape)
@@ -1439,11 +1438,10 @@ class Array(_GPUArray):
             spv = self._gather_axis
             local_size = (1, 64, 1)
 
-            shape = np.array(self.shape)
+            shape = self.shape
             prev_shape = shape[:axis]
             post_shape = shape[axis+1:]
-            shape = np.concatenate((indices.shape, prev_shape, post_shape),
-                                   axis=0)
+            shape = indices.shape + prev_shape + post_shape
 
             ret = Array(self._gpu, shape=shape)
 
