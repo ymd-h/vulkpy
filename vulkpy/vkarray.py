@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 import functools
-from typing import Iterable, List, Optional, Union
+from typing import cast, Iterable, List, Optional, Union
 from typing_extensions import TypeGuard
 
 import numpy as np
@@ -1359,6 +1359,8 @@ class Array(_GPUArray):
         ret = self.sum(axis, keepdims, rebroadcast)
 
         if rebroadcast:
+            # rebroadcast supports only `axis` is `int`
+            axis = cast(int, axis)
             ret /= self.shape[axis]
         else:
             n_after = ret.buffer.size()
