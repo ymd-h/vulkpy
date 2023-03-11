@@ -73,8 +73,10 @@ class GPU:
         self.canSubgroupArithmetic = self.gpu.canSubgroupArithmetic()
         logger.info(f"GPU {idx}: Subgroup Arithmetic: {self.canSubgroupArithmetic}")
 
-    def __eq__(self, other: GPU):
-        return isinstance(other, GPU) and (self._idx == other._idx)
+    def __eq__(self, other: object):
+        if not isinstance(other, GPU):
+            return NotImplemented
+        return self._idx == other._idx
 
     def _submit(self,
                 spv: str,
