@@ -8,7 +8,7 @@ from typing import Iterable, Union
 
 from wblog import getLogger
 
-from vulkpy.vkarray import GPU, Array
+from vulkpy.vkarray import GPU, Array, zeros
 from .core import Optimizer, OptimizerState
 
 __all__ = [
