@@ -14,24 +14,6 @@ __all__ = [
 class Parameter:
     """
     Neural Network Parameter
-
-    Attributes
-    ----------
-    value : vulkpy.Array
-        Parameter value
-    grad : vulkpy.Array, optional
-        Accumulated gradients if parameter is trainable
-
-    Methods
-    -------
-    is_trainable()
-        Whether this parameter is trainable.
-    add_grad(grad)
-        Add gradients.
-    zero_grad()
-        Reset accumulated gradients to 0.
-    update()
-        Update parameter based on accumulated gradients.
     """
     def __init__(self,
                  gpu: GPU,
