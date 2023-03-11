@@ -3,7 +3,7 @@ Neural Network Model Module (:mod:`vulkpy.nn.models`)
 =====================================================
 """
 from __future__ import annotations
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional, Tuple, Union
 
 from vulkpy import Array
 from .core import Module, Loss
