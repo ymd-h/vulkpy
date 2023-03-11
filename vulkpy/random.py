@@ -173,8 +173,8 @@ class PRNG:
             # For safety, we wait output buffer job.
             buffer.wait()
 
-        # After checking, coarse type to Array
-        buffer = cast(vk.Array, buffer)
+        # After checking, coarse type to U32Array
+        buffer = cast(vk.U32Array, buffer)
 
         size = buffer.buffer.size()
         rng = self.random(shape=buffer.shape)
