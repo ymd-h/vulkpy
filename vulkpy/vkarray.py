@@ -540,13 +540,13 @@ class Array(_GPUArray):
         ret._keep = [self, other]
         return ret
 
-    def reshape(self, shape: tuple[int]):
+    def reshape(self, shape: Iterable[int]):
         """
         Reshape of this array
 
         Parameters
         ----------
-        shape : tuple of int
+        shape : iterable of int
             New shape
 
         Raises
