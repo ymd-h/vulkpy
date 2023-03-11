@@ -24,6 +24,6 @@ Examples
 >>> print(c)
 [4., 5., 6.]
 """
-from .vkarray import GPU, U32Array, Shape, Array
+from .vkarray import GPU, U32Array, Shape, Array, zeros
 from . import random
 from . import nn

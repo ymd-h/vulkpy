@@ -38,7 +38,7 @@ class TestOptimizers(unittest.TestCase):
         grad = vk.Array(self.gpu, data=[1, 2, 3])
         state = sgd.init_state(grad.shape)
 
-        diff = sgd(grad, state)
+        diff = state.grad2diff(grad)
         np.testing.assert_allclose(diff, grad * (-0.01))
 
     def test_adam(self):
@@ -49,7 +49,7 @@ class TestOptimizers(unittest.TestCase):
         self.assertEqual(state.beta1t, 1.0)
         self.assertEqual(state.beta2t, 1.0)
 
-        diff = adam(grad, state)
+        diff = state.grad2diff(grad)
 
         self.assertEqual(state.beta1t, adam.beta1)
         self.assertEqual(state.beta2t, adam.beta2)

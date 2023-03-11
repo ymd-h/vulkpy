@@ -24,6 +24,7 @@ from typing import Literal
 
 from vulkpy.util import getShader
 from vulkpy.vkarray import Array, DataShape, VectorParams
+from .core import Loss
 from .layers import Softmax
 
 __all__ = [
@@ -32,58 +33,6 @@ __all__ = [
     "MSELoss",
     "HuberLoss",
 ]
-
-class Loss:
-    def __init__(self, reduce: Literal["mean", "sum"] = "mean"):
-        self.reduce, self.scale_backward = {
-            "mean": (lambda _L: _L.mean(axis=0), lambda _dx: 1/_dx.shape[0]),
-            "sum": (lambda _L: _L.sum(axis=0), None),
-        }[reduce]
-
-    def __call__(self, x: Array, y: Array) -> Array:
-        r"""
-        Compute Loss
-
-        Parameters
-        ----------
-        x : vulkpy.Array
-            Batch input features
-        y : vulkpy.Array
-            Batch labels/targets
-
-        Returns
-        -------
-        loss : vulkpy.Array
-            Loss
-        """
-        self._x = x
-        self._y = y
-        L = self.forward(x, y)
-        return self.reduce(L)
-
-    def grad(self) -> Array:
-        r"""
-        Compute Gradients
-
-        Returns
-        -------
-        dx : vulkpy.Array
-            Batch gradients of dL/dx
-
-        Notes
-        -----
-        This method calculates gradients for the last ``__call__(x, y)``.
-        """
-        dx = self.backward()
-        if self.scale_backward is not None:
-            dx *= self.scale_backward(dx)
-        return dx
-
-    def forward(self, x: Array, y: Array) -> Array:
-        raise NotImplementedError
-
-    def backward(self) -> Array:
-        raise NotImplementedError
 
 
 class CrossEntropyLoss(Loss):

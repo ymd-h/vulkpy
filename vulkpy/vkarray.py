@@ -35,7 +35,8 @@ __all__ = [
     "GPU",
     "U32Array",
     "Shape",
-    "Array"
+    "Array",
+    "zeros"
 ]
 
 Params = Union[
@@ -67,9 +68,13 @@ class GPU:
         priority : float, optional
             GPU priority. Default is ``0.0``.
         """
+        self._idx = idx
         self.gpu = createGPU(idx, priority)
         self.canSubgroupArithmetic = self.gpu.canSubgroupArithmetic()
         logger.info(f"GPU {idx}: Subgroup Arithmetic: {self.canSubgroupArithmetic}")
+
+    def __eq__(self, other: GPU):
+        return isinstance(other, GPU) and (self._idx == other._idx)
 
     def _submit(self,
                 spv: str,
@@ -1461,3 +1466,24 @@ class Array(_GPUArray):
         ret.job = self._gpu._submit(spv, *local_size, [self, indices, ret], d, p)
         ret._keep = [self, indices]
         return ret
+
+
+def zeros(gpu: GPU, shape: Iterable[int]) -> Array:
+    """
+    Zero initialized Array
+
+    Parameters
+    ----------
+    gpu : vulkpy.GPU
+        GPU
+    shape : iterable of ints
+        Shape
+
+    Returns
+    -------
+    vulkpy.Array
+        Zero initialized Array
+    """
+    z = Array(gpu, shape=shape)
+    z[:] = 0.0
+    return z
