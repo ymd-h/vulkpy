@@ -180,7 +180,7 @@ class U32Array(_GPUArray):
             if shape is None:
                 raise ValueError("One of `data` or `shape` must be specified.")
 
-            self.shape = np.asarray(shape, dtype=int)
+            self.shape = tuple(np.asarray(shape, dtype=int))
             self.buffer = self._gpu.gpu.createU32Buffer(np.prod(self.shape))
 
         self.array = np.asarray(self.buffer)
@@ -343,7 +343,9 @@ class Array(_GPUArray):
     _gather = getShader("gather.spv")
     _gather_axis = getShader("gather_axis.spv")
 
-    def __init__(self, gpu: GPU, *, data = None, shape = None):
+    def __init__(self, gpu: GPU, *,
+                 data = None,
+                 shape: Optional[Iterable[int]] = None):
         """
         Initialize Array
 
@@ -367,7 +369,7 @@ class Array(_GPUArray):
             self.shape = np.asarray(data).shape
             self.buffer = self._gpu.gpu.toBuffer(np.ravel(data))
         elif shape is not None:
-            self.shape = np.asarray(shape, dtype=int)
+            self.shape = tuple(np.asarray(shape, dtype=int))
             self.buffer = self._gpu.gpu.createBuffer(int(np.prod(self.shape)))
         else:
             raise ValueError(f"`data` or `shape` must not be `None`.")
@@ -559,7 +561,7 @@ class Array(_GPUArray):
         ValueError
             If ``shape`` is incompatible
         """
-        self.array.shape = shape
+        self.array.shape = tuple(shape)
         self.shape = self.array.shape
 
     def max(self, other: Union[Array, float],
