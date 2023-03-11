@@ -27,7 +27,7 @@ class Sequence:
         loss : vulkpy.Loss
             Loss layer
         """
-        self.L: Tuple[Module] = tuple(layers)
+        self.L: Tuple[Module, ...] = tuple(layers)
         self.loss = loss
 
     def _forward(self, x: Array):
