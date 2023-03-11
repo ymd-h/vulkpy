@@ -37,12 +37,25 @@ from .util import getShader
 
 __all__ = ["Xoshiro128pp"]
 
-class _ConvertMixin:
+class PRNG:
     _box_muller = getShader("prng_box_muller.spv")
     _ibox_muller = getShader("prng_ibox_muller.spv")
     _randrange = getShader("prng_randrange.spv")
 
     _2p32 = int(2 ** 32)
+
+    def __init__(self, gpu: vk.GPU):
+        self._gpu = gpu
+
+    def random(self, *,
+               shape: Optional[Iterable[int]] = None,
+               buffer: Optional[vk.Array] = None) -> vk.Array:
+        raise NotImplementedError
+
+    def randint(self, *,
+                shape: Optional[Iterable[int]] = None,
+                buffer: Optional[vk.U32Array] = None) -> vk.U32Array:
+        raise NotImplementedError
 
     def normal(self, *,
                shape: Optional[Iterable[int]] = None,
@@ -176,7 +189,7 @@ class _ConvertMixin:
         pass
 
 
-class Xoshiro128pp(_ConvertMixin):
+class Xoshiro128pp(PRNG):
     """
     xoshiro128++: Pseudo Random Number Generator
 
@@ -207,7 +220,7 @@ class Xoshiro128pp(_ConvertMixin):
         seed : int, optional
             Random seed. If ``None`` (default), use hardware random instead.
         """
-        self._gpu = gpu
+        super().__init__(gpu)
 
         if seed is None:
             self.rng = _vkarray.Xoshiro128pp(self._gpu.gpu,
