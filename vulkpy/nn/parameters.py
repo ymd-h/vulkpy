@@ -70,14 +70,14 @@ class Parameter:
         grad : vulkpy.Array
             Gradient to be accumulated
         """
-        if self.is_trainable():
+        if self.grad is not None:
             self.grad += grad
 
     def zero_grad(self):
         """
         Clear gradient to 0.0
         """
-        if self.is_trainable():
+        if self.grad is not None:
             self.grad[:] = 0.0
 
     def update(self):
@@ -86,5 +86,5 @@ class Parameter:
 
         Update value with accumulated gradients only if this value is trainable.
         """
-        if self.is_trainable():
+        if self.grad is not None:
             self.value += self.opt_state.grad2diff(self.grad)
