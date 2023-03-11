@@ -57,7 +57,7 @@ class Parameter:
         """
         if initializer is None:
             initializer = zeros
-        self.value: Array = initializer(gpu, shape=shape)
+        self.value: Array = initializer(gpu, shape)
 
         self.grad: Optional[Array] = None
         self.opt_state: Optional[OptimizerState] = None
