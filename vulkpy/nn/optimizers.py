@@ -20,17 +20,17 @@ __all__ = [
 logger = getLogger()
 
 
-@dataclass
 class SGDState(OptimizerState):
-    """
-    Optimizer State for SGD
+    def __init__(self, opt: SGD):
+        """
+        Optimizer State for SGD
 
-    Attributes
-    ----------
-    opt : vulkpy.SGD
-        SGD Optimizer
-    """
-    opt: SGD
+        Parameters
+        ----------
+        opt : vulkpy.SGD
+            SGD Optimizer
+        """
+        self.opt: SGD = opt
 
     def grad2diff(self, grad: Array) -> Array:
         """
@@ -48,21 +48,19 @@ class SGDState(OptimizerState):
         """
         return (-self.opt.lr) * grad
 
-@dataclass
 class SGD(OptimizerState):
-    """
-    Stachostic Gradient Decent Optimizer
+    def __init__(self, lr: float):
+        """
+        Stachostic Gradient Decent Optimizer
 
-    Use constant learning rate
+        Use constant learning rate
 
-    Attributes
-    ----------
-    lr : float
-        Learning rate
-    """
-    lr: float
-
-    def __post_init__(self):
+        Parameters
+        ----------
+        lr : float
+            Learning rate
+        """
+        self.lr: float = lr
         logger.debug(f"SGD(lr={self.lr})")
 
     def init_state(self, shape: Iterable[int]) -> SGDState:
@@ -87,33 +85,23 @@ class SGD(OptimizerState):
         return SGDState(self)
 
 
-@dataclass
 class AdamState(OptimizerState):
-    """
-    Optimizer State for Adam
+    def __init__(self, opt: Adam, shape: Iterable[int]):
+        """
+        Optimizer State for Adam
 
-    Attributes
-    ----------
-    opt : vulkpy.Adam
-        Adam Optimizer
-    m : vulkpy.Array
-        Adam Parameter
-    v : vulkpy.Array
-        Adam Parameter
-    beta1t : float
-        ``beta1 ** t``
-    beta2t : float
-        ``beta2 ** t``
-    """
-    opt: Adam
-    m: Array
-    v: Array
-    beta1t: float = 1.0
-    beta2t: float = 1.0
-
-    def __post_init__(self):
-        self.m[:] = 0.0
-        self.v[:] = 0.0
+        Parameters
+        ----------
+        opt : vulkpy.Adam
+            Adam Optimizer
+        shape : iterable of ints
+            Value shape
+        """
+        sellf.opt: Adam = opt
+        self.m: Array = zeros(self.opt.gpu, shape=shape)
+        self.v: Array = zeros(self.opt.gpu, shape=shape)
+        self.beta1t: float = 1.0
+        self.beta2t: float = 1.0
 
     def grad2diff(self, grad: Array) -> Array:
         """
@@ -150,31 +138,35 @@ class AdamState(OptimizerState):
         return mhat
 
 
-@dataclass
 class Adam(Optimizer):
-    """
-    Adam Optimizer
+    def __init__(self,
+                 gpu: GPU, *,
+                 lr: float = 0.001,
+                 beta1: float = 0.9,
+                 beta2: float = 0.999,
+                 eps: float = 1e-8):
+        """
+        Adam Optimizer
 
-    Attributes
-    ----------
-    gpu : vulkpy.GPU
-        GPU
-    lr : float, optional
-        Learning rate. The default is 0.001
-    beta1 : float, optional
-        Adam parameter. The defaults are 0.9.
-    beta2 : float, optional
-        Adam parameter. The defaults is 0.999.
-    eps : float, optional
-        Adam parameter. The defaults is, 1e-8.
-    """
-    gpu: GPU
-    lr: float = 0.001
-    beta1: float = 0.9
-    beta2: float = 0.999
-    eps: float = 1e-8
+        Parameters
+        ----------
+        gpu : vulkpy.GPU
+            GPU
+        lr : float
+            Adam parameter
+        beta1 : float
+            Adam parameter
+        beta2 : float
+            Adam parameter
+        eps : float
+            Adam parameter
+        """
+        self.gpu: GPU = gpu
+        self.lr: float = lr
+        self.beta1: float = beta1
+        self.beta2: float = beta2
+        self.eps: float = eps
 
-    def __post_init__(self):
         logger.debug(f"Adam(lr={self.lr}, beta1={self.beta1}, " +
                      f"beta2={self.beta2}, eps={self.eps})")
 
@@ -192,6 +184,4 @@ class Adam(Optimizer):
         AdamState
             Optimizer state
         """
-        return AdamState(opt=self,
-                         m=Array(self.gpu, shape=shape),
-                         v=Array(self.gpu, shape=shape))
+        return AdamState(opt=self, shape=shape)
