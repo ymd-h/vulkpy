@@ -48,7 +48,7 @@ class SGDState(OptimizerState):
         """
         return (-self.opt.lr) * grad
 
-class SGD(OptimizerState):
+class SGD(Optimizer):
     def __init__(self, lr: float):
         """
         Stachostic Gradient Decent Optimizer
