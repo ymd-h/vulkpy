@@ -81,7 +81,7 @@ class GPU:
     def _submit(self,
                 spv: str,
                 local_size_x: int, local_size_y: int, local_size_z: int,
-                arrays: Iterable[Array],
+                arrays: Iterable[_GPUArray],
                 shape: DataShape,
                 params: Params) -> Job:
         infos = [a.buffer.info() for a in arrays]
