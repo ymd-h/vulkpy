@@ -304,7 +304,7 @@ class Xoshiro128pp(PRNG):
             buffer.wait()
 
         # After checking, coarse type to Array
-        buffer = cast(vk.Array, buffer)
+        buffer = cast(vk.U32Array, buffer)
 
         n = int(np.prod(buffer.shape))
         buffer.job = self.rng.random_uint32(n, buffer.buffer.info())
