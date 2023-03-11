@@ -1201,7 +1201,7 @@ class Array(_GPUArray):
         else:
             return self._axis_reduction(spv_axis, axis, keepdims)
 
-    def sum(self, axis: Union[int, Iterable[int]]=None,
+    def sum(self, axis: Union[None, int, Iterable[int]]=None,
             keepdims: bool = False,
             rebroadcast: bool = False) -> Array:
         """
@@ -1231,7 +1231,7 @@ class Array(_GPUArray):
                             keepdims,
                             rebroadcast)
 
-    def prod(self, axis: Union[int, Iterable[int]]=None,
+    def prod(self, axis: Union[None, int, Iterable[int]]=None,
              keepdims: bool = False,
              rebroadcast: bool = False) -> Array:
         """
@@ -1261,7 +1261,7 @@ class Array(_GPUArray):
                             keepdims,
                             rebroadcast)
 
-    def maximum(self, axis: Union[int, Iterable[int]]=None,
+    def maximum(self, axis: Union[None, int, Iterable[int]]=None,
                 keepdims: bool = False,
                 rebroadcast: bool = False) -> Array:
         """
@@ -1291,7 +1291,7 @@ class Array(_GPUArray):
                             keepdims,
                             rebroadcast)
 
-    def minimum(self, axis: Union[int, Iterable[int]]=None,
+    def minimum(self, axis: Union[None, int, Iterable[int]]=None,
                 keepdims: bool = False,
                 rebroadcast: bool = False) -> Array:
         """
@@ -1321,7 +1321,7 @@ class Array(_GPUArray):
                             keepdims,
                             rebroadcast)
 
-    def mean(self, axis: Union[int, Iterable[int]]=None,
+    def mean(self, axis: Union[None, int, Iterable[int]]=None,
              keepdims: bool = False,
              rebroadcast: bool = False) -> Array:
         """
