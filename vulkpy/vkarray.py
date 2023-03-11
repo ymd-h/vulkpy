@@ -107,7 +107,7 @@ class GPU:
         self.gpu.wait()
 
 
-KeyType = Union[int, np.ndarray]
+KeyType = Union[int, np.ndarray, slice]
 ValueType = Union[int, float, np.ndarray]
 
 
