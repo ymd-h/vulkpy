@@ -110,8 +110,10 @@ class GPU:
 KeyType = Union[int, np.ndarray, slice]
 ValueType = Union[int, float, np.ndarray]
 
+class Resource:
+    pass
 
-class _GPUArray:
+class _GPUArray(Resource):
     def __init__(self, gpu: GPU):
         self._gpu: GPU = gpu
 
@@ -120,7 +122,7 @@ class _GPUArray:
 
         # Hold temporary resources until pipeline job finish
         # to avoid freeing memories in use.
-        self._keep: List[Union[Shape, Array]] = []
+        self._keep: List[Resource] = []
 
     def __del__(self):
         self.wait()

@@ -37,7 +37,7 @@ from .util import getShader
 
 __all__ = ["Xoshiro128pp"]
 
-class PRNG:
+class PRNG(vk.Resource):
     _box_muller = getShader("prng_box_muller.spv")
     _ibox_muller = getShader("prng_ibox_muller.spv")
     _randrange = getShader("prng_randrange.spv")
