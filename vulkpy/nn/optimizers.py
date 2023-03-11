@@ -97,7 +97,7 @@ class AdamState(OptimizerState):
         shape : iterable of ints
             Value shape
         """
-        sellf.opt: Adam = opt
+        self.opt: Adam = opt
         self.m: Array = zeros(self.opt.gpu, shape=shape)
         self.v: Array = zeros(self.opt.gpu, shape=shape)
         self.beta1t: float = 1.0
