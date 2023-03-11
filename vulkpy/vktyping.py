@@ -6,7 +6,7 @@ import numpy as np
 
 
 KeyType = Union[int, np.ndarray, slice]
-ValueType = Union[int, float, np.ndarray]
+ValueType = Union[int, float, np.ndarray, Tuple]
 
 class Resource:
     pass
