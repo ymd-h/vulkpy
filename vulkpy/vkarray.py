@@ -11,14 +11,20 @@ from __future__ import annotations
 
 import os
 import functools
-from typing import cast, Iterable, List, Optional, Union
-from typing_extensions import TypeGuard
+from typing import cast, Iterable, List, Optional, Tuple, Union
+from typing_extensions import Protocol, TypeGuard
 
 import numpy as np
 import wblog
 
 from .util import getShader
-from ._vkarray import createGPU, DataShape, Job
+from ._vkarray import (
+    createGPU,
+    DataShape,
+    Job,
+    Buffer,
+    Shape as U32Buffer,
+)
 from ._vkarray import (
     VectorParams,
     MultiVector2Params,
@@ -85,7 +91,7 @@ class GPU:
                 arrays: Iterable[_GPUArray],
                 shape: DataShape,
                 params: Params) -> Job:
-        infos = [a.buffer.info() for a in arrays]
+        infos = [a._info() for a in arrays]
         jobs = [a.job for a in arrays if a.job is not None]
         return self.gpu.submit(spv, local_size_x, local_size_y, local_size_z,
                                infos, shape, params, jobs)
@@ -113,6 +119,10 @@ ValueType = Union[int, float, np.ndarray]
 
 class Resource:
     pass
+
+class Shaped(Protocol):
+    @property
+    def shape(self) -> Tuple[int, ...]: ...
 
 class _GPUArray(Resource):
     def __init__(self, gpu: GPU):
@@ -144,6 +154,9 @@ class _GPUArray(Resource):
         """
         self._gpu.flush([self])
 
+    def _info(self):
+        raise NotImplementedError
+
     def __getitem__(self, key: KeyType) -> ValueType:
         self.wait()
         return self.array[key]
@@ -151,7 +164,7 @@ class _GPUArray(Resource):
     def __setitem__(self, key: KeyType, value: ValueType):
         self.array[key] = value
 
-    def __repr__(self) -> str:
+    def __repr__(self: Shaped) -> str:
         return f"<{self.__class__.__name__}(shape={tuple(self.shape)})>"
 
     def __str__(self) -> str:
@@ -201,6 +214,9 @@ class U32Array(_GPUArray):
             One hot vector
         """
         return Array(self._gpu, data=np.identity(num_classes)).gather(self, axis=0)
+
+    def _info(self):
+        return self.buffer.info()
 
 
 class Shape(U32Array):
@@ -376,6 +392,9 @@ class Array(_GPUArray):
 
         self.array = np.asarray(self.buffer)
         self.array.shape = self.shape
+
+    def _info(self):
+        return self.buffer.info()
 
     def _check_shape(self, other):
         if not np.array_equal(self.shape, other.shape):
