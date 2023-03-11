@@ -27,7 +27,7 @@ class SGDState(OptimizerState):
 
     Attributes
     ----------
-    opt : SGD
+    opt : vulkpy.SGD
         SGD Optimizer
     """
     opt: SGD
@@ -94,11 +94,11 @@ class AdamState(OptimizerState):
 
     Attributes
     ----------
-    opt : Adam
+    opt : vulkpy.Adam
         Adam Optimizer
-    m : Array
+    m : vulkpy.Array
         Adam Parameter
-    v : Array
+    v : vulkpy.Array
         Adam Parameter
     beta1t : float
         ``beta1 ** t``
