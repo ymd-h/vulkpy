@@ -106,7 +106,7 @@ setup(name="vulkpy",
           "well-behaved-logging"
       ],
       extras_require={
-          "test": ["coverage", "unittest-xml-reporting"],
+          "test": ["coverage", "unittest-xml-reporting", "mypy"],
           "doc": ["sphinx", "sphinx-rtd-theme", "myst-parser"],
       },
       classifiers=[
