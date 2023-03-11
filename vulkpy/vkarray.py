@@ -365,7 +365,7 @@ class Array(_GPUArray):
             self.buffer = self._gpu.gpu.toBuffer(np.ravel(data))
         elif shape is not None:
             self.shape = np.asarray(shape, dtype=int)
-            self.buffer = self._gpu.gpu.createBuffer(int(self.shape.prod()))
+            self.buffer = self._gpu.gpu.createBuffer(int(np.prod(self.shape)))
         else:
             raise ValueError(f"`data` or `shape` must not be `None`.")
 
