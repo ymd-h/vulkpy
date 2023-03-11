@@ -17,6 +17,11 @@ from typing_extensions import Protocol, TypeGuard
 import numpy as np
 import wblog
 
+from .vktyping import (
+    KeyType, ValueType,
+    Resource,
+    ArrayProtocol
+)
 from .util import getShader
 from ._vkarray import (
     createGPU,
@@ -114,22 +119,6 @@ class GPU:
         self.gpu.wait()
 
 
-KeyType = Union[int, np.ndarray, slice]
-ValueType = Union[int, float, np.ndarray]
-
-class Resource:
-    pass
-
-class _ArrayProtocol(Protocol):
-    @property
-    def shape(self) -> Tuple[int, ...]: ...
-
-    @property
-    def array(self) -> np.ndarray: ...
-
-    def wait(self): ...
-
-
 class _GPUArray(Resource):
     def __init__(self, gpu: GPU):
         self._gpu: GPU = gpu
@@ -163,21 +152,21 @@ class _GPUArray(Resource):
     def _info(self):
         raise NotImplementedError
 
-    def __getitem__(self: _ArrayProtocol, key: KeyType) -> ValueType:
+    def __getitem__(self: ArrayProtocol, key: KeyType) -> ValueType:
         self.wait()
         return self.array[key]
 
-    def __setitem__(self: _ArrayProtocol, key: KeyType, value: ValueType):
+    def __setitem__(self: ArrayProtocol, key: KeyType, value: ValueType):
         self.array[key] = value
 
-    def __repr__(self: _ArrayProtocol) -> str:
+    def __repr__(self: ArrayProtocol) -> str:
         return f"<{self.__class__.__name__}(shape={tuple(self.shape)})>"
 
-    def __str__(self: _ArrayProtocol) -> str:
+    def __str__(self: ArrayProtocol) -> str:
         self.wait()
         return str(self.array)
 
-    def __array__(self: _ArrayProtocol) -> np.ndarray:
+    def __array__(self: ArrayProtocol) -> np.ndarray:
         self.wait()
         return self.array
 
