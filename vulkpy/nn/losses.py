@@ -20,7 +20,7 @@ Gradients can be computed with `grad()` method
 >>> dx = L.grad()
 """
 from __future__ import annotations
-from typing import Literal
+from typing import cast, Literal
 
 from vulkpy.util import getShader
 from vulkpy.vkarray import Array, DataShape, VectorParams

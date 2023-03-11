@@ -30,7 +30,7 @@ class Sequence:
         self.L: Tuple[Module, ...] = tuple(layers)
         self.loss = loss
 
-    def _forward(self, x: Array):
+    def _forward(self, x: Array) -> Array:
         for _L in self.L:
             x = _L(x)
         return x

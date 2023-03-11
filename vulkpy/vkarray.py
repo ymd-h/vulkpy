@@ -395,25 +395,26 @@ class Array(_GPUArray):
         if not np.array_equal(self.shape, other.shape):
             raise ValueError(f"Incompatible shapes: {self.shape} vs {other.shape}")
 
-    def _opVec(self, spv, arrays):
+    def _opVec(self, spv, arrays) -> Job:
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
                                  arrays,
                                  DataShape(size, 1, 1),
                                  VectorParams(size))
 
-    def _opVec3(self, spv, other):
+    def _opVec3(self, spv, other) -> Array:
         self._check_shape(other)
         ret = Array(self._gpu, shape=self.shape)
         ret.job = self._opVec(spv, [self, other, ret])
         ret._keep = [self, other]
         return ret
 
-    def _opVec2(self, spv, other=None):
+    def _opVec2(self, spv, other=None) -> Array:
         if other is not None:
             self._check_shape(other)
             self.job = self._opVec(spv, [self, other])
             self._keep = [other]
+            return self
         else:
             ret = Array(self._gpu, shape=self.shape)
             ret.job = self._opVec(spv, [self, ret])
@@ -423,14 +424,14 @@ class Array(_GPUArray):
     def _opVec1(self, spv):
         self.job = self._opVec(spv, [self])
 
-    def _opVecScalar(self, spv, arrays, scalar):
+    def _opVecScalar(self, spv, arrays, scalar) -> Job:
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
                                  arrays,
                                  DataShape(size, 1, 1),
                                  VectorScalarParams(size, scalar))
 
-    def _opVecScalar2(self, spv, other):
+    def _opVecScalar2(self, spv, other) -> Array:
         ret = Array(self._gpu, shape=self.shape)
         ret.job = self._opVecScalar(spv, [self, ret], other)
         ret._keep = [self]
@@ -439,14 +440,14 @@ class Array(_GPUArray):
     def _opVecScalar1(self, spv, other):
         self.job = self._opVecScalar(spv, [self], other)
 
-    def _opVec2Scalar(self, spv, arrays, scalars):
+    def _opVec2Scalar(self, spv, arrays, scalars) -> Job:
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
                                  arrays,
                                  DataShape(size, 1, 1),
                                  VectorScalar2Params(size, *scalars))
 
-    def _op(self, other, spv, spv_scalar, spv_broadcast):
+    def _op(self, other, spv, spv_scalar, spv_broadcast) -> Array:
         if not isinstance(other, Array):
             return self._opVecScalar2(spv_scalar, other)
         if np.array_equal(self.shape, other.shape):
@@ -487,7 +488,7 @@ class Array(_GPUArray):
     def __truediv__(self, other: Union[Array, float]) -> Array:
         return self._op(other, self._div, self._div_scalar, self._div_broadcast)
 
-    def _iop(self, other, spv, spv_scalar, spv_broadcast):
+    def _iop(self, other, spv, spv_scalar, spv_broadcast) -> Array:
         if not isinstance(other, Array):
             self._opVecScalar1(spv_scalar, other)
         elif np.array_equal(self.shape, other.shape):
@@ -1144,7 +1145,7 @@ class Array(_GPUArray):
             return self
 
 
-    def _axis_reduction(self, spv, axis, keepdims):
+    def _axis_reduction(self, spv, axis, keepdims) -> Array:
         # Ensure axis is flattened decending unique indices set.
         axis = np.unique(axis, axis=None)[::-1]
 
@@ -1176,7 +1177,7 @@ class Array(_GPUArray):
 
     def _reduce(self,
                 spv, spv_v1_3, spv_axis, spv_rebroadcast,
-                axis, keepdims, rebroadcast):
+                axis, keepdims, rebroadcast) -> Array:
         if rebroadcast:
             if not isinstance(axis, int):
                 raise ValueError("When `rebroadcast` is specified, " +
