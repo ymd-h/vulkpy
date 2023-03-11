@@ -124,7 +124,7 @@ class PRNG:
         return buffer
 
     def randrange(self, *,
-                  shape: Optional[Iterablte[int]] = None,
+                  shape: Optional[Iterable[int]] = None,
                   buffer: Optional[vk.U32Array] = None,
                   low: int = 0,
                   high: int = int(2 ** 32)) -> vk.U32Array:
