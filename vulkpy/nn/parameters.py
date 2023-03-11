@@ -14,24 +14,6 @@ __all__ = [
 class Parameter:
     """
     Neural Network Parameter
-
-    Attributes
-    ----------
-    value : vulkpy.Array
-        Parameter value
-    grad : vulkpy.Array, optional
-        Accumulated gradients if parameter is trainable
-
-    Methods
-    -------
-    is_trainable()
-        Whether this parameter is trainable.
-    add_grad(grad)
-        Add gradients.
-    zero_grad()
-        Reset accumulated gradients to 0.
-    update()
-        Update parameter based on accumulated gradients.
     """
     def __init__(self,
                  gpu: GPU,
@@ -57,7 +39,7 @@ class Parameter:
         """
         if initializer is None:
             initializer = zeros
-        self.value: Array = initializer(gpu, shape=shape)
+        self.value: Array = initializer(gpu, shape)
 
         self.grad: Optional[Array] = None
         self.opt_state: Optional[OptimizerState] = None
@@ -88,14 +70,14 @@ class Parameter:
         grad : vulkpy.Array
             Gradient to be accumulated
         """
-        if self.is_trainable():
+        if self.grad is not None:
             self.grad += grad
 
     def zero_grad(self):
         """
         Clear gradient to 0.0
         """
-        if self.is_trainable():
+        if self.grad is not None:
             self.grad[:] = 0.0
 
     def update(self):
@@ -104,5 +86,5 @@ class Parameter:
 
         Update value with accumulated gradients only if this value is trainable.
         """
-        if self.is_trainable():
+        if self.grad is not None:
             self.value += self.opt_state.grad2diff(self.grad)

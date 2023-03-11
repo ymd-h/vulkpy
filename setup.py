@@ -100,9 +100,13 @@ setup(name="vulkpy",
       packages=find_packages(),
       ext_modules=ext,
       include_package_data=True,
-      install_requires=["numpy", "well-behaved-logging"],
+      install_requires=[
+          "typing_extensions",
+          "numpy",
+          "well-behaved-logging"
+      ],
       extras_require={
-          "test": ["coverage", "unittest-xml-reporting"],
+          "test": ["coverage", "unittest-xml-reporting", "mypy"],
           "doc": ["sphinx", "sphinx-rtd-theme", "myst-parser"],
       },
       classifiers=[

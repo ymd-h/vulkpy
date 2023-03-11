@@ -11,13 +11,25 @@ from __future__ import annotations
 
 import os
 import functools
-from typing import Iterable, List, Optional, Union
+from typing import cast, Iterable, List, Optional, Tuple, Union
+from typing_extensions import Protocol, TypeGuard
 
 import numpy as np
 import wblog
 
+from .vktyping import (
+    KeyType, ValueType,
+    Resource,
+    ArrayProtocol
+)
 from .util import getShader
-from ._vkarray import createGPU, DataShape, Job
+from ._vkarray import (
+    createGPU,
+    DataShape,
+    Job,
+    Buffer,
+    Shape as U32Buffer,
+)
 from ._vkarray import (
     VectorParams,
     MultiVector2Params,
@@ -73,16 +85,18 @@ class GPU:
         self.canSubgroupArithmetic = self.gpu.canSubgroupArithmetic()
         logger.info(f"GPU {idx}: Subgroup Arithmetic: {self.canSubgroupArithmetic}")
 
-    def __eq__(self, other: GPU):
-        return isinstance(other, GPU) and (self._idx == other._idx)
+    def __eq__(self, other: object):
+        if not isinstance(other, GPU):
+            return NotImplemented
+        return self._idx == other._idx
 
     def _submit(self,
                 spv: str,
                 local_size_x: int, local_size_y: int, local_size_z: int,
-                arrays: Iterable[Array],
+                arrays: Iterable[_GPUArray],
                 shape: DataShape,
                 params: Params) -> Job:
-        infos = [a.buffer.info() for a in arrays]
+        infos = [a._info() for a in arrays]
         jobs = [a.job for a in arrays if a.job is not None]
         return self.gpu.submit(spv, local_size_x, local_size_y, local_size_z,
                                infos, shape, params, jobs)
@@ -105,11 +119,7 @@ class GPU:
         self.gpu.wait()
 
 
-KeyType = Union[int, np.ndarray]
-ValueType = Union[int, float, np.ndarray]
-
-
-class _GPUArray:
+class _GPUArray(Resource):
     def __init__(self, gpu: GPU):
         self._gpu: GPU = gpu
 
@@ -118,7 +128,7 @@ class _GPUArray:
 
         # Hold temporary resources until pipeline job finish
         # to avoid freeing memories in use.
-        self._keep: List[Union[Shape, Array]] = []
+        self._keep: List[Resource] = []
 
     def __del__(self):
         self.wait()
@@ -139,21 +149,24 @@ class _GPUArray:
         """
         self._gpu.flush([self])
 
-    def __getitem__(self, key: KeyType) -> ValueType:
+    def _info(self):
+        raise NotImplementedError
+
+    def __getitem__(self: ArrayProtocol, key: KeyType) -> ValueType:
         self.wait()
         return self.array[key]
 
-    def __setitem__(self, key: KeyType, value: ValueType):
+    def __setitem__(self: ArrayProtocol, key: KeyType, value: ValueType):
         self.array[key] = value
 
-    def __repr__(self) -> str:
+    def __repr__(self: ArrayProtocol) -> str:
         return f"<{self.__class__.__name__}(shape={tuple(self.shape)})>"
 
-    def __str__(self) -> str:
+    def __str__(self: ArrayProtocol) -> str:
         self.wait()
         return str(self.array)
 
-    def __array__(self) -> np.ndarray:
+    def __array__(self: ArrayProtocol) -> np.ndarray:
         self.wait()
         return self.array
 
@@ -175,7 +188,7 @@ class U32Array(_GPUArray):
             if shape is None:
                 raise ValueError("One of `data` or `shape` must be specified.")
 
-            self.shape = np.asarray(shape, dtype=int)
+            self.shape = tuple(np.asarray(shape, dtype=int))
             self.buffer = self._gpu.gpu.createU32Buffer(np.prod(self.shape))
 
         self.array = np.asarray(self.buffer)
@@ -196,6 +209,9 @@ class U32Array(_GPUArray):
             One hot vector
         """
         return Array(self._gpu, data=np.identity(num_classes)).gather(self, axis=0)
+
+    def _info(self):
+        return self.buffer.info()
 
 
 class Shape(U32Array):
@@ -338,7 +354,9 @@ class Array(_GPUArray):
     _gather = getShader("gather.spv")
     _gather_axis = getShader("gather_axis.spv")
 
-    def __init__(self, gpu: GPU, *, data = None, shape = None):
+    def __init__(self, gpu: GPU, *,
+                 data = None,
+                 shape: Optional[Iterable[int]] = None):
         """
         Initialize Array
 
@@ -362,37 +380,41 @@ class Array(_GPUArray):
             self.shape = np.asarray(data).shape
             self.buffer = self._gpu.gpu.toBuffer(np.ravel(data))
         elif shape is not None:
-            self.shape = np.asarray(shape, dtype=int)
-            self.buffer = self._gpu.gpu.createBuffer(int(self.shape.prod()))
+            self.shape = tuple(np.asarray(shape, dtype=int))
+            self.buffer = self._gpu.gpu.createBuffer(int(np.prod(self.shape)))
         else:
             raise ValueError(f"`data` or `shape` must not be `None`.")
 
         self.array = np.asarray(self.buffer)
         self.array.shape = self.shape
 
+    def _info(self):
+        return self.buffer.info()
+
     def _check_shape(self, other):
         if not np.array_equal(self.shape, other.shape):
             raise ValueError(f"Incompatible shapes: {self.shape} vs {other.shape}")
 
-    def _opVec(self, spv, arrays):
+    def _opVec(self, spv, arrays) -> Job:
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
                                  arrays,
                                  DataShape(size, 1, 1),
                                  VectorParams(size))
 
-    def _opVec3(self, spv, other):
+    def _opVec3(self, spv, other) -> Array:
         self._check_shape(other)
         ret = Array(self._gpu, shape=self.shape)
         ret.job = self._opVec(spv, [self, other, ret])
         ret._keep = [self, other]
         return ret
 
-    def _opVec2(self, spv, other=None):
+    def _opVec2(self, spv, other=None) -> Array:
         if other is not None:
             self._check_shape(other)
             self.job = self._opVec(spv, [self, other])
             self._keep = [other]
+            return self
         else:
             ret = Array(self._gpu, shape=self.shape)
             ret.job = self._opVec(spv, [self, ret])
@@ -402,14 +424,14 @@ class Array(_GPUArray):
     def _opVec1(self, spv):
         self.job = self._opVec(spv, [self])
 
-    def _opVecScalar(self, spv, arrays, scalar):
+    def _opVecScalar(self, spv, arrays, scalar) -> Job:
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
                                  arrays,
                                  DataShape(size, 1, 1),
                                  VectorScalarParams(size, scalar))
 
-    def _opVecScalar2(self, spv, other):
+    def _opVecScalar2(self, spv, other) -> Array:
         ret = Array(self._gpu, shape=self.shape)
         ret.job = self._opVecScalar(spv, [self, ret], other)
         ret._keep = [self]
@@ -418,14 +440,14 @@ class Array(_GPUArray):
     def _opVecScalar1(self, spv, other):
         self.job = self._opVecScalar(spv, [self], other)
 
-    def _opVec2Scalar(self, spv, arrays, scalars):
+    def _opVec2Scalar(self, spv, arrays, scalars) -> Job:
         size = self.buffer.size()
         return self._gpu._submit(spv, 64, 1, 1,
                                  arrays,
                                  DataShape(size, 1, 1),
                                  VectorScalar2Params(size, *scalars))
 
-    def _op(self, other, spv, spv_scalar, spv_broadcast):
+    def _op(self, other, spv, spv_scalar, spv_broadcast) -> Array:
         if not isinstance(other, Array):
             return self._opVecScalar2(spv_scalar, other)
         if np.array_equal(self.shape, other.shape):
@@ -466,7 +488,7 @@ class Array(_GPUArray):
     def __truediv__(self, other: Union[Array, float]) -> Array:
         return self._op(other, self._div, self._div_scalar, self._div_broadcast)
 
-    def _iop(self, other, spv, spv_scalar, spv_broadcast):
+    def _iop(self, other, spv, spv_scalar, spv_broadcast) -> Array:
         if not isinstance(other, Array):
             self._opVecScalar1(spv_scalar, other)
         elif np.array_equal(self.shape, other.shape):
@@ -540,13 +562,13 @@ class Array(_GPUArray):
         ret._keep = [self, other]
         return ret
 
-    def reshape(self, shape: tuple[int]):
+    def reshape(self, shape: Iterable[int]):
         """
         Reshape of this array
 
         Parameters
         ----------
-        shape : tuple of int
+        shape : iterable of int
             New shape
 
         Raises
@@ -554,11 +576,11 @@ class Array(_GPUArray):
         ValueError
             If ``shape`` is incompatible
         """
-        self.array.shape = shape
+        self.array.shape = tuple(shape)
         self.shape = self.array.shape
 
     def max(self, other: Union[Array, float],
-            inplace: bool = False) -> Optional[Array]:
+            inplace: bool = False) -> Array:
         """
         Element-wise Max
 
@@ -571,10 +593,8 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            max array
 
         Raises
         ------
@@ -584,9 +604,10 @@ class Array(_GPUArray):
         if not inplace:
             return self._op(other, self._max, self._max_scalar, self._max_broadcast)
         self._iop(other, self._imax, self._imax_scalar, self._imax_broadcast)
+        return self
 
     def min(self, other: Union[Array, float],
-            inplace: bool = False) -> Optional[Array]:
+            inplace: bool = False) -> Array:
         """
         Element-wise Min
 
@@ -599,10 +620,8 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            min array
 
         Raises
         ------
@@ -612,8 +631,9 @@ class Array(_GPUArray):
         if not inplace:
             return self._op(other, self._min, self._min_scalar, self._min_broadcast)
         self._iop(other, self._imin, self._imin_scalar, self._imin_broadcast)
+        return self
 
-    def abs(self, inplace: bool = False) -> Optional[Array]:
+    def abs(self, inplace: bool = False) -> Array:
         """
         Element-wise Abs
 
@@ -625,17 +645,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            abs array
         """
         if inplace:
             self._opVec1(self._iabs)
+            return self
         else:
             return self._opVec2(self._abs)
 
-    def sign(self, inplace: bool = False) -> Optional[Array]:
+    def sign(self, inplace: bool = False) -> Array:
         """
         Element-wise sign
 
@@ -647,17 +666,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            sign array
         """
         if inplace:
             self._opVec1(self._isign)
+            return self
         else:
             return self._opVec2(self._sign)
 
-    def sin(self, inplace: bool = False) -> Optional[Array]:
+    def sin(self, inplace: bool = False) -> Array:
         """
         Element-wise sin()
 
@@ -669,17 +687,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            sin array
         """
         if inplace:
             self._opVec1(self._isin)
+            return self
         else:
             return self._opVec2(self._sin)
 
-    def cos(self, inplace: bool = False) -> Optional[Array]:
+    def cos(self, inplace: bool = False) -> Array:
         """
         Element-wise cos()
 
@@ -691,17 +708,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            cos array
         """
         if inplace:
             self._opVec1(self._icos)
+            return self
         else:
             return self._opVec2(self._cos)
 
-    def tan(self, inplace: bool = False) -> Optional[Array]:
+    def tan(self, inplace: bool = False) -> Array:
         """
         Element-wise tan()
 
@@ -713,17 +729,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            tan array
         """
         if inplace:
             self._opVec1(self._itan)
+            return self
         else:
             return self._opVec2(self._tan)
 
-    def asin(self, inplace: bool = False) -> Optional[Array]:
+    def asin(self, inplace: bool = False) -> Array:
         """
         Element-wise asin()
 
@@ -735,17 +750,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            asin array
         """
         if inplace:
             self._opVec1(self._iasin)
+            return self
         else:
             return self._opVec2(self._asin)
 
-    def acos(self, inplace: bool = False) -> Optional[Array]:
+    def acos(self, inplace: bool = False) -> Array:
         """
         Element-wise acos()
 
@@ -757,17 +771,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            acos array
         """
         if inplace:
             self._opVec1(self._iacos)
+            return self
         else:
             return self._opVec2(self._acos)
 
-    def atan(self, inplace: bool = False) -> Optional[Array]:
+    def atan(self, inplace: bool = False) -> Array:
         """
         Element-wise atan()
 
@@ -779,17 +792,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            atan array
         """
         if inplace:
             self._opVec1(self._iatan)
+            return self
         else:
             return self._opVec2(self._atan)
 
-    def sinh(self, inplace: bool = False) -> Optional[Array]:
+    def sinh(self, inplace: bool = False) -> Array:
         """
         Element-wise sinh()
 
@@ -801,17 +813,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            sinh array
         """
         if inplace:
             self._opVec1(self._isinh)
+            return self
         else:
             return self._opVec2(self._sinh)
 
-    def cosh(self, inplace: bool = False) -> Optional[Array]:
+    def cosh(self, inplace: bool = False) -> Array:
         """
         Element-wise cosh()
 
@@ -823,17 +834,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            cosh array
         """
         if inplace:
             self._opVec1(self._icosh)
+            return self
         else:
             return self._opVec2(self._cosh)
 
-    def tanh(self, inplace: bool = False) -> Optional[Array]:
+    def tanh(self, inplace: bool = False) -> Array:
         """
         Element-wise tanh()
 
@@ -845,17 +855,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            tanh array
         """
         if inplace:
             self._opVec1(self._itanh)
+            return self
         else:
             return self._opVec2(self._tanh)
 
-    def asinh(self, inplace: bool = False) -> Optional[Array]:
+    def asinh(self, inplace: bool = False) -> Array:
         """
         Element-wise asinh()
 
@@ -867,17 +876,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            asinh array
         """
         if inplace:
             self._opVec1(self._iasinh)
+            return self
         else:
             return self._opVec2(self._asinh)
 
-    def acosh(self, inplace: bool = False) -> Optional[Array]:
+    def acosh(self, inplace: bool = False) -> Array:
         """
         Element-wise acosh()
 
@@ -889,17 +897,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            acosh array
         """
         if inplace:
             self._opVec1(self._iacosh)
+            return self
         else:
             return self._opVec2(self._acosh)
 
-    def atanh(self, inplace: bool = False) -> Optional[Array]:
+    def atanh(self, inplace: bool = False) -> Array:
         """
         Element-wise atanh()
 
@@ -911,17 +918,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            atanh array
         """
         if inplace:
             self._opVec1(self._iatanh)
+            return self
         else:
             return self._opVec2(self._atanh)
 
-    def exp(self, inplace: bool = False) -> Optional[Array]:
+    def exp(self, inplace: bool = False) -> Array:
         """
         Element-wise exp()
 
@@ -933,17 +939,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            exp array
         """
         if inplace:
             self._opVec1(self._iexp)
+            return self
         else:
             return self._opVec2(self._exp)
 
-    def log(self, inplace: bool = False) -> Optional[Array]:
+    def log(self, inplace: bool = False) -> Array:
         """
         Element-wise log()
 
@@ -955,17 +960,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            log array
         """
         if inplace:
             self._opVec1(self._ilog)
+            return self
         else:
             return self._opVec2(self._log)
 
-    def exp2(self, inplace: bool = False) -> Optional[Array]:
+    def exp2(self, inplace: bool = False) -> Array:
         """
         Element-wise exp2()
 
@@ -977,17 +981,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            exp2 array
         """
         if inplace:
             self._opVec1(self._iexp2)
+            return self
         else:
             return self._opVec2(self._exp2)
 
-    def log2(self, inplace: bool = False) -> Optional[Array]:
+    def log2(self, inplace: bool = False) -> Array:
         """
         Element-wise log2()
 
@@ -999,17 +1002,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            log2 array
         """
         if inplace:
             self._opVec1(self._ilog2)
+            return self
         else:
             return self._opVec2(self._log2)
 
-    def sqrt(self, inplace: bool = False) -> Optional[Array]:
+    def sqrt(self, inplace: bool = False) -> Array:
         """
         Element-wise sqrt()
 
@@ -1021,17 +1023,16 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            sqrt array
         """
         if inplace:
             self._opVec1(self._isqrt)
+            return self
         else:
             return self._opVec2(self._sqrt)
 
-    def invsqrt(self, inplace: bool = False) -> Optional[Array]:
+    def invsqrt(self, inplace: bool = False) -> Array:
         """
         Element-wise 1/sqrt()
 
@@ -1043,13 +1044,12 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            1/sqrt array
         """
         if inplace:
             self._opVec1(self._iinvsqrt)
+            return self
         else:
             return self._opVec2(self._invsqrt)
 
@@ -1064,7 +1064,7 @@ class Array(_GPUArray):
         return self._opVecScalar2(self._rpow_scalar, other)
 
     def clamp(self, min: Union[Array, float], max: Union[Array, float],
-              inplace: bool = False) -> Optional[Array]:
+              inplace: bool = False) -> Array:
         """
         Element-wise clamp()
 
@@ -1078,18 +1078,24 @@ class Array(_GPUArray):
 
         Returns
         -------
-        None
-            When ``replace=True``.
         Array
-            When ``replace=False``.
+            clamped array
         """
         shape_set = [self.shape]
-        min_is_array = isinstance(min, Array)
-        if min_is_array:
+
+        # Enable Type narrowing by TypeGuard
+        _min_is_array = isinstance(min, Array)
+        _max_is_array = isinstance(max, Array)
+        def min_is_array(_: Union[Array, float]) -> TypeGuard[Array]:
+            return _min_is_array
+        def max_is_array(_: Union[Array, float]) -> TypeGuard[Array]:
+            return _max_is_array
+
+
+        if min_is_array(min):
             shape_set.append(min.shape)
 
-        max_is_array = isinstance(max, Array)
-        if max_is_array:
+        if max_is_array(max):
             shape_set.append(max.shape)
 
         _s = self
@@ -1101,21 +1107,21 @@ class Array(_GPUArray):
                     raise ValueError(f"Incompatible shape")
                 _s = self.broadcast_to(shape)
 
-            if min_is_array and not np.array_equal(shape, min.shape):
+            if min_is_array(min) and not np.array_equal(shape, min.shape):
                 min = min.broadcast_to(shape)
 
-            if max_is_array and not np.array_equal(shape, max.shape):
+            if max_is_array(max) and not np.array_equal(shape, max.shape):
                 max = max.broadcast_to(shape)
 
         if not inplace:
             ret = Array(self._gpu, shape=_s.shape)
-            if min_is_array and max_is_array:
+            if min_is_array(min) and max_is_array(max):
                 ret.job = _s._opVec(self._clamp, [_s, min, max, ret])
                 ret._keep = [_s, min, max]
-            elif max_is_array:
+            elif max_is_array(max):
                 ret.job = _s._opVecScalar(self._clamp_sv, [_s, max, ret], min)
                 ret._keep = [_s, max]
-            elif min_is_array:
+            elif min_is_array(min):
                 ret.job = _s._opVecScalar(self._clamp_vs, [_s, min, ret], max)
                 ret._keep = [_s, min]
             else:
@@ -1124,21 +1130,22 @@ class Array(_GPUArray):
             return ret
         else:
             # inplace
-            if min_is_array and max_is_array:
+            if min_is_array(min) and max_is_array(max):
                 self.job = self._opVec(self._iclamp, [self, min, max])
                 self._keep = [min, max]
-            elif max_is_array:
+            elif max_is_array(max):
                 self.job = self._opVecScalar(self._iclamp_sv, [self, max], min)
                 self._keep = [max]
-            elif min_is_array:
+            elif min_is_array(min):
                 self.job = self._opVecScalar(self._iclamp_vs, [self, min], max)
                 self._keep = [min]
             else:
                 self.job = self._opVec2Scalar(self._iclamp_ss, [self], [min, max])
                 self._keep = []
+            return self
 
 
-    def _axis_reduction(self, spv, axis, keepdims):
+    def _axis_reduction(self, spv, axis, keepdims) -> Array:
         # Ensure axis is flattened decending unique indices set.
         axis = np.unique(axis, axis=None)[::-1]
 
@@ -1170,7 +1177,7 @@ class Array(_GPUArray):
 
     def _reduce(self,
                 spv, spv_v1_3, spv_axis, spv_rebroadcast,
-                axis, keepdims, rebroadcast):
+                axis, keepdims, rebroadcast) -> Array:
         if rebroadcast:
             if not isinstance(axis, int):
                 raise ValueError("When `rebroadcast` is specified, " +
@@ -1222,7 +1229,7 @@ class Array(_GPUArray):
         else:
             return self._axis_reduction(spv_axis, axis, keepdims)
 
-    def sum(self, axis: Union[int, Iterable[int]]=None,
+    def sum(self, axis: Union[None, int, Iterable[int]]=None,
             keepdims: bool = False,
             rebroadcast: bool = False) -> Array:
         """
@@ -1252,7 +1259,7 @@ class Array(_GPUArray):
                             keepdims,
                             rebroadcast)
 
-    def prod(self, axis: Union[int, Iterable[int]]=None,
+    def prod(self, axis: Union[None, int, Iterable[int]]=None,
              keepdims: bool = False,
              rebroadcast: bool = False) -> Array:
         """
@@ -1282,7 +1289,7 @@ class Array(_GPUArray):
                             keepdims,
                             rebroadcast)
 
-    def maximum(self, axis: Union[int, Iterable[int]]=None,
+    def maximum(self, axis: Union[None, int, Iterable[int]]=None,
                 keepdims: bool = False,
                 rebroadcast: bool = False) -> Array:
         """
@@ -1312,7 +1319,7 @@ class Array(_GPUArray):
                             keepdims,
                             rebroadcast)
 
-    def minimum(self, axis: Union[int, Iterable[int]]=None,
+    def minimum(self, axis: Union[None, int, Iterable[int]]=None,
                 keepdims: bool = False,
                 rebroadcast: bool = False) -> Array:
         """
@@ -1342,7 +1349,7 @@ class Array(_GPUArray):
                             keepdims,
                             rebroadcast)
 
-    def mean(self, axis: Union[int, Iterable[int]]=None,
+    def mean(self, axis: Union[None, int, Iterable[int]]=None,
              keepdims: bool = False,
              rebroadcast: bool = False) -> Array:
         """
@@ -1369,6 +1376,8 @@ class Array(_GPUArray):
         ret = self.sum(axis, keepdims, rebroadcast)
 
         if rebroadcast:
+            # rebroadcast supports only `axis` is `int`
+            axis = cast(int, axis)
             ret /= self.shape[axis]
         else:
             n_after = ret.buffer.size()
@@ -1404,8 +1413,7 @@ class Array(_GPUArray):
         self_shape = self.shape
         dim_diff = len(shape) - len(self_shape)
         if dim_diff > 0:
-            self_shape = np.concatenate((np.ones(shape=(dim_diff,)), self_shape),
-                                        axis=0)
+            self_shape = tuple(np.ones(shape=(dim_diff,), dtype=int)) + self_shape
 
         shapeA = Shape(self._gpu, data=self_shape)
         shapeB = Shape(self._gpu, data=shape)
@@ -1449,11 +1457,10 @@ class Array(_GPUArray):
             spv = self._gather_axis
             local_size = (1, 64, 1)
 
-            shape = np.array(self.shape)
+            shape = self.shape
             prev_shape = shape[:axis]
             post_shape = shape[axis+1:]
-            shape = np.concatenate((indices.shape, prev_shape, post_shape),
-                                   axis=0)
+            shape = indices.shape + prev_shape + post_shape
 
             ret = Array(self._gpu, shape=shape)
 

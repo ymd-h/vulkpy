@@ -3,7 +3,7 @@ Neural Network Model Module (:mod:`vulkpy.nn.models`)
 =====================================================
 """
 from __future__ import annotations
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional, Tuple, Union
 
 from vulkpy import Array
 from .core import Module, Loss
@@ -27,10 +27,10 @@ class Sequence:
         loss : vulkpy.Loss
             Loss layer
         """
-        self.L: Tuple[Module] = tuple(layers)
+        self.L: Tuple[Module, ...] = tuple(layers)
         self.loss = loss
 
-    def _forward(self, x: Array):
+    def _forward(self, x: Array) -> Array:
         for _L in self.L:
             x = _L(x)
         return x

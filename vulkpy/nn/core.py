@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Literal, Iterable
+from typing import Callable, Literal, Optional, Iterable, Tuple
 
 from vulkpy.vkarray import GPU, Array
 
@@ -73,12 +73,15 @@ class Module:
         """
         pass
 
+F = Callable[[Array], Array]
 class Loss:
     def __init__(self, reduce: Literal["mean", "sum"] = "mean"):
-        self.reduce, self.scale_backward = {
+        tmp: Tuple[F, Optional[F]] = {
             "mean": (lambda _L: _L.mean(axis=0), lambda _dx: 1/_dx.shape[0]),
             "sum": (lambda _L: _L.sum(axis=0), None),
         }[reduce]
+        self.reduce, self.scale_backward = tmp
+
 
     def __call__(self, x: Array, y: Array) -> Array:
         r"""

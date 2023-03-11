@@ -20,7 +20,7 @@ Gradients can be computed with `grad()` method
 >>> dx = L.grad()
 """
 from __future__ import annotations
-from typing import Literal
+from typing import cast, Literal
 
 from vulkpy.util import getShader
 from vulkpy.vkarray import Array, DataShape, VectorParams
@@ -189,7 +189,7 @@ class SoftmaxCrossEntropyLoss(CrossEntropyLoss):
              Generally, users should not call this method directly.
              Use ``grad()`` instead, where reduction scale is corrected.
         """
-        return self._sm._y - self._y
+        return cast(Array, self._sm._y) - self._y
 
 
 class MSELoss(Loss):

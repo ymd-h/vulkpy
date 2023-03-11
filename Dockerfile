@@ -16,9 +16,10 @@ FROM vulkpy-env AS vulkpy-install
 WORKDIR /vulkpy-ci
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install coverage unittest-xml-reporting
-COPY setup.py pyproject.toml MANIFEST.in .
+COPY setup.py pyproject.toml MANIFEST.in mypy.ini .
 COPY vulkpy vulkpy
 RUN --mount=type=cache,target=/root/.cache/pip pip install .[test] && \
+    mypy -p vulkpy && \
     rm -rf vulkpy && \
     rm setup.py pyproject.toml MANIFEST.in
 
@@ -26,7 +27,7 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install .[test] && \
 FROM vulkpy-install AS vulkpy-test
 COPY test test
 WORKDIR /vulkpy-ci/test
-COPY .coveragerc .coveragerc
+COPY .coveragerc .
 RUN coverage run --source vulkpy -m xmlrunner discover || true
 RUN mkdir -p /coverage && cp -v .coverage.* /coverage && \
     mkdir -p /unittest && cp *.xml /unittest
