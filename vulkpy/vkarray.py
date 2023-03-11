@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 import functools
 from typing import Iterable, List, Optional, Union
+from typing_extensions import TypeGuard
 
 import numpy as np
 import wblog
@@ -1064,12 +1065,20 @@ class Array(_GPUArray):
             clamped array
         """
         shape_set = [self.shape]
-        min_is_array = isinstance(min, Array)
-        if min_is_array:
+
+        # Enable Type narrowing by TypeGuard
+        _min_is_array = isinstance(min, Array)
+        _max_is_array = isinstance(max, Array)
+        def min_is_array(_: Union[Array, float]) -> TypeGuard[Array]:
+            return _min_is_array
+        def max_is_array(_: Union[Array, float]) -> TypeGuard[Array]:
+            return _max_is_array
+
+
+        if min_is_array(min):
             shape_set.append(min.shape)
 
-        max_is_array = isinstance(max, Array)
-        if max_is_array:
+        if max_is_array(max):
             shape_set.append(max.shape)
 
         _s = self
@@ -1081,21 +1090,21 @@ class Array(_GPUArray):
                     raise ValueError(f"Incompatible shape")
                 _s = self.broadcast_to(shape)
 
-            if min_is_array and not np.array_equal(shape, min.shape):
+            if min_is_array(min) and not np.array_equal(shape, min.shape):
                 min = min.broadcast_to(shape)
 
-            if max_is_array and not np.array_equal(shape, max.shape):
+            if max_is_array(max) and not np.array_equal(shape, max.shape):
                 max = max.broadcast_to(shape)
 
         if not inplace:
             ret = Array(self._gpu, shape=_s.shape)
-            if min_is_array and max_is_array:
+            if min_is_array(min) and max_is_array(max):
                 ret.job = _s._opVec(self._clamp, [_s, min, max, ret])
                 ret._keep = [_s, min, max]
-            elif max_is_array:
+            elif max_is_array(max):
                 ret.job = _s._opVecScalar(self._clamp_sv, [_s, max, ret], min)
                 ret._keep = [_s, max]
-            elif min_is_array:
+            elif min_is_array(min):
                 ret.job = _s._opVecScalar(self._clamp_vs, [_s, min, ret], max)
                 ret._keep = [_s, min]
             else:
@@ -1104,13 +1113,13 @@ class Array(_GPUArray):
             return ret
         else:
             # inplace
-            if min_is_array and max_is_array:
+            if min_is_array(min) and max_is_array(max):
                 self.job = self._opVec(self._iclamp, [self, min, max])
                 self._keep = [min, max]
-            elif max_is_array:
+            elif max_is_array(max):
                 self.job = self._opVecScalar(self._iclamp_sv, [self, max], min)
                 self._keep = [max]
-            elif min_is_array:
+            elif min_is_array(min):
                 self.job = self._opVecScalar(self._iclamp_vs, [self, min], max)
                 self._keep = [min]
             else:
