@@ -478,90 +478,67 @@ class TestRegularizer(unittest.TestCase):
 
     def test_ridge_zero(self):
         p = self.P(self.gpu, (1,), initializer=nn.Constant(0.0))
-        R = nn.Ridge([(1, p)])
+        R = nn.Ridge(1.0)
 
-        np.testing.assert_allclose(R.loss(), np.asarray(0.0))
-
-        R.add_grad()
-        np.testing.assert_allclose(p.grad, np.asarray((0.0, )))
+        np.testing.assert_allclose(R.loss(p.value), np.asarray(0.0))
+        np.testing.assert_allclose(R.grad(p.value), np.asarray((0.0, )))
 
     def test_ridge(self):
         p = self.P(self.gpu, (1,), initializer=nn.Constant(3.5))
-        R = nn.Ridge([(1, p)])
+        R = nn.Ridge(1.0)
 
-        np.testing.assert_allclose(R.loss(), np.asarray(3.5 ** 2))
-
-        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
-        R.add_grad()
-        np.testing.assert_allclose(p.grad, np.asarray((2 * 3.5,)))
+        np.testing.assert_allclose(R.loss(p.value), np.asarray(3.5 ** 2))
+        np.testing.assert_allclose(R.grad(p.value), np.asarray((2 * 3.5,)))
 
     def test_ridge_negative(self):
         p = self.P(self.gpu, (1,), initializer=nn.Constant(-3.5))
-        R = nn.Ridge([(1, p)])
+        R = nn.Ridge(1.0)
 
-        np.testing.assert_allclose(R.loss(), np.asarray((-3.5) ** 2))
-
-        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
-        R.add_grad()
-        np.testing.assert_allclose(p.grad, np.asarray((2 * -3.5,)))
+        np.testing.assert_allclose(R.loss(p.value), np.asarray((-3.5) ** 2))
+        np.testing.assert_allclose(R.grad(p.value), np.asarray((2 * -3.5,)))
 
     def test_lasso_zero(self):
         p = self.P(self.gpu, (1,), initializer=nn.Constant(0.0))
-        R = nn.Lasso([(1, p)])
+        R = nn.Lasso(1.0)
 
-        np.testing.assert_allclose(R.loss(), np.asarray(0.0))
-
-        R.add_grad()
-        np.testing.assert_allclose(p.grad, np.asarray((0.0, )))
+        np.testing.assert_allclose(R.loss(p.value), np.asarray(0.0))
+        np.testing.assert_allclose(R.grad(p.value), np.asarray((0.0, )))
 
     def test_lasso(self):
         p = self.P(self.gpu, (1,), initializer=nn.Constant(3.5))
-        R = nn.Lasso([(1, p)])
+        R = nn.Lasso(1.0)
 
-        np.testing.assert_allclose(R.loss(), np.asarray(3.5))
-
-        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
-        R.add_grad()
-        np.testing.assert_allclose(p.grad, np.asarray((1.0,)))
+        np.testing.assert_allclose(R.loss(p.value), np.asarray(3.5))
+        np.testing.assert_allclose(R.grad(p.value), np.asarray((1.0,)))
 
     def test_lasso_negative(self):
         p = self.P(self.gpu, (1,), initializer=nn.Constant(-3.5))
-        R = nn.Lasso([(1, p)])
+        R = nn.Lasso(1.0)
 
-        np.testing.assert_allclose(R.loss(), np.asarray(3.5))
-
-        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
-        R.add_grad()
-        np.testing.assert_allclose(p.grad, np.asarray((-1.0,)))
+        np.testing.assert_allclose(R.loss(p.value), np.asarray(3.5))
+        np.testing.assert_allclose(R.grad(p.value), np.asarray((-1.0,)))
 
     def test_elastic_zero(self):
         p = self.P(self.gpu, (1,), initializer=nn.Constant(0.0))
-        R = nn.Elastic([(1, 1, p)])
+        R = nn.Elastic(1.0, 1.0)
 
-        np.testing.assert_allclose(R.loss(), np.asarray(0.0))
-
-        R.add_grad()
-        np.testing.assert_allclose(p.grad, np.asarray(0.0,))
+        np.testing.assert_allclose(R.loss(p.value), np.asarray(0.0))
+        np.testing.assert_allclose(R.grad(p.value), np.asarray(0.0,))
 
     def test_elastic(self):
         p = self.P(self.gpu, (1,), initializer=nn.Constant(3.5))
-        R = nn.Elastic([(1, 1, p)])
+        R = nn.Elastic(1.0, 1.0)
 
-        np.testing.assert_allclose(R.loss(), np.asarray(3.5 ** 2 + 3.5))
+        np.testing.assert_allclose(R.loss(p.value), np.asarray(3.5 ** 2 + 3.5))
 
-        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
-        R.add_grad()
-        np.testing.assert_allclose(p.grad, np.asarray((2 * 3.5 + 1.0,)))
+        np.testing.assert_allclose(R.grad(p.value), np.asarray((2 * 3.5 + 1.0,)))
 
     def test_elastic_negative(self):
         p = self.P(self.gpu, (1,), initializer=nn.Constant(-3.5))
-        R = nn.Elastic([(1, 1, p)])
+        R = nn.Elastic(1.0, 1.0)
 
-        np.testing.assert_allclose(R.loss(), np.asarray(3.5 ** 2 + 3.5))
-
-        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
-        R.add_grad()
-        np.testing.assert_allclose(p.grad, np.asarray((2 * -3.5 - 1.0,)))
+        np.testing.assert_allclose(R.loss(p.value), np.asarray(3.5 ** 2 + 3.5))
+        np.testing.assert_allclose(R.grad(p.value), np.asarray((2 * -3.5 - 1.0,)))
 
 if __name__ == "__main__":
     unittest.main()
