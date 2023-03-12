@@ -34,7 +34,6 @@ class Sequence:
         """
         self.L: Tuple[Module, ...] = tuple(layers)
         self.loss: Loss = loss
-        self.R: Optional[Regularizer] = regularizer
 
     def _forward(self, x: Array) -> Array:
         for _L in self.L:
@@ -73,13 +72,8 @@ class Sequence:
         _y = self._forward(x)
         _loss = self.loss(_y, y)
 
-        if self.R is not None:
-            _loss = _loss + self.R.loss()
-
         self._zero_grad()
         self._backward()
-        if self.R is not None:
-            self.R.add_grad()
         self._update()
 
         return _y, _loss
@@ -109,6 +103,4 @@ class Sequence:
             return _y
 
         _loss = self.loss(_y, y)
-        if self.R is not None:
-            _loss = _loss + self.R.loss()
         return _y, _loss
