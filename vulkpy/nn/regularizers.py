@@ -8,7 +8,6 @@ from typing_extensions import Protocol
 
 from vulkpy import Array
 from .core import Regularizer
-from .parameters import Parameter
 
 __all__ = [
     "Lasso",
