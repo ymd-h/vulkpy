@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Iterable, Optional, Tuple, Union
 
 from vulkpy import Array
-from .core import Module, Loss
+from .core import Module, Loss, Regularizer
 
 
 __all__ = ["Sequence"]
@@ -16,19 +16,24 @@ class Sequence:
     """
     Sequential Model
     """
-    def __init__(self, layers: Iterable[Module], loss: Loss):
+    def __init__(self,
+                 layers: Iterable[Module],
+                 loss: Loss, *,
+                 regularizer: Optional[Regularizer] = None):
         """
         Initialize Sequence
 
         Parameters
         ----------
-        layers : iterable of vulkpy.Module
+        layers : iterable of vulkpy.nn.Module
             Layers to be called sequentially
-        loss : vulkpy.Loss
+        loss : vulkpy.nn.Loss
             Loss layer
+        regularizer : vulkpy.nn.Regularizer, optional
+            Regularizer
         """
         self.L: Tuple[Module, ...] = tuple(layers)
-        self.loss = loss
+        self.loss: Loss = loss
 
     def _forward(self, x: Array) -> Array:
         for _L in self.L:

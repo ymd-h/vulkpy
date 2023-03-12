@@ -1,6 +1,14 @@
 """
 Example 02: Neural Network for Classifying of Iris
+==================================================
 
+Classify 3-class Iris with Sequential Neural Network.
+The hidden layers have units of 128 and 128, respectively.
+
+For options, see `python 02-nn.py -h`.
+
+Notes
+-----
 This example requires scikit-learn (`pip install scikit-learn`)
 """
 import argparse
@@ -15,7 +23,7 @@ from vulkpy.util import enable_debug
 from vulkpy import nn
 
 
-def example02(nepoch, batch_size, opt, lr, *, debug = False):
+def example02(nepoch, batch_size, opt, lr, l1, l2, *, debug = False):
     if debug:
         enable_debug(api_dump=False)
 
@@ -42,14 +50,22 @@ def example02(nepoch, batch_size, opt, lr, *, debug = False):
         "sgd": lambda lr: nn.SGD(lr)
     }[opt](lr)
 
+    R = None
+    if (l1 is not None) and (l2 is not None):
+        R = nn.Elastic(l1, l2)
+    elif (l1 is not None):
+        R = nn.Lasso(l1)
+    elif (l2 is not None):
+        R = nn.Ridge(l2)
+
     # Sequential Model: 4 -> 128 -> 128 -> 3
     net = nn.Sequence(
         [
-            nn.Dense(gpu, 4, 128, w_opt=opt, b_opt=opt),
+            nn.Dense(gpu, 4, 128, w_opt=opt, b_opt=opt, w_reg=R, b_reg=R),
             nn.ReLU(),
-            nn.Dense(gpu, 128, 128, w_opt=opt, b_opt=opt),
+            nn.Dense(gpu, 128, 128, w_opt=opt, b_opt=opt, w_reg=R, b_reg=R),
             nn.ReLU(),
-            nn.Dense(gpu, 128, 3, w_opt=opt, b_opt=opt),
+            nn.Dense(gpu, 128, 3, w_opt=opt, b_opt=opt, w_reg=R, b_reg=R),
             nn.Softmax(),
          ],
         nn.CrossEntropyLoss(reduce="sum")
@@ -97,10 +113,14 @@ if __name__ == "__main__":
     p.add_argument("--debug", action="store_true")
     p.add_argument("--optimizer", choices=["adam", "sgd"], default="adam")
     p.add_argument("--learning-rate", type=float, default=0.0001)
+    p.add_argument("--l1", type=float, help="L1 regularization", default=None)
+    p.add_argument("--l2", type=float, help="L2 regularization", default=None)
     p = p.parse_args()
 
     example02(nepoch=p.nepoch,
               batch_size=p.batch_size,
               opt=p.optimizer,
               lr=p.learning_rate,
+              l1=p.l1,
+              l2=p.l2,
               debug=p.debug)

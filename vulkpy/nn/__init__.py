@@ -41,4 +41,9 @@ from .losses import (
     MSELoss,
     HuberLoss,
 )
+from .regularizers import (
+    Lasso,
+    Ridge,
+    Elastic,
+)
 from .models import Sequence

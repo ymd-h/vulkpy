@@ -20,7 +20,7 @@ Gradients can be computed with `grad()` method
 >>> dx = L.grad()
 """
 from __future__ import annotations
-from typing import cast, Literal
+from typing import cast, Callable, Iterable, Literal, Optional, Tuple
 
 from vulkpy.util import getShader
 from vulkpy.vkarray import Array, DataShape, VectorParams
@@ -32,10 +32,67 @@ __all__ = [
     "SoftmaxCrossEntropyLoss",
     "MSELoss",
     "HuberLoss",
+    "MixLoss",
 ]
 
 
-class CrossEntropyLoss(Loss):
+F = Callable[[Array], Array]
+class ReduceLoss(Loss):
+    def __init__(self, reduce: Literal["mean", "sum"] = "mean"):
+        tmp: Tuple[F, Optional[F]] = {
+            "mean": (lambda _L: _L.mean(axis=0), lambda _dx: 1/_dx.shape[0]),
+            "sum": (lambda _L: _L.sum(axis=0), None),
+        }[reduce]
+        self.reduce, self.scale_backward = tmp
+
+
+    def __call__(self, x: Array, y: Array) -> Array:
+        r"""
+        Compute Loss
+
+        Parameters
+        ----------
+        x : vulkpy.Array
+            Batch input features
+        y : vulkpy.Array
+            Batch labels/targets
+
+        Returns
+        -------
+        loss : vulkpy.Array
+            Loss
+        """
+        self._x = x
+        self._y = y
+        L = self.forward(x, y)
+        return self.reduce(L)
+
+    def grad(self) -> Array:
+        r"""
+        Compute Gradients
+
+        Returns
+        -------
+        dx : vulkpy.Array
+            Batch gradients of dL/dx
+
+        Notes
+        -----
+        This method calculates gradients for the last ``__call__(x, y)``.
+        """
+        dx = self.backward()
+        if self.scale_backward is not None:
+            dx *= self.scale_backward(dx)
+        return dx
+
+    def forward(self, x: Array, y: Array) -> Array:
+        raise NotImplementedError
+
+    def backward(self) -> Array:
+        raise NotImplementedError
+
+
+class CrossEntropyLoss(ReduceLoss):
     """
     Cross Entropy Loss
     """
@@ -192,7 +249,7 @@ class SoftmaxCrossEntropyLoss(CrossEntropyLoss):
         return cast(Array, self._sm._y) - self._y
 
 
-class MSELoss(Loss):
+class MSELoss(ReduceLoss):
     """
     Mean Squared Loss
     """
@@ -263,7 +320,7 @@ class MSELoss(Loss):
         return dx
 
 
-class HuberLoss(Loss):
+class HuberLoss(ReduceLoss):
     """
     Huber Loss
     """
@@ -334,3 +391,68 @@ class HuberLoss(Loss):
         delta = self._x - self._y
         delta.clamp(-1.0, 1.0, inplace=True)
         return delta
+
+
+class MixLoss(Loss):
+    """
+    Mixing Loss class
+    """
+    def __init__(self, losses: Iterable[Tuple[float, Loss]]):
+        """
+        Initializer MixLoss
+
+        Parameters
+        ----------
+        losses : iterable of tuple of float and vulkpy.Loss
+            Sets of coefficient and loss.
+
+        Raises
+        ------
+        ValueError
+            When losses is empty
+        """
+        self.L: Tuple[Tuple[float, Loss], ...] = tuple(losses)
+        if len(self.L) < 1:
+            raise ValueError(f"losses should not empty")
+
+    def __call__(self, x: Array, y: Array) -> Array:
+        r"""
+        Compute Loss
+
+        Parameters
+        ----------
+        x : vulkpy.Array
+            Batch input features
+        y : vulkpy.Array
+            Batch labels/targets
+
+        Returns
+        -------
+        loss : vulkpy.Array
+            Loss
+        """
+        return self._sum(lambda _L: _L(x, y))
+
+    def grad(self) -> Array:
+        r"""
+        Compute Gradients
+
+        Returns
+        -------
+        dx : vulkpy.Array
+            Batch gradients of dL/dx
+
+        Notes
+        -----
+        This method calculates gradients for the last ``__call__(x, y)``.
+        """
+        return self._sum(lambda _L: _L.grad())
+
+    def _sum(self, F: Callable[[Loss], Array]) -> Array:
+        coeff, _L = self.L[0]
+        s = coeff * F(_L)
+
+        for coeff, _L in self.L[1:]:
+            s += coeff * F(_L)
+
+        return s

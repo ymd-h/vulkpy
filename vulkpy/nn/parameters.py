@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Callable, Iterable, Optional
 
 from vulkpy.vkarray import GPU, Array, zeros
-from .core import Optimizer, OptimizerState
+from .core import Optimizer, OptimizerState, Regularizer
 from .optimizers import Adam
 
 
@@ -20,7 +20,8 @@ class Parameter:
                  shape: Iterable[int],
                  trainable: bool = True,
                  opt: Optional[Optimizer] = None,
-                 initializer: Optional[Callable[[GPU, Iterable[int]], Array]]=None):
+                 initializer: Optional[Callable[[GPU, Iterable[int]], Array]]=None,
+                 regularizer: Optional[Regularizer] = None):
         """
         Initialize Parameter
 
@@ -36,6 +37,8 @@ class Parameter:
             Optimizer. If ``None`` (default), ``vulkpy.nn.Adam`` is used.
         initializer : callable, optional
             Initializer function. If ``None`` (default), initialized with ``0.0``.
+        regularizer : vulkpy.nn.Regularizer, optional
+            Regularizer. If ``None`` (default), no regularization is applied.
         """
         if initializer is None:
             initializer = zeros
@@ -49,6 +52,8 @@ class Parameter:
             if opt is None:
                 opt = Adam(gpu)
             self.opt_state = opt.init_state(shape)
+
+        self.R: Optional[Regularizer] = regularizer
 
     def is_trainable(self) -> bool:
         """
@@ -88,3 +93,24 @@ class Parameter:
         """
         if self.grad is not None:
             self.value += self.opt_state.grad2diff(self.grad)
+
+    def regular_loss(self) -> Array:
+        """
+        Regularization Loss
+
+        Returns
+        -------
+        vulkpy.nn.Array
+            Loss
+        """
+        if self.R is not None:
+            return self.R.loss(self.value)
+
+        return zeros(self.value._gpu, shape=(1,))
+
+    def regular_grad(self):
+        """
+        Add Regularization Gradients
+        """
+        if self.R is not None:
+            self.add_grad(self.R.grad(self.value))
