@@ -381,7 +381,7 @@ class HuberLoss(ReduceLoss):
         -----
         .. math::
 
-             dx = clamp(x - y, -1.0, 1.0)
+             dx = \text{clamp}(x - y, -1.0, 1.0)
 
         .. warning::
 
