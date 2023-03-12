@@ -142,8 +142,8 @@ class Elastic(Regularizer):
         """
         Initialize Elastic Regularizer
 
-        Paramters
-        ---------
+        Parameters
+        ----------
         L1 : float, optional
             L1 Coefficient
         L2 : float, optional
