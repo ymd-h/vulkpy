@@ -469,6 +469,70 @@ class TestLosses(unittest.TestCase):
         np.testing.assert_allclose(L, [5.84])
         np.testing.assert_allclose(dx, [[-1.0, -0.8], [1.0, 0.2]])
 
+class TestRegularizer(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from vulkpy.nn.parameters import Parameter
+        cls.gpu = vk.GPU()
+        cls.P = Parameter
+
+    def test_ridge_zero(self):
+        p = self.P(self.gpu, (1,), initializer=nn.Constant(0.0))
+        R = nn.Ridge([(1, p)])
+
+        np.testing.assert_allclose(R.loss(), np.asarray(0.0))
+
+        R.add_grad()
+        np.testing.assert_allclose(p.grad, np.asarray((0.0, )))
+
+    def test_ridge(self):
+        p = self.P(self.gpu, (1,), initializer=nn.Constant(3.5))
+        R = nn.Ridge([(1, p)])
+
+        np.testing.assert_allclose(R.loss(), np.asarray(3.5 ** 2))
+
+        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
+        R.add_grad()
+        np.testing.assert_allclose(p.grad, np.asarray((2 * 3.5,)))
+
+    def test_ridge_negative(self):
+        p = self.P(self.gpu, (1,), initializer=nn.Constant(-3.5))
+        R = nn.Ridge([(1, p)])
+
+        np.testing.assert_allclose(R.loss(), np.asarray((-3.5) ** 2))
+
+        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
+        R.add_grad()
+        np.testing.assert_allclose(p.grad, np.asarray((2 * -3.5,)))
+
+    def test_lasso_zero(self):
+        p = self.P(self.gpu, (1,), initializer=nn.Constant(0.0))
+        R = nn.Lasso([(1, p)])
+
+        np.testing.assert_allclose(R.loss(), np.asarray(0.0))
+
+        R.add_grad()
+        np.testing.assert_allclose(p.grad, np.asarray((0.0, )))
+
+    def test_lasso(self):
+        p = self.P(self.gpu, (1,), initializer=nn.Constant(3.5))
+        R = nn.Lasso([(1, p)])
+
+        np.testing.assert_allclose(R.loss(), np.asarray(3.5))
+
+        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
+        R.add_grad()
+        np.testing.assert_allclose(p.grad, np.asarray((1.0,)))
+
+    def test_lasso_negative(self):
+        p = self.P(self.gpu, (1,), initializer=nn.Constant(-3.5))
+        R = nn.Lasso([(1, p)])
+
+        np.testing.assert_allclose(R.loss(), np.asarray(3.5))
+
+        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
+        R.add_grad()
+        np.testing.assert_allclose(p.grad, np.asarray((-1.0,)))
 
 if __name__ == "__main__":
     unittest.main()
