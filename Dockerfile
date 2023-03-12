@@ -46,6 +46,17 @@ RUN coverage combine && \
     mkdir -p /coverage/html && coverage html -d /coverage/html
 
 
+FROM vulkpy-install AS vulkpy-example
+WORKDIR /vulkpy-ci/example
+RUN --mount=type=cache,target=/root/.cache/pip pip install scikit-learn
+COPY example .
+RUN python 00-arithmetic.py && \
+    python 01-random.py && \
+    python 02-nn.py --debug --optimizer sgd --nepoch 1 && \
+    python 02-nn.py --debug --optimizer adam  --nepoch 1 && \
+    touch /vulkpy-ci/example/example-ok
+
+
 FROM vulkpy-env AS vulkpy-build
 WORKDIR /build
 RUN --mount=type=cache,target=/root/.cache/pip pip install wheel
@@ -79,4 +90,5 @@ COPY --from=vulkpy-combine /coverage/html /coverage/html
 COPY --from=vulkpy-combine /coverage/summary.md /coverage/summary.md
 COPY --from=vulkpy-build /dist /dist
 COPY --from=vulkpy-doc /html /html
+COPY --from=vulkpy-example /vulkpy-ci/example/example-ok /example/example-ok
 CMD [""]
