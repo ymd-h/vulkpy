@@ -73,8 +73,15 @@ class _SumRegularizer(Regularizer):
             _R.add_grad()
 
 class Ridge(_SumRegularizer):
-    """
+    r"""
     Ridge (L2) Regularization
+
+    Notes
+    -----
+    .. math::
+
+         L = coeff \times \sum_i |W_i|^2\
+         dL/dW_i = 2 coeff \times W_i
     """
     def __init__(self, params: Iterable[Tuple[float, Parameter]]):
         """
@@ -95,8 +102,15 @@ class Ridge(_SumRegularizer):
             raise ValueError(f"params must not be empty.")
 
 class Lasso(_SumRegularizer):
-    """
+    r"""
     Lasso (L1) Regularization
+
+    Notes
+    -----
+    .. math::
+
+         L = coeff \times \sum_i |W_i|\
+         dL/dW_i = coeff \times sign(W_i)
     """
     def __init__(self, params: Iterable[Tuple[float, Parameter]]):
         """
