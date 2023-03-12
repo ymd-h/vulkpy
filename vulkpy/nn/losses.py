@@ -355,7 +355,7 @@ class HuberLoss(ReduceLoss):
         -----
         .. math::
 
-             L = 0.5 Reduce _i min(|x - y|^2, |x - y|)
+             L = 0.5 Reduce _i \min(|x - y|^2, |x - y|)
 
         .. warning::
 
