@@ -64,9 +64,9 @@ class Sequence:
 
         Returns
         -------
-        vulkpy.Array
+        y : vulkpy.Array
             Predicted Labels/Targets
-        vulkpy.Array
+        loss : vulkpy.Array
             Loss
         """
         _y = self._forward(x)
@@ -93,9 +93,9 @@ class Sequence:
 
         Returns
         -------
-        vulkpy.Array
+        pred_y : vulkpy.Array
             Predicted Labels/Targets
-        vulkpy.Array
+        loss : vulkpy.Array
             Loss. Return only if ``y`` is specified.
         """
         _y = self._forward(x)
