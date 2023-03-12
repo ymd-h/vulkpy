@@ -49,6 +49,9 @@ class SGDState(OptimizerState):
         return (-self.opt.lr) * grad
 
 class SGD(Optimizer):
+    """
+    SGD Optimizer
+    """
     def __init__(self, lr: float):
         """
         Stachostic Gradient Decent Optimizer
@@ -139,6 +142,9 @@ class AdamState(OptimizerState):
 
 
 class Adam(Optimizer):
+    """
+    Adam Optimizer
+    """
     def __init__(self,
                  gpu: GPU, *,
                  lr: float = 0.001,
