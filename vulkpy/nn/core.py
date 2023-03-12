@@ -28,10 +28,10 @@ class Loss:
         raise NotImplementedError
 
 class Regularizer:
-    def loss(self) -> Array:
+    def loss(self, param: Array) -> Array:
         raise NotImplementedError
 
-    def add_grad(self):
+    def grad(self, param: Array) -> Array:
         raise NotImplementedError
 
 

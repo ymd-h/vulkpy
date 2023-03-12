@@ -7,7 +7,7 @@ from typing import Callable, Iterable, Optional
 
 from vulkpy.util import getShader
 from vulkpy.vkarray import GPU, Array, DataShape, BatchAffineParams
-from .core import Module, Optimizer
+from .core import Module, Optimizer, Regularizer
 from .parameters import Parameter
 from .initializers import HeNormal
 
@@ -25,7 +25,9 @@ class Dense(Module):
                  w_init: Optional[Callable[[GPU, Iterable[int]], Array]] = None,
                  b_init: Optional[Callable[[GPU, Iterable[int]], Array]] = None,
                  w_opt: Optional[Optimizer] = None,
-                 b_opt: Optional[Optimizer] = None):
+                 b_opt: Optional[Optimizer] = None,
+                 w_reg: Optional[Regularizer] = None,
+                 b_reg: Optional[Regularizer] = None):
         """
         Initialize Dense
 
@@ -49,6 +51,10 @@ class Dense(Module):
         b_opt : vulkpy.nn.Optimizer, optional
             Bias Optimizer. If ``None`` (default),
             ``vulkpy.nn.Adam`` is used.
+        w_reg : vulkpy.nn.Regularizer, optional
+            Weight Regularizer.
+        b_reg : vulkpy.nn.Regularizer, optional
+            Bias Regularizer
         """
         self.input_dim = int(input_dim)
         self.output_dim = int(output_dim)
@@ -57,9 +63,9 @@ class Dense(Module):
             w_init = HeNormal(gpu, self.input_dim)
 
         self.w = Parameter(gpu, shape=(self.output_dim, self.input_dim),
-                           initializer=w_init, opt=w_opt)
+                           initializer=w_init, opt=w_opt, regularizer=w_reg)
         self.b = Parameter(gpu, shape=(self.output_dim,),
-                           initializer=b_init, opt=b_opt)
+                           initializer=b_init, opt=b_opt, regularizer=b_reg)
 
     def forward(self, x: Array) -> Array:
         r"""
