@@ -534,5 +534,34 @@ class TestRegularizer(unittest.TestCase):
         R.add_grad()
         np.testing.assert_allclose(p.grad, np.asarray((-1.0,)))
 
+    def test_elastic_zero(self):
+        p = self.P(self.gpu, (1,), initializer=nn.Constant(0.0))
+        R = nn.Elastic([(1, 1, p)])
+
+        np.testing.assert_allclose(R.loss(), np.asarray(0.0))
+
+        R.add_grad()
+        np.testing.assert_allclose(p.grad, np.asarray(0.0,))
+
+    def test_elastic(self):
+        p = self.P(self.gpu, (1,), initializer=nn.Constant(3.5))
+        R = nn.Elastic([(1, 1, p)])
+
+        np.testing.assert_allclose(R.loss(), np.asarray(3.5 ** 2 + 3.5))
+
+        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
+        R.add_grad()
+        np.testing.assert_allclose(p.grad, np.asarray((2 * 3.5 + 1.0,)))
+
+    def test_elastic_negative(self):
+        p = self.P(self.gpu, (1,), initializer=nn.Constant(-3.5))
+        R = nn.Elastic([(1, 1, p)])
+
+        np.testing.assert_allclose(R.loss(), np.asarray(3.5 ** 2 + 3.5))
+
+        np.testing.assert_allclose(p.grad, np.asarray((0.0,)))
+        R.add_grad()
+        np.testing.assert_allclose(p.grad, np.asarray((2 * -3.5 - 1.0,)))
+
 if __name__ == "__main__":
     unittest.main()
