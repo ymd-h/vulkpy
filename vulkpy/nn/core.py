@@ -7,8 +7,9 @@ from vulkpy.vkarray import GPU, Array
 __all__ = [
     "OptimizerState",
     "Optimizer",
-    "Module",
+    "Regularizer",
     "Loss",
+    "Module",
 ]
 
 
