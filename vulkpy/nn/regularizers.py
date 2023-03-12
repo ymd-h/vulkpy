@@ -28,7 +28,7 @@ class Lasso(Regularizer):
     -----
     .. math::
 
-         L = coeff \times \sum_i |W_i|\
+         L = coeff \times \sum_i |W_i|\\
          dL/dW_i = coeff \times sign(W_i)
     """
     def __init__(self, coeff: float = 1.0):
@@ -85,7 +85,7 @@ class Ridge(Regularizer):
     -----
     .. math::
 
-         L = coeff \times \sum_i |W_i|^2\
+         L = coeff \times \sum_i |W_i|^2\\
          dL/dW_i = 2 coeff \times W_i
     """
     def __init__(self, coeff: float = 1.0):
