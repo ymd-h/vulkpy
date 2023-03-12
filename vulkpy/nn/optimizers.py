@@ -51,10 +51,14 @@ class SGDState(OptimizerState):
 class SGD(Optimizer):
     """
     SGD Optimizer
+
+    See Also
+    --------
+    vulkpy.nn.Adam
     """
     def __init__(self, lr: float):
         """
-        Stachostic Gradient Decent Optimizer
+        Initialize Stachostic Gradient Decent (SGD) Optimizer
 
         Use constant learning rate
 
@@ -144,6 +148,10 @@ class AdamState(OptimizerState):
 class Adam(Optimizer):
     """
     Adam Optimizer
+
+    See Also
+    --------
+    vulkpy.nn.SGD
     """
     def __init__(self,
                  gpu: GPU, *,
@@ -152,7 +160,7 @@ class Adam(Optimizer):
                  beta2: float = 0.999,
                  eps: float = 1e-8):
         """
-        Adam Optimizer
+        Initialize Adam Optimizer
 
         Parameters
         ----------
