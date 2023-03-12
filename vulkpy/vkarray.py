@@ -587,6 +587,7 @@ class Array(_GPUArray):
         Parameters
         ----------
         other : Array or float
+            Other value
         inplace : bool
             If ``True``, update inplace, otherwise returns new array.
             Default value is ``False``.
@@ -614,6 +615,7 @@ class Array(_GPUArray):
         Parameters
         ----------
         other : Array or float
+            Other value
         inplace : bool
             If ``True``, update inplace, otherwise returns new array.
             Default value is ``False``.
