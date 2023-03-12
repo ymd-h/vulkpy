@@ -21,7 +21,7 @@ COPY vulkpy vulkpy
 RUN --mount=type=cache,target=/root/.cache/pip pip install .[test] && \
     mypy -p vulkpy && \
     rm -rf vulkpy && \
-    rm setup.py pyproject.toml MANIFEST.in
+    rm setup.py pyproject.toml MANIFEST.in mypy.ini
 
 
 FROM vulkpy-install AS vulkpy-test
