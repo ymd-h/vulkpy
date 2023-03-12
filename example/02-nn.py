@@ -42,14 +42,16 @@ def example02(nepoch, batch_size, opt, lr, *, debug = False):
         "sgd": lambda lr: nn.SGD(lr)
     }[opt](lr)
 
+    R = nn.Elastic(L1=0.01, L2=0.01)
+
     # Sequential Model: 4 -> 128 -> 128 -> 3
     net = nn.Sequence(
         [
-            nn.Dense(gpu, 4, 128, w_opt=opt, b_opt=opt),
+            nn.Dense(gpu, 4, 128, w_opt=opt, b_opt=opt, w_reg=R, b_reg=R),
             nn.ReLU(),
-            nn.Dense(gpu, 128, 128, w_opt=opt, b_opt=opt),
+            nn.Dense(gpu, 128, 128, w_opt=opt, b_opt=opt, w_reg=R, b_reg=R),
             nn.ReLU(),
-            nn.Dense(gpu, 128, 3, w_opt=opt, b_opt=opt),
+            nn.Dense(gpu, 128, 3, w_opt=opt, b_opt=opt, w_reg=R, b_reg=R),
             nn.Softmax(),
          ],
         nn.CrossEntropyLoss(reduce="sum")
