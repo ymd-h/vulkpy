@@ -104,7 +104,8 @@ print(c)
   * Models
     * [x] `Sequance`
     * [ ] ...
-  * [ ] L1/L2 regularization
+  * [x] Regularization
+    * `Lasso(coeff=1.0)`, `Ridge(coeff=1.0)`, `Elastic(L1=1.0, L2=1.0)`
   * [ ] ONNX support
   * [ ] Custom user layer with automatic `backward()` definition.
   * [ ] Define by Run API
