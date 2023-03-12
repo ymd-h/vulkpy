@@ -20,6 +20,20 @@ class Optimizer:
     def init_state(self, shape: Iterable[int]) -> OptimizerState:
         raise NotImplementedError
 
+class Loss:
+    def __call__(self, x: Array, y: Array) -> Array:
+        raise NotImplementedError
+
+    def grad(self) -> Array:
+        raise NotImplementedError
+
+class Regularizer:
+    def loss(self) -> Array:
+        raise NotImplementedError
+
+    def add_grad(self):
+        raise NotImplementedError
+
 
 class Module:
     def __init__(self):
@@ -72,11 +86,3 @@ class Module:
         Update parameters based on accumulated gradients
         """
         pass
-
-
-class Loss:
-    def __call__(self, x: Array, y: Array) -> Array:
-        raise NotImplementedError
-
-    def grad(self) -> Array:
-        raise NotImplementedError

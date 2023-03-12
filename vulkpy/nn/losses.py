@@ -396,8 +396,6 @@ class HuberLoss(ReduceLoss):
 class MixLoss(Loss):
     """
     Mixing Loss class
-
-    This class is designated for L1/L2 regularization.
     """
     def __init__(self, losses: Iterable[Tuple[float, Loss]]):
         """
