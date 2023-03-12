@@ -98,7 +98,7 @@ class Lasso(_SumRegularizer):
     """
     Lasso (L1) Regularization
     """
-    def __init__(self, params: Iterable[Parameter]):
+    def __init__(self, params: Iterable[Tuple[float, Parameter]]):
         """
         Initialize Lasso Regularizer
 
