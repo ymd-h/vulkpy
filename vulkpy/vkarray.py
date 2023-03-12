@@ -68,6 +68,23 @@ logger = wblog.getLogger()
 class GPU:
     """
     GPU instance
+
+    Examples
+    --------
+    >>> import vulkpy as vk
+    >>> gpu = vk.GPU()
+
+    If you have multiple GPUs, you can specify GPU index
+
+    >>> gpu1 = vk.GPU(1)
+
+    GPU equality is checked by GPU index
+
+    >>> gpu == gpu1
+    False
+
+    >>> gpu == vk.GPU()
+    True
     """
     def __init__(self, idx: int=0, priority: float=0.0):
         """
