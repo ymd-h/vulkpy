@@ -38,7 +38,7 @@ def example02(nepoch, batch_size, opt, lr, *, debug = False):
     assert train_y.shape[1] == test_y.shape[1] == 3
 
     opt = {
-        "adam": lambda lr: nn.Adam(gpu, lr),
+        "adam": lambda lr: nn.Adam(gpu, lr=lr),
         "sgd": lambda lr: nn.SGD(lr)
     }[opt](lr)
 
