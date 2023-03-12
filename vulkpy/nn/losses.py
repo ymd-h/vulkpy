@@ -308,7 +308,7 @@ class MSELoss(ReduceLoss):
         -----
         .. math::
 
-             dx = 2 * (x - y)
+             dx = 2 (x - y)
 
         .. warning::
 
