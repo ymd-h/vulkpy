@@ -1070,8 +1070,10 @@ class Array(_GPUArray):
 
         Parameters
         ----------
-        min, max : Array or float
-            Minimum/Maximum value
+        min : Array or float
+            Minimum value
+        max : Array or float
+            Maximum value
         inplace : bool
             If ``True``, update inplace, otherwise returns new array.
             Default value is ``False``.
