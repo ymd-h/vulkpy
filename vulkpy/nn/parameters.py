@@ -106,7 +106,7 @@ class Parameter:
         if self.R is not None:
             return self.R.loss(self.value)
 
-        return zeros(self.value.gpu, shape=(1,))
+        return zeros(self.value._gpu, shape=(1,))
 
     def regular_grad(self):
         """
