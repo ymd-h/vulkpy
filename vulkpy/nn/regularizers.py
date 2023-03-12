@@ -137,6 +137,13 @@ class Ridge(Regularizer):
 class Elastic(Regularizer):
     """
     Elastic (L1 + L2) Regularization
+
+    Notes
+    -----
+    .. math::
+
+         L = \alpha \sum _i |W_i| + \beta \sum _i |W_i|^2\\
+         dL/dW_i = \alpha sign(W_i) + 2 \beta W_i
     """
     def __init__(self, L1: float = 1.0, L2: float = 1.0):
         """
