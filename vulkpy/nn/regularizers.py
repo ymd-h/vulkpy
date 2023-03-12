@@ -6,6 +6,8 @@ from __future__ import annotations
 from typing import Iterable, Tuple
 from typing_extensions import Protocol
 
+import wblog
+
 from vulkpy import Array
 from .core import Regularizer
 
@@ -14,6 +16,9 @@ __all__ = [
     "Ridge",
     "Elastic",
 ]
+
+logger = wblog.getLogger()
+
 
 class Lasso(Regularizer):
     r"""
@@ -35,6 +40,7 @@ class Lasso(Regularizer):
         coeff : float, optional
             L1 Coefficient
         """
+        logger.debug(f"Lasso(L1={coeff})")
         self.coeff: float = coeff
 
     def loss(self, param: Array) -> Array:
@@ -91,6 +97,7 @@ class Ridge(Regularizer):
         coef : float, optional
             L2 Coefficient
         """
+        logger.debug(f"Ridge(L2={coeff})")
         self.coeff: float = coeff
 
     def loss(self, param: Array) -> Array:
