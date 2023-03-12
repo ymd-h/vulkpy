@@ -28,7 +28,7 @@ class _Ridge1(Regularizer):
         return L
 
     def add_grad(self):
-        self.param.add_grad(self.coeff * self.param.value)
+        self.param.add_grad(2 * self.coeff * self.param.value)
 
 class _Lasso1(Regularizer):
     def __init__(self, param: Parameter, coeff: float = 1.0):
