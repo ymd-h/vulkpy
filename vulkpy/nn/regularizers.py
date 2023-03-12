@@ -46,7 +46,7 @@ class _Lasso1(Regularizer):
 
 class SumRegularizerProtocol(Protocol):
     @property
-    def R(self) -> Tuple[Regularizer]: ...
+    def R(self) -> Tuple[Regularizer, ...]: ...
 
 class _SumRegularizer(Regularizer):
     def loss(self: SumRegularizerProtocol) -> Array:
