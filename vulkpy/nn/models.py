@@ -18,7 +18,7 @@ class Sequence:
     """
     def __init__(self,
                  layers: Iterable[Module],
-                 loss: Loss,
+                 loss: Loss, *,
                  regularizer: Optional[Regularizer] = None):
         """
         Initialize Sequence
