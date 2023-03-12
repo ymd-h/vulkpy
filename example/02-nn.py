@@ -1,6 +1,14 @@
 """
 Example 02: Neural Network for Classifying of Iris
+==================================================
 
+Classify 3-class Iris with Sequential Neural Network.
+The hidden layers have units of 128 and 128, respectively.
+
+For options, see `python 02-nn.py -h`.
+
+Notes
+-----
 This example requires scikit-learn (`pip install scikit-learn`)
 """
 import argparse
