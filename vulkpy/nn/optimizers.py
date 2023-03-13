@@ -181,7 +181,8 @@ class Adam(Optimizer):
 
     .. math::
 
-         \theta _t = \theta _{t-1} - \text{lr} \hat{m}_t/(\sqrt{\hat{v}_t} + \epsilon)
+         \theta _t = \theta _{t-1} - \text{lr} \times
+         \hat{m}_t/(\sqrt{\hat{v}_t} + \epsilon)
 
 
     References
