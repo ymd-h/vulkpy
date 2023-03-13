@@ -195,7 +195,6 @@ class Adam(Optimizer):
     >>> import vulkpy.vk
     >>> from vulkpy import nn
     >>> gpu = vk.GPU()
-
     >>> adam = nn.Adam(gpu, lr=0.001, beta1=0.9, beta2=0.999)
     """
     def __init__(self,
