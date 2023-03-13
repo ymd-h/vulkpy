@@ -130,7 +130,7 @@ class CrossEntropyLoss(ReduceLoss):
         -----
         .. math::
 
-             L = - Reduce _i ( y_i \times \log (x_i) )
+             L = - f _{\text{reduce}} ( y_i \log (x_i) )
 
         .. warning::
 
@@ -217,7 +217,7 @@ class SoftmaxCrossEntropyLoss(CrossEntropyLoss):
         -----
         .. math::
 
-             L = - Reduce _i (y_i \times \log (softmax(x) _i))
+             L = - f _{\text{reduce}} (y_i \log (softmax(x) _i))
 
         .. warning::
 
@@ -284,7 +284,7 @@ class MSELoss(ReduceLoss):
         -----
         .. math::
 
-             L = Reduce _i |x - y|^2
+             L = f _{\text{reduce}} |x - y|^2
 
         .. warning::
 
@@ -355,7 +355,7 @@ class HuberLoss(ReduceLoss):
         -----
         .. math::
 
-             L = 0.5 Reduce _i \min(|x - y|^2, |x - y|)
+             L = 0.5 f _{\text{reduce}} \min(|x - y|^2, |x - y|)
 
         .. warning::
 
