@@ -54,7 +54,7 @@ class SGD(Optimizer):
 
     See Also
     --------
-    vulkpy.nn.Adam
+    vulkpy.nn.Adam : Adam optimizer
     """
     def __init__(self, lr: float):
         """
@@ -146,12 +146,53 @@ class AdamState(OptimizerState):
 
 
 class Adam(Optimizer):
-    """
+    r"""
     Adam Optimizer
 
     See Also
     --------
-    vulkpy.nn.SGD
+    vulkpy.nn.SGD : SGD optimizer
+
+    Notes
+    -----
+    This class implement Adam [adam1]_.
+    The algorithm utilizes moving averages of the 1st and 2nd order moment.
+    The 1st (:math:`m_t`) and 2nd (:math:`v_t`) order moment are updated as follows;
+
+    .. math::
+
+         m_t = \beta _1 m_{t-1} + (1 - \beta _1) g_t\\
+         v_t = \beta _2 v_{t-1} + (1 - \beta _2) g_t ^2
+
+    where :math:`g_t` is gradient.
+
+    To mitigate initial underestimation,
+    corrected :math:`\hat{m_t}` and :math:`\hat{v_t}` are used for parameter update.
+
+    .. math::
+
+         \hat{m_t} = m_t / (1 - \beta _1 ^t)\\
+         \hat{v_t} = v_t / (1 - \beta _2 ^t)
+
+    Finally, parameter :math:`\theta _t` is updated by
+
+    .. math::
+
+         \theta _t = \theta _{t-1} - \text{lr} \hat{m_t}/(\sqrt{\hat{v_t}} + \epsilon)
+
+
+    References
+    ----------
+    .. [adam1] D. Kingma and J. Ba, "Adam: A Method for Stochastic Optimization",
+       ICLR (Poster) 2015, https://dblp.org/rec/journals/corr/KingmaB14.html
+
+    Examples
+    --------
+    >>> import vulkpy.vk
+    >>> from vulkpy import nn
+    >>> gpu = vk.GPU()
+
+    >>> adam = nn.Adam(gpu, lr=0.001, beta1=0.9, beta2=0.999)
     """
     def __init__(self,
                  gpu: GPU, *,
