@@ -135,7 +135,7 @@ class Ridge(Regularizer):
         return (2 * self.coeff) * param
 
 class Elastic(Regularizer):
-    """
+    r"""
     Elastic (L1 + L2) Regularization
 
     Notes
