@@ -174,14 +174,14 @@ class Adam(Optimizer):
 
     .. math::
 
-         \hat{m_t} = m_t / (1 - \beta _1 ^t)\\
-         \hat{v_t} = v_t / (1 - \beta _2 ^t)
+         \hat{m}_t = m_t / (1 - \beta _1 ^t)\\
+         \hat{v}_t = v_t / (1 - \beta _2 ^t)
 
     Finally, parameter :math:`\theta _t` is updated by
 
     .. math::
 
-         \theta _t = \theta _{t-1} - \text{lr} \hat{m_t}/(\sqrt{\hat{v_t}} + \epsilon)
+         \theta _t = \theta _{t-1} - \text{lr} \hat{m}_t/(\sqrt{\hat{v}_t} + \epsilon)
 
 
     References
