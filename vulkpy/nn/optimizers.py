@@ -21,9 +21,12 @@ logger = getLogger()
 
 
 class SGDState(OptimizerState):
+    """
+    Optimizer State for SGD
+    """
     def __init__(self, opt: SGD):
         """
-        Optimizer State for SGD
+        Initialize SGD state
 
         Parameters
         ----------
@@ -52,6 +55,8 @@ class SGD(Optimizer):
     """
     SGD Optimizer
 
+    Use constant learning rate
+
     See Also
     --------
     vulkpy.nn.Adam : Adam optimizer
@@ -59,8 +64,6 @@ class SGD(Optimizer):
     def __init__(self, lr: float):
         """
         Initialize Stachostic Gradient Decent (SGD) Optimizer
-
-        Use constant learning rate
 
         Parameters
         ----------
