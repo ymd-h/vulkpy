@@ -191,6 +191,11 @@ class _GPUArray(Resource):
 class U32Array(_GPUArray):
     """
     GPU Array of uint (32bit) for shape or indices
+
+    Warnings
+    --------
+    U32Array doesn't support any mathematical operation.
+    This class is designed for indexing and class label.
     """
     def __init__(self, gpu: GPU, *,
                  data: Optional[Iterable[int]] = None,
