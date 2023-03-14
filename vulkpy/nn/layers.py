@@ -17,8 +17,9 @@ __all__ = ["Dense", "ReLU", "Sigmoid", "Softmax"]
 
 class Dense(Module):
     """
-    Dense
+    Fully connected Dense Layer
     """
+
     _batch_affine = getShader("batch_affine.spv")
 
     def __init__(self, gpu: GPU, input_dim: int, output_dim: int, *,
