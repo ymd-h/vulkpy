@@ -192,6 +192,10 @@ class U32Array(_GPUArray):
     """
     GPU Array of uint (32bit) for shape or indices
 
+    See Also
+    --------
+    vulkpy.Array : float (32bit) array supporing mathematical operation
+
     Warnings
     --------
     U32Array doesn't support any mathematical operation.
@@ -200,6 +204,22 @@ class U32Array(_GPUArray):
     def __init__(self, gpu: GPU, *,
                  data: Optional[Iterable[int]] = None,
                  shape: Optional[Iterable[int]] = None):
+        """
+        U32Array(gpu, *, data=None, shape=None)
+
+        Parameters
+        ----------
+        data : iterable of ints, optional
+            Data to be copied.
+        shape : iterable of ints, optional
+            Shape for uninitialized array.
+            If ``data`` is not ``None``, ``shape`` is ignored.
+
+        Raises
+        ------
+        ValueError
+            If neither ``data`` nor ``shape`` is specified.
+        """
         super().__init__(gpu)
 
         if data is not None:
