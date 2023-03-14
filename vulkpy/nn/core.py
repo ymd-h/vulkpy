@@ -1,3 +1,9 @@
+"""
+Neural Network Core Module (:mod:`vulkpy.nn.core`)
+==================================================
+
+This module provides abstract base classes for Neural Network.
+"""
 from __future__ import annotations
 from typing import Iterable
 
