@@ -205,7 +205,7 @@ class U32Array(_GPUArray):
                  data: Optional[Iterable[int]] = None,
                  shape: Optional[Iterable[int]] = None):
         """
-        U32Array(gpu, *, data=None, shape=None)
+        Initialize U32Array
 
         Parameters
         ----------

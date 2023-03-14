@@ -39,6 +39,7 @@ napoleon_use_admonition_for_references = True
 
 numpydoc_show_class_members=False
 
+autodoc_class_signature = "separated"
 autodoc_default_options = {
     'member-order': 'bysource',
     'class-doc-from':'both',
