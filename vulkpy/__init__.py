@@ -2,7 +2,7 @@
 vulkpy: GPGPU array on Vulkan
 =============================
 
-vulkpy provides GPU computations.
+vulkpy provides GPGPU computations.
 
 See Also
 --------
