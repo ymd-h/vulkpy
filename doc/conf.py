@@ -42,7 +42,7 @@ numpydoc_show_class_members=False
 autodoc_class_signature = "separated"
 autodoc_default_options = {
     'member-order': 'bysource',
-    'class-doc-from':'both',
+    'class-doc-from':'class',
     'exclude-members': '__dict__, __weakref__, __module__, __new__, __reduce__, __setstate__',
 }
 
