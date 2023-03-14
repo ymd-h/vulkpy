@@ -29,7 +29,7 @@ class Lasso(Regularizer):
     .. math::
 
          L = \text{coeff} \times \sum_i |W_i|\\
-         dL/dW_i = \text{coeff} \times sign(W_i)
+         dL/dW_i = \text{coeff} \times \rm{sign}(W_i)
     """
     def __init__(self, coeff: float = 1.0):
         """
@@ -143,7 +143,7 @@ class Elastic(Regularizer):
     .. math::
 
          L = \alpha \sum _i |W_i| + \beta \sum _i |W_i|^2\\
-         dL/dW_i = \alpha sign(W_i) + 2 \beta W_i
+         dL/dW_i = \alpha \rm{sign}(W_i) + 2 \beta W_i
     """
     def __init__(self, L1: float = 1.0, L2: float = 1.0):
         """
