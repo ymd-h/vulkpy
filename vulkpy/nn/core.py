@@ -14,31 +14,185 @@ __all__ = [
 
 
 class OptimizerState:
+    """
+    Abstract base class for Optimizer State
+
+    See Also
+    --------
+    vulkpy.nn.core.Optimizer : Optimizer
+    vulkpy.nn.SGDState : OptimizerState subclass for SGD
+    vulkpy.nn.AdamState : OptimizerState subclass for Adam
+
+    Notes
+    -----
+    Mutable per parameter values are stored at this class instance,
+    although static global parameters (e.g. learning rate) are
+    stored at Optimizer class.
+    """
     def grad2diff(self, grad: Array) -> Array:
+        """
+        Compute update diff from gradient
+
+        Parameters
+        ----------
+        grad : vulkpy.Array
+            Accumulated gradient
+
+        Returns
+        -------
+        diff : vulkpy.Array
+            Update diff. (`v += opt_state.grad2diff(grad)`)
+
+        Notes
+        -----
+        Subclass must implement this method.
+        """
         raise NotImplementedError
 
 class Optimizer:
+    """
+    Abstract base class for Optimizer
+
+    See Also
+    --------
+    vulkpy.nn.core.OptimizerState : Optimizer State
+    vulkpy.nn.SGD : Optimizer subclass for SGD
+    vulkpy.nn.Adam : Optimizer subclass for Adam
+
+    Notes
+    -----
+    Mutable per parameter values are stored at OptimizerState class instance,
+    although static global parameters (e.g. learning rate) are
+    stored at this class.
+    """
     def init_state(self, shape: Iterable[int]) -> OptimizerState:
+        """
+        Create OptimizerState
+
+        Parameters
+        ----------
+        shape : iterable of ints
+            Parameter Shape
+
+        Returns
+        -------
+        opt_state : vulkpy.nn.core.OptimizerState
+            Optimizer State
+
+        Notes
+        -----
+        Subclass must implement this method.
+        """
         raise NotImplementedError
 
 class Loss:
+    """
+    Abstract base class for Loss
+
+    See Also
+    --------
+    vulkpy.nn.CrossEntropy : Cross Entropy Loss
+    vulkpy.nn.SoftmaxCrossEntropy : Softmax Cross Entropy Loss
+    vulkpy.nn.HuberLoss : Huber Loss
+    vulkpy.nn.MSELoss : MSE Loss
+    vulkpy.nn.MixLoss : Mixing Loss
+    """
     def __call__(self, x: Array, y: Array) -> Array:
+        """
+        Compute Loss
+
+        Parameters
+        ----------
+        x : vulkpy.Array
+            Input features
+        y : vulkpy.Array
+            Output target/label
+
+        Returns
+        -------
+        loss : vulkpy.Array
+            Loss
+
+        Notes
+        -----
+        Subclass must implement this method.
+        """
         raise NotImplementedError
 
     def grad(self) -> Array:
+        """
+        Compute Gradient
+
+        Returns
+        -------
+        grad : vulkpy.Array
+            Gradient
+
+        Notes
+        -----
+        Subclass must implement this method.
+        """
         raise NotImplementedError
 
 class Regularizer:
+    """
+    Abstract base class for Regularizer
+
+    See Also
+    --------
+    vulkpy.nn.Lasso : Lasso (L1) Regularizer
+    vulkpy.nn.Ridge : Ridge (L2) Regularizer
+    vulkpy.nn.Elastic : Elastic (L1 + L2) Regularizer
+    """
     def loss(self, param: Array) -> Array:
+        """
+        Compute Regularizer Loss
+
+        Parameters
+        ----------
+        param : vulkpy.Array
+            Parameters
+
+        Returns
+        -------
+        loss : vulkpy.Array
+            Loss
+
+        Notes
+        -----
+        Subclass must implement this method.
+        """
         raise NotImplementedError
 
     def grad(self, param: Array) -> Array:
+        """
+        Compute Gradient
+
+        Parameters
+        ----------
+        param : vulkpy.Array
+            Parameters
+
+        Returns
+        -------
+        grad : vulkpy.Array
+            Gradient
+
+        Notes
+        -----
+        Subclass must implement this method.
+        """
         raise NotImplementedError
 
 
 class Module:
-    def __init__(self):
-        pass
+    """
+    Abstract base class for Module
+
+    See Also
+    --------
+    vulkpy.nn.Sequence : Sequential Model
+    """
 
     def __call__(self, x: Array) -> Array:
         """
@@ -71,19 +225,63 @@ class Module:
         return self._y
 
     def forward(self, x: Array) -> Array:
+        """
+        Forward Calculation
+
+        Parameters
+        ----------
+        x : vulkpy.Array
+            Input features
+
+        Returns
+        -------
+        y : vulkpy.Array
+            Output
+
+        Notes
+        -----
+        Subclass must implement this method.
+        """
         raise NotImplementedError
 
     def backward(self, dy: Array) -> Array:
+        """
+        Backward Calculation
+
+        Parameters
+        ----------
+        dy : vulkpy.Array
+            dL/dy propagated from following layer
+
+        Returns
+        -------
+        dx : vulkpy.Array
+            dL/dx propagated to previous layer
+
+        Notes
+        -----
+        Subclass must implement this method.
+        """
         raise NotImplementedError
 
     def zero_grad(self):
         """
         Reset accumulated gradients to 0.
+
+        Notes
+        -----
+        Base class implement no-operation.
+        Subclass can customize this method.
         """
         pass
 
     def update(self):
         """
         Update parameters based on accumulated gradients
+
+        Notes
+        -----
+        Base class implement no-operation.
+        Subclass can customize this method.
         """
         pass
