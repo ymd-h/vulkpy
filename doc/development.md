@@ -27,7 +27,7 @@ statement for class docstring;
 To separate class docstring and `__init__()` docstring,
 we configure Sphinx as follows;
 
-```python:conf.py
+```python
 autodoc_class_signature = "separated"
 autodoc_default_options = {
     "class-doc-from": "class"
