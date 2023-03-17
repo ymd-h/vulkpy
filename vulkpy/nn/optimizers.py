@@ -213,14 +213,14 @@ class Adam(Optimizer):
         ----------
         gpu : vulkpy.GPU
             GPU
-        lr : float
-            Adam parameter
-        beta1 : float
-            Adam parameter
-        beta2 : float
-            Adam parameter
-        eps : float
-            Adam parameter
+        lr : float, optional
+            Adam parameter. The default is ``0.001``.
+        beta1 : float, optional
+            Adam parameter. The default is ``0.9``.
+        beta2 : float, optional
+            Adam parameter. The defeault is ``0.999``.
+        eps : float, optional
+            Adam parameter. The default is ``1e-8``.
         """
         self.gpu: GPU = gpu
         self.lr: float = lr
