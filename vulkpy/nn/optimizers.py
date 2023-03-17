@@ -96,9 +96,12 @@ class SGD(Optimizer):
 
 
 class AdamState(OptimizerState):
+    """
+    Optimizer State for Adam
+    """
     def __init__(self, opt: Adam, shape: Iterable[int]):
         """
-        Optimizer State for Adam
+        Initialize Adam state
 
         Parameters
         ----------
