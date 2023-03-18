@@ -21,9 +21,12 @@ logger = getLogger()
 
 
 class SGDState(OptimizerState):
+    """
+    Optimizer State for SGD
+    """
     def __init__(self, opt: SGD):
         """
-        Optimizer State for SGD
+        Initialize SGD state
 
         Parameters
         ----------
@@ -49,11 +52,18 @@ class SGDState(OptimizerState):
         return (-self.opt.lr) * grad
 
 class SGD(Optimizer):
+    """
+    SGD Optimizer
+
+    Use constant learning rate
+
+    See Also
+    --------
+    vulkpy.nn.Adam : Adam optimizer
+    """
     def __init__(self, lr: float):
         """
-        Stachostic Gradient Decent Optimizer
-
-        Use constant learning rate
+        Initialize Stachostic Gradient Decent (SGD) Optimizer
 
         Parameters
         ----------
@@ -86,9 +96,12 @@ class SGD(Optimizer):
 
 
 class AdamState(OptimizerState):
+    """
+    Optimizer State for Adam
+    """
     def __init__(self, opt: Adam, shape: Iterable[int]):
         """
-        Optimizer State for Adam
+        Initialize Adam state
 
         Parameters
         ----------
@@ -139,6 +152,54 @@ class AdamState(OptimizerState):
 
 
 class Adam(Optimizer):
+    r"""
+    Adam Optimizer
+
+    See Also
+    --------
+    vulkpy.nn.SGD : SGD optimizer
+
+    Notes
+    -----
+    This class implement Adam [adam1]_.
+    The algorithm utilizes moving averages of the 1st and 2nd order moment.
+    The 1st (:math:`m_t`) and 2nd (:math:`v_t`) order moment are updated as follows;
+
+    .. math::
+
+         m_t = \beta _1 m_{t-1} + (1 - \beta _1) g_t\\
+         v_t = \beta _2 v_{t-1} + (1 - \beta _2) g_t ^2
+
+    where :math:`g_t` is gradient.
+
+    To mitigate initial underestimation,
+    corrected :math:`\hat{m_t}` and :math:`\hat{v_t}` are used for parameter update.
+
+    .. math::
+
+         \hat{m}_t = m_t / (1 - \beta _1 ^t)\\
+         \hat{v}_t = v_t / (1 - \beta _2 ^t)
+
+    Finally, parameter :math:`\theta _t` is updated by
+
+    .. math::
+
+         \theta _t = \theta _{t-1} - \text{lr} \times
+         \hat{m}_t/(\sqrt{\hat{v}_t} + \epsilon)
+
+
+    References
+    ----------
+    .. [adam1] D. Kingma and J. Ba, "Adam: A Method for Stochastic Optimization",
+       ICLR (Poster) 2015, https://dblp.org/rec/journals/corr/KingmaB14.html
+
+    Examples
+    --------
+    >>> import vulkpy.vk
+    >>> from vulkpy import nn
+    >>> gpu = vk.GPU()
+    >>> adam = nn.Adam(gpu, lr=0.001, beta1=0.9, beta2=0.999)
+    """
     def __init__(self,
                  gpu: GPU, *,
                  lr: float = 0.001,
@@ -146,20 +207,20 @@ class Adam(Optimizer):
                  beta2: float = 0.999,
                  eps: float = 1e-8):
         """
-        Adam Optimizer
+        Initialize Adam Optimizer
 
         Parameters
         ----------
         gpu : vulkpy.GPU
             GPU
-        lr : float
-            Adam parameter
-        beta1 : float
-            Adam parameter
-        beta2 : float
-            Adam parameter
-        eps : float
-            Adam parameter
+        lr : float, optional
+            Adam parameter. The default is ``0.001``.
+        beta1 : float, optional
+            Adam parameter. The default is ``0.9``.
+        beta2 : float, optional
+            Adam parameter. The defeault is ``0.999``.
+        eps : float, optional
+            Adam parameter. The default is ``1e-8``.
         """
         self.gpu: GPU = gpu
         self.lr: float = lr

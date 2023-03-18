@@ -17,8 +17,9 @@ __all__ = ["Dense", "ReLU", "Sigmoid", "Softmax"]
 
 class Dense(Module):
     """
-    Dense
+    Fully connected Dense Layer
     """
+
     _batch_affine = getShader("batch_affine.spv")
 
     def __init__(self, gpu: GPU, input_dim: int, output_dim: int, *,
@@ -118,7 +119,7 @@ class Dense(Module):
         -----
         .. math::
 
-            dx = dy @ W\\
+            dx = dy W\\
             dW = dy ^T \cdot x\\
             db = dy
         """
@@ -199,7 +200,7 @@ class ReLU(Module):
 
         Notes
         -----
-        .. math:: dx = dy \times \max(sign(y), 0)
+        .. math:: dx = dy \cdot \max(\rm{sign}(y), 0)
 
         if x == 0, dy/dx => 0
         """
@@ -258,7 +259,7 @@ class Sigmoid(Module):
 
         Notes
         -----
-        .. math:: dx = dy \times y(1 - y)
+        .. math:: dx = dy \cdot y(1 - y)
         """
         dx = 1.0 - self._y
         dx *= self._y
@@ -314,7 +315,7 @@ class Softmax(Module):
 
         Notes
         -----
-        .. math:: dx = dy \times y(1 - y)
+        .. math:: dx = dy \cdot y(1 - y)
         """
         dx = 1.0 - self._y
         dx *= self._y

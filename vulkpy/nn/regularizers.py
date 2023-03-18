@@ -28,8 +28,8 @@ class Lasso(Regularizer):
     -----
     .. math::
 
-         L = coeff \times \sum_i |W_i|\
-         dL/dW_i = coeff \times sign(W_i)
+         L = \text{coeff} \times \sum_i |W_i|\\
+         dL/dW_i = \text{coeff} \times \rm{sign}(W_i)
     """
     def __init__(self, coeff: float = 1.0):
         """
@@ -85,8 +85,8 @@ class Ridge(Regularizer):
     -----
     .. math::
 
-         L = coeff \times \sum_i |W_i|^2\
-         dL/dW_i = 2 coeff \times W_i
+         L = \text{coeff} \times \sum_i |W_i|^2\\
+         dL/dW_i = 2 \cdot \text{coeff} \times W_i
     """
     def __init__(self, coeff: float = 1.0):
         """
@@ -135,15 +135,22 @@ class Ridge(Regularizer):
         return (2 * self.coeff) * param
 
 class Elastic(Regularizer):
-    """
+    r"""
     Elastic (L1 + L2) Regularization
+
+    Notes
+    -----
+    .. math::
+
+         L = \alpha \sum _i |W_i| + \beta \sum _i |W_i|^2\\
+         dL/dW_i = \alpha \rm{sign}(W_i) + 2 \beta W_i
     """
     def __init__(self, L1: float = 1.0, L2: float = 1.0):
         """
         Initialize Elastic Regularizer
 
-        Paramters
-        ---------
+        Parameters
+        ----------
         L1 : float, optional
             L1 Coefficient
         L2 : float, optional

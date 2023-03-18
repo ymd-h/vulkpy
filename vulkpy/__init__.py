@@ -2,11 +2,10 @@
 vulkpy: GPGPU array on Vulkan
 =============================
 
-vulkpy provides GPU computations.
+vulkpy provides GPGPU computations.
 
 See Also
 --------
-vulkpy.vkarray : Core Module
 vulkpy.random : Random Module
 vulkpy.nn : Neural Network Module
 vulkpy.util : Utility Module

@@ -15,11 +15,12 @@ __all__ = ["Sequence"]
 class Sequence:
     """
     Sequential Model
+
+    All layers sequentially connceted.
     """
     def __init__(self,
                  layers: Iterable[Module],
-                 loss: Loss, *,
-                 regularizer: Optional[Regularizer] = None):
+                 loss: Loss):
         """
         Initialize Sequence
 
@@ -29,8 +30,6 @@ class Sequence:
             Layers to be called sequentially
         loss : vulkpy.nn.Loss
             Loss layer
-        regularizer : vulkpy.nn.Regularizer, optional
-            Regularizer
         """
         self.L: Tuple[Module, ...] = tuple(layers)
         self.loss: Loss = loss
@@ -64,9 +63,9 @@ class Sequence:
 
         Returns
         -------
-        vulkpy.Array
+        y : vulkpy.Array
             Predicted Labels/Targets
-        vulkpy.Array
+        loss : vulkpy.Array
             Loss
         """
         _y = self._forward(x)
@@ -93,9 +92,9 @@ class Sequence:
 
         Returns
         -------
-        vulkpy.Array
+        pred_y : vulkpy.Array
             Predicted Labels/Targets
-        vulkpy.Array
+        loss : vulkpy.Array
             Loss. Return only if ``y`` is specified.
         """
         _y = self._forward(x)

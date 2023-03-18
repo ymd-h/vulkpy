@@ -68,6 +68,23 @@ logger = wblog.getLogger()
 class GPU:
     """
     GPU instance
+
+    Examples
+    --------
+    >>> import vulkpy as vk
+    >>> gpu = vk.GPU()
+
+    If you have multiple GPUs, you can specify GPU index
+
+    >>> gpu1 = vk.GPU(1)
+
+    GPU equality is checked by GPU index
+
+    >>> gpu == gpu1
+    False
+
+    >>> gpu == vk.GPU()
+    True
     """
     def __init__(self, idx: int=0, priority: float=0.0):
         """
@@ -174,10 +191,35 @@ class _GPUArray(Resource):
 class U32Array(_GPUArray):
     """
     GPU Array of uint (32bit) for shape or indices
+
+    See Also
+    --------
+    vulkpy.Array : float (32bit) array supporing mathematical operation
+
+    Warnings
+    --------
+    U32Array doesn't support any mathematical operation.
+    This class is designed for indexing and class label.
     """
     def __init__(self, gpu: GPU, *,
                  data: Optional[Iterable[int]] = None,
                  shape: Optional[Iterable[int]] = None):
+        """
+        Initialize U32Array
+
+        Parameters
+        ----------
+        data : iterable of ints, optional
+            Data to be copied.
+        shape : iterable of ints, optional
+            Shape for uninitialized array.
+            If ``data`` is not ``None``, ``shape`` is ignored.
+
+        Raises
+        ------
+        ValueError
+            If neither ``data`` nor ``shape`` is specified.
+        """
         super().__init__(gpu)
 
         if data is not None:
@@ -587,6 +629,7 @@ class Array(_GPUArray):
         Parameters
         ----------
         other : Array or float
+            Other value
         inplace : bool
             If ``True``, update inplace, otherwise returns new array.
             Default value is ``False``.
@@ -614,6 +657,7 @@ class Array(_GPUArray):
         Parameters
         ----------
         other : Array or float
+            Other value
         inplace : bool
             If ``True``, update inplace, otherwise returns new array.
             Default value is ``False``.
@@ -1070,8 +1114,10 @@ class Array(_GPUArray):
 
         Parameters
         ----------
-        min, max : Array or float
-            Minimum/Maximum value
+        min : Array or float
+            Minimum value
+        max : Array or float
+            Maximum value
         inplace : bool
             If ``True``, update inplace, otherwise returns new array.
             Default value is ``False``.

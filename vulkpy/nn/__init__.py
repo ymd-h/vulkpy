@@ -32,8 +32,18 @@ Predict with Model
 >>> pred_y = net.predict(x)
 """
 
+from .core import (
+    Optimizer,
+    OptimizerState,
+    Loss,
+    Regularizer,
+    Module,
+)
 from .initializers import Constant, HeNormal
-from .optimizers import SGD, Adam
+from .optimizers import (
+    SGD, SGDState,
+    Adam, AdamState,
+)
 from .layers import Dense, ReLU, Sigmoid, Softmax
 from .losses import (
     CrossEntropyLoss,
