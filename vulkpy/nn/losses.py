@@ -217,7 +217,7 @@ class SoftmaxCrossEntropyLoss(CrossEntropyLoss):
         -----
         .. math::
 
-             L = - f _{\text{reduce}} (y_i \log (softmax(x) _i))
+             L = - f _{\text{reduce}} (y_i \log (\rm{softmax}(x) _i))
 
         .. warning::
 
@@ -239,7 +239,7 @@ class SoftmaxCrossEntropyLoss(CrossEntropyLoss):
         -----
         .. math::
 
-             dx = softmax(x) - y
+             dx = \rm{softmax}(x) - y
 
         .. warning::
 
