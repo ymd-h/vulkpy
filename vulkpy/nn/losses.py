@@ -182,8 +182,8 @@ class SoftmaxCrossEntropyLoss(CrossEntropyLoss):
 
     See Also
     --------
-    Softmax : Softmax layer
-    CrossEntropyLoss : Cross Entropy loss without Softmax
+    vulkpy.nn.Softmax : Softmax layer
+    vulkpy.nn.CrossEntropyLoss : Cross Entropy loss without Softmax
     """
     def __init__(self, *args, **kwargs):
         """
