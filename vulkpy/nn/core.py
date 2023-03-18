@@ -97,8 +97,8 @@ class Loss:
 
     See Also
     --------
-    vulkpy.nn.CrossEntropy : Cross Entropy Loss
-    vulkpy.nn.SoftmaxCrossEntropy : Softmax Cross Entropy Loss
+    vulkpy.nn.CrossEntropyLoss : Cross Entropy Loss
+    vulkpy.nn.SoftmaxCrossEntropyLoss : Softmax Cross Entropy Loss
     vulkpy.nn.HuberLoss : Huber Loss
     vulkpy.nn.MSELoss : MSE Loss
     vulkpy.nn.MixLoss : Mixing Loss
