@@ -125,6 +125,12 @@ class Loss:
     vulkpy.nn.HuberLoss : Huber Loss
     vulkpy.nn.MSELoss : MSE Loss
     vulkpy.nn.MixLoss : Mixing Loss
+
+    Notes
+    -----
+    ``Loss`` is designed
+
+    Subclass of ``Loss`` must implements ``__call__()`` and ``grad()``.
     """
     def __call__(self, x: Array, y: Array) -> Array:
         """
