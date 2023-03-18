@@ -18,8 +18,7 @@ class Sequence:
     """
     def __init__(self,
                  layers: Iterable[Module],
-                 loss: Loss, *,
-                 regularizer: Optional[Regularizer] = None):
+                 loss: Loss):
         """
         Initialize Sequence
 
@@ -29,8 +28,6 @@ class Sequence:
             Layers to be called sequentially
         loss : vulkpy.nn.Loss
             Loss layer
-        regularizer : vulkpy.nn.Regularizer, optional
-            Regularizer
         """
         self.L: Tuple[Module, ...] = tuple(layers)
         self.loss: Loss = loss
