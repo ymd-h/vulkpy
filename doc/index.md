@@ -2,9 +2,9 @@
 
 vulkpy is a Python package providing GPGPU computation based on Vulkan.
 
-:::{warning}
+```{warning}
 vulkpy is still under development, so that API still might break without notice.
-:::
+```
 
 ```{toctree}
 :caption: Contents
