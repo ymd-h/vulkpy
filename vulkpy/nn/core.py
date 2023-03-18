@@ -67,9 +67,26 @@ class Optimizer:
 
     Notes
     -----
-    Mutable per parameter values are stored at OptimizerState class instance,
+    ``Optimizer`` class is designed to pass to ``Parameter`` constructor
+    through ``Module`` constructor.
+    Inside ``Parameter`` constructor, ``Optimizer.init_state()`` is called and
+    corresponding ``OptimizerState`` are stored at the ``Parameter`` instance.
+
+    Mutable per-parameter values are stored at ``OptimizerState`` class instance,
     although static global parameters (e.g. learning rate) are
     stored at this class.
+
+    To implement specific optimizer, Subclass of ``Optimizer`` should implement
+    ``Optimizer.init_state()`` method, which returns corresponding subclass of
+    ``OptimizerState``.
+
+    Examples
+    --------
+    >>> import vulkpy as vk
+    >>> gpu = vk.GPU()
+    >>>
+    >>> adam = vk.nn.Adam(gpu) # Optimizer
+    >>> dense = vk.nn.Dense(gpu, 1, 1, w_opt=adam, b_opt=adam) # Module
     """
     def init_state(self, shape: Iterable[int]) -> OptimizerState:
         """
