@@ -15,6 +15,8 @@ __all__ = ["Sequence"]
 class Sequence:
     """
     Sequential Model
+
+    All layers sequentially connceted.
     """
     def __init__(self,
                  layers: Iterable[Module],
