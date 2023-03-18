@@ -23,7 +23,7 @@ def enable_debug(*, validation: bool = True, api_dump: bool = True):
     Parameters
     ----------
     validation : bool, optional
-        If ``True`` (default), enable vulkan validation.
+        If ``True`` (default), enable Vulkan validation.
     api_dump : bool, optional
         If ``True`` (default), enable Vulkan API dump.
 
