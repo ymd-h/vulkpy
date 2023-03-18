@@ -200,7 +200,7 @@ class ReLU(Module):
 
         Notes
         -----
-        .. math:: dx = dy \times \max(sign(y), 0)
+        .. math:: dx = dy \cdot \max(\rm{sign}(y), 0)
 
         if x == 0, dy/dx => 0
         """
