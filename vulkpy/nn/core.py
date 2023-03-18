@@ -25,7 +25,7 @@ class OptimizerState:
 
     See Also
     --------
-    vulkpy.nn.core.Optimizer : Optimizer
+    vulkpy.nn.Optimizer : Optimizer
     vulkpy.nn.SGDState : OptimizerState subclass for SGD
     vulkpy.nn.AdamState : OptimizerState subclass for Adam
 
@@ -61,7 +61,7 @@ class Optimizer:
 
     See Also
     --------
-    vulkpy.nn.core.OptimizerState : Optimizer State
+    vulkpy.nn.OptimizerState : Optimizer State
     vulkpy.nn.SGD : Optimizer subclass for SGD
     vulkpy.nn.Adam : Optimizer subclass for Adam
 
@@ -82,7 +82,7 @@ class Optimizer:
 
         Returns
         -------
-        opt_state : vulkpy.nn.core.OptimizerState
+        opt_state : vulkpy.nn.OptimizerState
             Optimizer State
 
         Notes
