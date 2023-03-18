@@ -226,7 +226,18 @@ class Module:
 
     See Also
     --------
+    vulkpy.nn.Dense : Dense Layer (subclass)
+    vulkpy.nn.ReLU : ReLU Layer (subclass)
+    vulkpy.nn.Sigmoid : Sigmoid Layer (subclass)
+    vulkpy.nn.Softmax : Softmax Layer (subclass)
     vulkpy.nn.Sequence : Sequential Model
+
+    Notes
+    -----
+    ``Module`` is designed to for Neural Network Layer.
+
+    Subclass must implement ``forward()`` and ``backward()``, and can implement
+    ``zero_grad()`` and ``update()`` when it is necessary.
     """
 
     def __call__(self, x: Array) -> Array:
