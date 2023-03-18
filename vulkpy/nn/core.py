@@ -178,6 +178,10 @@ class Regularizer:
     vulkpy.nn.Lasso : Lasso (L1) Regularizer
     vulkpy.nn.Ridge : Ridge (L2) Regularizer
     vulkpy.nn.Elastic : Elastic (L1 + L2) Regularizer
+
+    Notes
+    -----
+    Subclass must implement ``loss()`` and ``grad()``.
     """
     def loss(self, param: Array) -> Array:
         """
