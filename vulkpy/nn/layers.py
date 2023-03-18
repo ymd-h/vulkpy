@@ -259,7 +259,7 @@ class Sigmoid(Module):
 
         Notes
         -----
-        .. math:: dx = dy \times y(1 - y)
+        .. math:: dx = dy \cdot y(1 - y)
         """
         dx = 1.0 - self._y
         dx *= self._y
@@ -315,7 +315,7 @@ class Softmax(Module):
 
         Notes
         -----
-        .. math:: dx = dy \times y(1 - y)
+        .. math:: dx = dy \cdot y(1 - y)
         """
         dx = 1.0 - self._y
         dx *= self._y
