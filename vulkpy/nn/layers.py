@@ -119,7 +119,7 @@ class Dense(Module):
         -----
         .. math::
 
-            dx = dy @ W\\
+            dx = dy W\\
             dW = dy ^T \cdot x\\
             db = dy
         """
