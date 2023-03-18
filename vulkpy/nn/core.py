@@ -31,9 +31,15 @@ class OptimizerState:
 
     Notes
     -----
-    Mutable per parameter values are stored at this class instance,
+    Mutable per-parameter values are stored at this class instance,
     although static global parameters (e.g. learning rate) are
-    stored at Optimizer class.
+    stored at ``Optimizer`` class.
+
+    Subclass of ``OptimizerState`` should implement ``Optimizer.grad2diff()``,
+    which takes accumulated gradients and returns update difference.
+
+    In standard design, ``OptimizerState`` holds a reference to
+    its parent ``Optimizer`` in order to access global parameters.
     """
     def grad2diff(self, grad: Array) -> Array:
         """
