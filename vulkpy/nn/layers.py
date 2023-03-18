@@ -46,15 +46,15 @@ class Dense(Module):
         b_init Callable, optional
             Bias initializer. If ``None`` (default),
             bias is initialized with ``0``.
-        w_opt : vulkpy.nn.core.Optimizer, optional
+        w_opt : vulkpy.nn.Optimizer, optional
             Weight Optimizer. If ``None`` (default),
             ``vulkpy.nn.Adam`` is used.
-        b_opt : vulkpy.nn.core.Optimizer, optional
+        b_opt : vulkpy.nn.Optimizer, optional
             Bias Optimizer. If ``None`` (default),
             ``vulkpy.nn.Adam`` is used.
-        w_reg : vulkpy.nn.core.Regularizer, optional
+        w_reg : vulkpy.nn.Regularizer, optional
             Weight Regularizer.
-        b_reg : vulkpy.nn.core.Regularizer, optional
+        b_reg : vulkpy.nn.Regularizer, optional
             Bias Regularizer
         """
         self.input_dim = int(input_dim)
