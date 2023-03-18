@@ -53,7 +53,7 @@ class OptimizerState:
         Returns
         -------
         diff : vulkpy.Array
-            Update diff. (`v += opt_state.grad2diff(grad)`)
+            Update diff. (``v += opt_state.grad2diff(grad)``)
 
         Notes
         -----
