@@ -86,7 +86,7 @@ class Ridge(Regularizer):
     .. math::
 
          L = \text{coeff} \times \sum_i |W_i|^2\\
-         dL/dW_i = 2 \text{coeff} \times W_i
+         dL/dW_i = 2 \cdot \text{coeff} \times W_i
     """
     def __init__(self, coeff: float = 1.0):
         """
