@@ -43,6 +43,7 @@ from .initializers import Constant, HeNormal
 from .optimizers import (
     SGD, SGDState,
     Adam, AdamState,
+    AdaGrad, AdaGradState,
 )
 from .layers import Dense, ReLU, Sigmoid, Softmax
 from .losses import (
