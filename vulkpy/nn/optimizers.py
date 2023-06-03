@@ -172,7 +172,7 @@ class AdaGrad(Optimizer):
             AdaGrad parameter (small positive).
             The default is ``1e-8``
         """
-        self.gpu: GPU = GPU
+        self.gpu: GPU = gpu
         self.lr: float = lr
         self.tau: float = tau
         self.eps: float = eps
