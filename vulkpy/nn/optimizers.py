@@ -72,7 +72,7 @@ class SGD(Optimizer):
             Learning rate
         """
         self.lr: float = lr
-        logger.debug(f"SGD(lr={self.lr})")
+        logger.debug("SGD(lr=%f)", self.lr)
 
     def init_state(self, shape: Iterable[int]) -> SGDState:
         """
@@ -177,7 +177,8 @@ class AdaGrad(Optimizer):
         self.tau: float = tau
         self.eps: float = eps
 
-        logger.debug(f"AdaGrad(lr={self.lr}, tau={self.tau}, eps={self.eps})")
+        logger.debug("AdaGrad(lr=%f, tau=%f, eps=%f)",
+                     self.lr, self.tau, self.eps)
 
     def init_state(self, shape: Iterable[int]) -> AdaGradState:
         """
@@ -329,8 +330,8 @@ class Adam(Optimizer):
         self.beta2: float = beta2
         self.eps: float = eps
 
-        logger.debug(f"Adam(lr={self.lr}, beta1={self.beta1}, " +
-                     f"beta2={self.beta2}, eps={self.eps})")
+        logger.debug("Adam(lr=%f, beta1=%f, beta2=%f, eps=%f)",
+                     self.lr, self.beta1, self.beta2, self.eps)
 
     def init_state(self, shape: Iterable[int]) -> AdamState:
         """
