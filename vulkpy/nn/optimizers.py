@@ -194,7 +194,7 @@ class AdaGrad(Optimizer):
         AdaGradState
             Optimizer state
         """
-        return AdaGrad(opt=self, shape=shape, tau=self.tau)
+        return AdaGradState(opt=self, shape=shape, tau=self.tau)
 
 
 class AdamState(OptimizerState):
