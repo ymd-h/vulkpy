@@ -54,6 +54,14 @@ class TestOptimizers(unittest.TestCase):
         self.assertEqual(state.beta1t, adam.beta1)
         self.assertEqual(state.beta2t, adam.beta2)
 
+    def test_adagrad(self):
+        adagrad = nn.AdaGrad(self.gpu)
+
+        grad = vk.Array(self.gpu, data=[1, 2, 3])
+        state = adagrad.init_state(grad.shape)
+
+        diff = state.grad2diff(grad)
+
 class TestLayers(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
