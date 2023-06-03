@@ -470,7 +470,18 @@ private:
   std::unordered_map<std::string_view, OpVariant_t> opMap;
 public:
   GPU(std::size_t id, float priority = 0.0f): priority(priority) {
+#if defined(__APPLE__)
+    std::vector<const char *> extensionNames;
+    extensionNames.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    extensionNames.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    vk::InstanceCreateInfo instanceInfo{};
+    instanceInfo.flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+    instanceInfo.enabledExtensionCount = static_cast<uint32_t>(extensionNames.size());
+    instanceInfo.ppEnabledExtensionNames = extensionNames.data();
+    this->instance = vk::createInstanceUnique(instanceInfo);
+#else
     this->instance = vk::createInstanceUnique(vk::InstanceCreateInfo{});
+#endif
     this->physical = this->instance->enumeratePhysicalDevices()[id];
 
     this->queueFamilyIndex = this->findQueueFamilyIndex(vk::QueueFlagBits::eCompute);
