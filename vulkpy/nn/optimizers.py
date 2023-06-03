@@ -175,8 +175,9 @@ class AdaGrad(Optimizer):
         self.gpu: GPU = GPU
         self.lr: float = lr
         self.tau: float = tau
+        self.eps: float = eps
 
-        logger.debug(f"AdaGrad(lr={self.lr}, tau={self.tau})")
+        logger.debug(f"AdaGrad(lr={self.lr}, tau={self.tau}, eps={self.eps})")
 
     def init_state(self, shape: Iterable[int]) -> AdaGradState:
         """
